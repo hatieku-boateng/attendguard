@@ -33,6 +33,8 @@ export default async function CourseStudentsPage({
     imported?: string;
     skipped?: string;
     errors?: string;
+    sent?: string;
+    pendingEmail?: string;
     importError?: string;
   }>;
 }) {
@@ -88,7 +90,9 @@ export default async function CourseStudentsPage({
           <CardTitle>CSV import</CardTitle>
           <CardDescription>
             Upload a CSV with the required columns: student name, student ID, and
-            email address. Optional columns: programme, level, class group.
+            valid email address. Pending students receive a secure one-time
+            activation link by email and must confirm their student ID.
+            Optional columns: programme, level, class group.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -100,7 +104,8 @@ export default async function CourseStudentsPage({
           {report.imported ? (
             <p className="mb-4 rounded-md border bg-muted px-3 py-2 text-sm text-muted-foreground">
               Imported {report.imported} row(s), skipped {report.skipped ?? 0},
-              errors {report.errors ?? 0}.
+              errors {report.errors ?? 0}. Activation emails sent{" "}
+              {report.sent ?? 0}; pending email setup {report.pendingEmail ?? 0}.
             </p>
           ) : null}
           <form action={importStudentsAction} className="grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">

@@ -1,10 +1,16 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { and, eq } from "drizzle-orm";
+import { and, eq, gt, isNull } from "drizzle-orm";
 
 import { getDb } from "@/db/client";
-import { studentProfiles, users } from "@/db/schema";
+import {
+  auditLogs,
+  studentActivationTokens,
+  studentProfiles,
+  users,
+} from "@/db/schema";
+import { hashActivationToken } from "@/lib/activation";
 import {
   clearSessionCookie,
   hashPassword,
@@ -59,26 +65,30 @@ export async function logoutAction() {
 }
 
 export async function activateAccountAction(formData: FormData) {
-  const email = cleanString(formData.get("email")).toLowerCase();
+  const token = cleanString(formData.get("token"));
   const studentIdNumber = cleanString(formData.get("studentIdNumber"));
   const password = cleanString(formData.get("password"));
 
-  if (!email || !studentIdNumber || password.length < 8) {
+  if (!token || !studentIdNumber || password.length < 8) {
     redirect("/activate-account?error=invalid");
   }
 
+  const tokenHash = hashActivationToken(token);
   const db = getDb();
   const [match] = await db
     .select({
       userId: users.id,
       status: users.status,
-      studentProfileId: studentProfiles.id,
+      tokenId: studentActivationTokens.id,
     })
-    .from(users)
+    .from(studentActivationTokens)
+    .innerJoin(users, eq(studentActivationTokens.userId, users.id))
     .innerJoin(studentProfiles, eq(studentProfiles.userId, users.id))
     .where(
       and(
-        eq(users.email, email),
+        eq(studentActivationTokens.tokenHash, tokenHash),
+        isNull(studentActivationTokens.usedAt),
+        gt(studentActivationTokens.expiresAt, new Date()),
         eq(users.role, "student"),
         eq(studentProfiles.studentIdNumber, studentIdNumber),
       ),
@@ -86,7 +96,7 @@ export async function activateAccountAction(formData: FormData) {
     .limit(1);
 
   if (!match) {
-    redirect("/activate-account?error=not-found");
+    redirect("/activate-account?error=invalid-token");
   }
 
   if (match.status === "active") {
@@ -102,6 +112,18 @@ export async function activateAccountAction(formData: FormData) {
       updatedAt: new Date(),
     })
     .where(eq(users.id, match.userId));
+
+  await db
+    .update(studentActivationTokens)
+    .set({ usedAt: new Date() })
+    .where(eq(studentActivationTokens.id, match.tokenId));
+
+  await db.insert(auditLogs).values({
+    userId: match.userId,
+    action: "student_account_activated",
+    entityType: "user",
+    entityId: match.userId,
+  });
 
   await setSessionCookie(match.userId);
   redirect("/student/dashboard");

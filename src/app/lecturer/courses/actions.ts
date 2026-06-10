@@ -12,10 +12,18 @@ import {
   courseResources,
   courses,
   enrolments,
+  studentActivationTokens,
   studentProfiles,
   users,
 } from "@/db/schema";
+import {
+  createActivationToken,
+  getActivationExpiry,
+  getActivationUrl,
+  hashActivationToken,
+} from "@/lib/activation";
 import { hashPassword, requireRole } from "@/lib/auth";
+import { sendStudentActivationEmail } from "@/lib/email";
 
 function cleanString(value: FormDataEntryValue | null) {
   return String(value ?? "").trim();
@@ -72,6 +80,8 @@ function importReportUrl(courseId: string, report: ImportReport) {
     imported: String(report.imported),
     skipped: String(report.skipped),
     errors: String(report.errors),
+    sent: String(report.activationEmailsSent),
+    pendingEmail: String(report.activationEmailsSkipped),
   });
 
   return `/lecturer/courses/${courseId}/students?${params.toString()}#import-students`;
@@ -81,6 +91,8 @@ type ImportReport = {
   imported: number;
   skipped: number;
   errors: number;
+  activationEmailsSent: number;
+  activationEmailsSkipped: number;
 };
 
 export async function importStudentsAction(formData: FormData) {
@@ -124,9 +136,24 @@ export async function importStudentsAction(formData: FormData) {
     redirect(`/lecturer/courses/${courseId}/students?importError=headings#import-students`);
   }
 
-  const report: ImportReport = { imported: 0, skipped: 0, errors: 0 };
+  const report: ImportReport = {
+    imported: 0,
+    skipped: 0,
+    errors: 0,
+    activationEmailsSent: 0,
+    activationEmailsSkipped: 0,
+  };
   const seenEmails = new Set<string>();
   const seenStudentIds = new Set<string>();
+
+  const [courseDetails] = await db
+    .select({
+      courseCode: courses.courseCode,
+      courseTitle: courses.courseTitle,
+    })
+    .from(courses)
+    .where(eq(courses.id, courseId))
+    .limit(1);
 
   for (const row of parsed.data) {
     const name = getField(row, "student name") ?? "";
@@ -156,6 +183,8 @@ export async function importStudentsAction(formData: FormData) {
       .limit(1);
 
     let studentProfileId: string | null = null;
+    let studentUserId: string | null = null;
+    let shouldSendActivation = false;
 
     if (existingByEmail) {
       if (existingByEmail.role !== "student") {
@@ -175,6 +204,8 @@ export async function importStudentsAction(formData: FormData) {
       }
 
       studentProfileId = profile.id;
+      studentUserId = existingByEmail.id;
+      shouldSendActivation = existingByEmail.status === "pending";
     } else {
       const passwordHash = await hashPassword(randomBytes(18).toString("base64url"));
       const [createdUser] = await db
@@ -200,6 +231,8 @@ export async function importStudentsAction(formData: FormData) {
         .returning({ id: studentProfiles.id });
 
       studentProfileId = profile.id;
+      studentUserId = createdUser.id;
+      shouldSendActivation = true;
     }
 
     await db
@@ -218,6 +251,37 @@ export async function importStudentsAction(formData: FormData) {
       });
 
     report.imported += 1;
+
+    if (shouldSendActivation && studentUserId) {
+      const token = createActivationToken();
+      const tokenHash = hashActivationToken(token);
+
+      await db
+        .update(studentActivationTokens)
+        .set({ usedAt: new Date() })
+        .where(eq(studentActivationTokens.userId, studentUserId));
+
+      await db.insert(studentActivationTokens).values({
+        userId: studentUserId,
+        tokenHash,
+        expiresAt: getActivationExpiry(),
+      });
+
+      const emailResult = await sendStudentActivationEmail({
+        to: email,
+        studentName: name,
+        courseLabel: courseDetails
+          ? `${courseDetails.courseCode}: ${courseDetails.courseTitle}`
+          : "your course",
+        activationUrl: getActivationUrl(token),
+      });
+
+      if (emailResult.sent) {
+        report.activationEmailsSent += 1;
+      } else {
+        report.activationEmailsSkipped += 1;
+      }
+    }
   }
 
   await db.insert(auditLogs).values({

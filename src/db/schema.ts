@@ -143,6 +143,25 @@ export const studentProfiles = pgTable(
   ],
 );
 
+export const studentActivationTokens = pgTable(
+  "student_activation_tokens",
+  {
+    id,
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    tokenHash: text("token_hash").notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    usedAt: timestamp("used_at", { withTimezone: true }),
+    createdAt,
+  },
+  (table) => [
+    uniqueIndex("student_activation_tokens_hash_unique").on(table.tokenHash),
+    index("student_activation_tokens_user_id_idx").on(table.userId),
+    index("student_activation_tokens_expires_at_idx").on(table.expiresAt),
+  ],
+);
+
 export const lecturerProfiles = pgTable(
   "lecturer_profiles",
   {
@@ -470,6 +489,7 @@ export const auditLogs = pgTable(
 export const usersRelations = relations(users, ({ one }) => ({
   studentProfile: one(studentProfiles),
   lecturerProfile: one(lecturerProfiles),
+  activationToken: one(studentActivationTokens),
 }));
 
 export const studentProfilesRelations = relations(
@@ -483,6 +503,16 @@ export const studentProfilesRelations = relations(
     passkeys: many(attendancePasskeys),
     attendanceRecords: many(attendanceRecords),
     attendanceAttempts: many(attendanceAttempts),
+  }),
+);
+
+export const studentActivationTokensRelations = relations(
+  studentActivationTokens,
+  ({ one }) => ({
+    user: one(users, {
+      fields: [studentActivationTokens.userId],
+      references: [users.id],
+    }),
   }),
 );
 

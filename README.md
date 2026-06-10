@@ -1,28 +1,72 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AttendGuard
 
-## Getting Started
+Full-stack attendance management application foundation based on the project specification in the parent folder.
 
-First, run the development server:
+## Stack
+
+- Next.js App Router
+- TypeScript
+- Tailwind CSS
+- shadcn/ui
+- Drizzle ORM
+- Neon PostgreSQL
+- Better Auth
+- Resend
+
+## Local Setup
+
+Copy `.env.example` to `.env.local` and fill in real values before connecting external services.
+
+At minimum, local database-backed routes require:
+
+```bash
+DATABASE_URL="postgresql://..."
+AUTH_SECRET="a-long-random-secret"
+APP_URL="http://localhost:3000"
+```
+
+Run the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Useful Commands
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run lint
+npm run typecheck
+npm run build
+npm run db:generate
+npm run db:migrate
+npm run db:studio
+npm run db:seed
+```
 
-## Learn More
+## Notes
 
-To learn more about Next.js, take a look at the following resources:
+- Keep database access in server-only files.
+- Do not expose secrets with `NEXT_PUBLIC_`.
+- Drizzle schema lives in `src/db/schema.ts`.
+- The database client is lazily initialized in `src/db/client.ts` to keep Next.js builds safe.
+- CSV student import expects headings: `student name`, `student id`, `email address`, with optional `programme`, `level`, and `class group`.
+- Students imported by a lecturer can use `/activate-account` to match their email and student ID, then set a password.
+- Passkeys are validated by hash and stored encrypted only for authenticated first-version delivery.
+
+## Current Product Scope
+
+- Lecturer and student account registration
+- Imported student account activation
+- Lecturer course creation and class roster import
+- Attendance session creation with lecturer geolocation
+- Student-specific passkey generation
+- Student active-session check-in with location capture
+- Server-side passkey, time, enrolment, duplicate, accuracy, and geofence validation
+- Lecturer dashboard, session monitoring, manual review approval/rejection
+- Student class list, active sessions, and attendance history
+- CSV attendance report export
 
 - [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
 - [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.

@@ -33,7 +33,7 @@ export function AppShell({
             ))}
             <Separator className="mx-1 h-6" orientation="vertical" />
             <Button asChild size="icon" variant="ghost" title="Sign out">
-              <Link href="/logout">
+              <Link href="/logout" prefetch={false}>
                 <LogOut className="size-4" />
               </Link>
             </Button>

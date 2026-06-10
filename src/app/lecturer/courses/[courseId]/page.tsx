@@ -6,6 +6,7 @@ import {
   deleteCourseResourceAction,
   updateCourseStatusAction,
 } from "@/app/lecturer/courses/actions";
+import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { PageHeader } from "@/components/page-header";
 import { StatCard } from "@/components/stat-card";
 import { Badge } from "@/components/ui/badge";
@@ -154,9 +155,12 @@ export default async function CourseDetailPage({
                   <form action={deleteCourseResourceAction}>
                     <input name="courseId" type="hidden" value={course.id} />
                     <input name="resourceId" type="hidden" value={resource.id} />
-                    <Button size="sm" type="submit" variant="outline">
+                    <ConfirmSubmitButton
+                      message="Delete this course resource?"
+                      variant="outline"
+                    >
                       Delete
-                    </Button>
+                    </ConfirmSubmitButton>
                   </form>
                 </div>
               </div>

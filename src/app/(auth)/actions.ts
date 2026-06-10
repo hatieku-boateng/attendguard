@@ -49,56 +49,8 @@ export async function loginAction(formData: FormData) {
 }
 
 export async function registerAction(formData: FormData) {
-  const name = cleanString(formData.get("name"));
-  const email = cleanString(formData.get("email")).toLowerCase();
-  const password = cleanString(formData.get("password"));
-  const role = "student" satisfies UserRole;
-
-  if (!name || !email || password.length < 8) {
-    redirect("/register?error=invalid");
-  }
-
-  const studentIdNumber = cleanString(formData.get("studentIdNumber"));
-
-  if (!studentIdNumber) {
-    redirect("/register?error=student-id");
-  }
-
-  const db = getDb();
-  const [existingUser] = await db
-    .select({ id: users.id })
-    .from(users)
-    .where(eq(users.email, email))
-    .limit(1);
-
-  if (existingUser) {
-    redirect("/register?error=exists");
-  }
-
-  const passwordHash = await hashPassword(password);
-
-  const [user] = await db
-    .insert(users)
-    .values({
-      name,
-      email,
-      passwordHash,
-      role,
-      status: "active",
-      emailVerifiedAt: new Date(),
-    })
-    .returning();
-
-  await db.insert(studentProfiles).values({
-    userId: user.id,
-    studentIdNumber,
-    programme: cleanString(formData.get("programme")) || null,
-    level: cleanString(formData.get("level")) || null,
-    classGroup: cleanString(formData.get("classGroup")) || null,
-  });
-
-  await setSessionCookie(user.id);
-  redirect(getDashboardPath(role));
+  void formData;
+  redirect("/login");
 }
 
 export async function logoutAction() {

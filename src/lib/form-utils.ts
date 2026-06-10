@@ -1,5 +1,10 @@
-export function cleanString(value: FormDataEntryValue | null) {
-  return String(value ?? "").trim();
+export function cleanString(
+  value: FormDataEntryValue | null,
+  options: { uppercase?: boolean } = {},
+) {
+  const text = String(value ?? "").trim();
+
+  return options.uppercase === false ? text : text.toUpperCase();
 }
 
 export async function fileToDataUrl(file: FormDataEntryValue | null) {

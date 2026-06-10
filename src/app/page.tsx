@@ -74,13 +74,13 @@ export default function Home() {
           </div>
           <div className="flex flex-wrap gap-3">
             <Button asChild size="lg">
-              <Link href="/register">
-                Create account
+              <Link href="/login">
+                Sign in
                 <ArrowRight className="size-4" />
               </Link>
             </Button>
             <Button asChild size="lg" variant="outline">
-              <Link href="/login">Open workspace</Link>
+              <Link href="/activate-account">Activate student account</Link>
             </Button>
           </div>
           <div className="grid max-w-2xl gap-3 sm:grid-cols-2">

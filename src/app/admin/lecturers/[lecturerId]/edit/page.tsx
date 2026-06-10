@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import { UserRound } from "lucide-react";
 
 import { deleteLecturerAction, updateLecturerAction } from "@/app/admin/actions";
+import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -133,9 +134,9 @@ export default async function EditLecturerPage({
             </p>
             <form action={deleteLecturerAction}>
               <input name="lecturerId" type="hidden" value={lecturer.id} />
-              <Button className="w-full" type="submit" variant="destructive">
+              <ConfirmSubmitButton message="Delete this lecturer account? This cannot be undone.">
                 Delete lecturer
-              </Button>
+              </ConfirmSubmitButton>
             </form>
           </CardContent>
         </Card>

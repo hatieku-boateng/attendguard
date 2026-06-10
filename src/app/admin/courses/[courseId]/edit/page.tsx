@@ -4,6 +4,7 @@ import {
   deleteAssignedCourseAction,
   updateAssignedCourseAction,
 } from "@/app/admin/actions";
+import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -135,9 +136,9 @@ export default async function EditAssignedCoursePage({
             </p>
             <form action={deleteAssignedCourseAction}>
               <input name="courseId" type="hidden" value={course.id} />
-              <Button className="w-full" type="submit" variant="destructive">
+              <ConfirmSubmitButton message="Delete this course assignment? This will remove related enrolments, sessions, and resources.">
                 Delete assignment
-              </Button>
+              </ConfirmSubmitButton>
             </form>
           </CardContent>
         </Card>

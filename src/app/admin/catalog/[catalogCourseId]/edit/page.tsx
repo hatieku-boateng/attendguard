@@ -4,6 +4,7 @@ import {
   deleteCatalogCourseAction,
   updateCatalogCourseAction,
 } from "@/app/admin/actions";
+import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -124,9 +125,9 @@ export default async function EditCatalogCoursePage({
             </p>
             <form action={deleteCatalogCourseAction}>
               <input name="catalogCourseId" type="hidden" value={course.id} />
-              <Button className="w-full" type="submit" variant="destructive">
+              <ConfirmSubmitButton message="Delete this catalogue course? Existing assignments will keep their copied course details.">
                 Delete catalogue course
-              </Button>
+              </ConfirmSubmitButton>
             </form>
           </CardContent>
         </Card>

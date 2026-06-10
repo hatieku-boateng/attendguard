@@ -18,8 +18,8 @@ import { cleanString, fileToDataUrl } from "@/lib/form-utils";
 export async function createLecturerAction(formData: FormData) {
   const admin = await requireRole("administrator");
   const name = cleanString(formData.get("name"));
-  const email = cleanString(formData.get("email")).toLowerCase();
-  const password = cleanString(formData.get("password"));
+  const email = cleanString(formData.get("email"), { uppercase: false }).toLowerCase();
+  const password = cleanString(formData.get("password"), { uppercase: false });
 
   if (!name || !email || password.length < 8) {
     redirect("/admin/lecturers/new?error=invalid");
@@ -78,9 +78,9 @@ export async function createLecturerAction(formData: FormData) {
 
 export async function updateLecturerAction(formData: FormData) {
   const admin = await requireRole("administrator");
-  const lecturerId = cleanString(formData.get("lecturerId"));
+  const lecturerId = cleanString(formData.get("lecturerId"), { uppercase: false });
   const name = cleanString(formData.get("name"));
-  const email = cleanString(formData.get("email")).toLowerCase();
+  const email = cleanString(formData.get("email"), { uppercase: false }).toLowerCase();
 
   if (!lecturerId || !name || !email) {
     redirect(`/admin/lecturers/${lecturerId}/edit?error=invalid`);
@@ -136,7 +136,7 @@ export async function updateLecturerAction(formData: FormData) {
 
 export async function deleteLecturerAction(formData: FormData) {
   const admin = await requireRole("administrator");
-  const lecturerId = cleanString(formData.get("lecturerId"));
+  const lecturerId = cleanString(formData.get("lecturerId"), { uppercase: false });
 
   if (!lecturerId) {
     redirect("/admin/lecturers");
@@ -219,7 +219,7 @@ export async function createCatalogCourseAction(formData: FormData) {
 
 export async function updateCatalogCourseAction(formData: FormData) {
   const admin = await requireRole("administrator");
-  const catalogCourseId = cleanString(formData.get("catalogCourseId"));
+  const catalogCourseId = cleanString(formData.get("catalogCourseId"), { uppercase: false });
   const courseCode = cleanString(formData.get("courseCode")).toUpperCase();
   const courseTitle = cleanString(formData.get("courseTitle"));
 
@@ -236,7 +236,10 @@ export async function updateCatalogCourseAction(formData: FormData) {
       programme: cleanString(formData.get("programme")) || null,
       level: cleanString(formData.get("level")) || null,
       description: cleanString(formData.get("description")) || null,
-      status: cleanString(formData.get("status")) === "archived" ? "archived" : "active",
+      status:
+        cleanString(formData.get("status"), { uppercase: false }) === "archived"
+          ? "archived"
+          : "active",
       updatedAt: new Date(),
     })
     .where(eq(courseCatalog.id, catalogCourseId));
@@ -268,7 +271,7 @@ export async function updateCatalogCourseAction(formData: FormData) {
 
 export async function deleteCatalogCourseAction(formData: FormData) {
   const admin = await requireRole("administrator");
-  const catalogCourseId = cleanString(formData.get("catalogCourseId"));
+  const catalogCourseId = cleanString(formData.get("catalogCourseId"), { uppercase: false });
 
   if (!catalogCourseId) {
     redirect("/admin/catalog");
@@ -290,8 +293,8 @@ export async function deleteCatalogCourseAction(formData: FormData) {
 
 export async function createAssignedCourseAction(formData: FormData) {
   const admin = await requireRole("administrator");
-  const catalogCourseId = cleanString(formData.get("catalogCourseId"));
-  const lecturerId = cleanString(formData.get("lecturerId"));
+  const catalogCourseId = cleanString(formData.get("catalogCourseId"), { uppercase: false });
+  const lecturerId = cleanString(formData.get("lecturerId"), { uppercase: false });
   const semester = cleanString(formData.get("semester"));
   const academicYear = cleanString(formData.get("academicYear"));
 
@@ -326,7 +329,7 @@ export async function createAssignedCourseAction(formData: FormData) {
       level: catalogCourse.level,
       semester,
       academicYear,
-      classGroup: cleanString(formData.get("classGroup")) || "main",
+      classGroup: cleanString(formData.get("classGroup")) || "MAIN",
       lecturerId,
       status: "active",
     })
@@ -347,9 +350,9 @@ export async function createAssignedCourseAction(formData: FormData) {
 
 export async function updateAssignedCourseAction(formData: FormData) {
   const admin = await requireRole("administrator");
-  const courseId = cleanString(formData.get("courseId"));
-  const lecturerId = cleanString(formData.get("lecturerId"));
-  const status = cleanString(formData.get("status"));
+  const courseId = cleanString(formData.get("courseId"), { uppercase: false });
+  const lecturerId = cleanString(formData.get("lecturerId"), { uppercase: false });
+  const status = cleanString(formData.get("status"), { uppercase: false });
 
   if (!courseId || !lecturerId) {
     redirect(`/admin/courses/${courseId}/edit?error=missing`);
@@ -372,7 +375,7 @@ export async function updateAssignedCourseAction(formData: FormData) {
       lecturerId,
       semester: cleanString(formData.get("semester")),
       academicYear: cleanString(formData.get("academicYear")),
-      classGroup: cleanString(formData.get("classGroup")) || "main",
+      classGroup: cleanString(formData.get("classGroup")) || "MAIN",
       status: status === "archived" || status === "draft" ? status : "active",
       updatedAt: new Date(),
     })
@@ -393,7 +396,7 @@ export async function updateAssignedCourseAction(formData: FormData) {
 
 export async function deleteAssignedCourseAction(formData: FormData) {
   const admin = await requireRole("administrator");
-  const courseId = cleanString(formData.get("courseId"));
+  const courseId = cleanString(formData.get("courseId"), { uppercase: false });
 
   if (!courseId) {
     redirect("/admin/courses");

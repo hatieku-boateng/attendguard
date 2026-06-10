@@ -38,10 +38,20 @@ export default async function LoginPage({
         <CardHeader>
           <CardTitle>Sign in</CardTitle>
           <CardDescription>
-            Access your lecturer or student attendance workspace.
+            Access your admin, lecturer, or student attendance workspace.
           </CardDescription>
         </CardHeader>
         <CardContent>
+          <div className="mb-5 grid gap-2 sm:grid-cols-3">
+            {["Admin", "Lecturer", "Student"].map((role) => (
+              <div
+                className="rounded-lg border bg-muted/40 px-3 py-2 text-center text-xs font-medium uppercase tracking-normal text-muted-foreground"
+                key={role}
+              >
+                {role}
+              </div>
+            ))}
+          </div>
           <form action={loginAction} className="space-y-5">
             {message ? (
               <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
@@ -61,12 +71,6 @@ export default async function LoginPage({
             </Button>
           </form>
           <p className="mt-6 text-center text-sm text-muted-foreground">
-            No account yet?{" "}
-            <Link className="font-medium text-foreground underline" href="/register">
-              Create one
-            </Link>
-          </p>
-          <p className="mt-2 text-center text-sm text-muted-foreground">
             Imported student?{" "}
             <Link className="font-medium text-foreground underline" href="/activate-account">
               Activate account

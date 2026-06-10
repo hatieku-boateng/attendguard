@@ -20,44 +20,13 @@ function cleanString(value: FormDataEntryValue | null) {
   return String(value ?? "").trim();
 }
 
-export async function createCourseAction(formData: FormData) {
-  const user = await requireRole(["lecturer", "administrator"]);
-
-  if (!user.lecturerProfileId) {
-    redirect("/lecturer/dashboard");
-  }
-
-  const courseCode = cleanString(formData.get("courseCode")).toUpperCase();
-  const courseTitle = cleanString(formData.get("courseTitle"));
-  const semester = cleanString(formData.get("semester"));
-  const academicYear = cleanString(formData.get("academicYear"));
-
-  if (!courseCode || !courseTitle || !semester || !academicYear) {
-    redirect("/lecturer/courses/new?error=missing");
-  }
-
-  const db = getDb();
-  const [course] = await db
-    .insert(courses)
-    .values({
-      courseCode,
-      courseTitle,
-      programme: cleanString(formData.get("programme")) || null,
-      level: cleanString(formData.get("level")) || null,
-      semester,
-      academicYear,
-      classGroup: cleanString(formData.get("classGroup")) || "main",
-      lecturerId: user.lecturerProfileId,
-      status: "active",
-    })
-    .returning({ id: courses.id });
-
-  revalidatePath("/lecturer/courses");
-  redirect(`/lecturer/courses/${course.id}`);
+export async function createCourseAction() {
+  await requireRole("administrator");
+  redirect("/admin/courses/new");
 }
 
 export async function updateCourseStatusAction(formData: FormData) {
-  const user = await requireRole(["lecturer", "administrator"]);
+  const user = await requireRole("lecturer");
   const courseId = cleanString(formData.get("courseId"));
   const status = cleanString(formData.get("status"));
 
@@ -114,7 +83,7 @@ type ImportReport = {
 };
 
 export async function importStudentsAction(formData: FormData) {
-  const user = await requireRole(["lecturer", "administrator"]);
+  const user = await requireRole("lecturer");
   const courseId = cleanString(formData.get("courseId"));
   const file = formData.get("studentFile");
 

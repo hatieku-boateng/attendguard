@@ -1,10 +1,8 @@
 import Link from "next/link";
 import { desc, eq } from "drizzle-orm";
-import { Plus } from "lucide-react";
 
 import { PageHeader } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -25,7 +23,7 @@ import { courses } from "@/db/schema";
 import { requireRole } from "@/lib/auth";
 
 export default async function LecturerCoursesPage() {
-  const user = await requireRole(["lecturer", "administrator"]);
+  const user = await requireRole("lecturer");
   const db = getDb();
 
   const rows = user.lecturerProfileId
@@ -40,15 +38,7 @@ export default async function LecturerCoursesPage() {
     <>
       <PageHeader
         title="Courses"
-        description="Create classes, manage course information, and open each roster for student enrolment."
-        actions={
-          <Button asChild>
-            <Link href="/lecturer/courses/new">
-              <Plus className="size-4" />
-              New course
-            </Link>
-          </Button>
-        }
+        description="Courses assigned by the administrator. Open a course to enrol students and manage attendance."
       />
       <Card>
         <CardHeader>
@@ -89,7 +79,7 @@ export default async function LecturerCoursesPage() {
               {rows.length === 0 ? (
                 <TableRow>
                   <TableCell className="h-24 text-center text-muted-foreground" colSpan={6}>
-                    No courses have been created yet.
+                    No courses have been assigned to you yet.
                   </TableCell>
                 </TableRow>
               ) : null}

@@ -17,7 +17,7 @@ export default async function CourseDetailPage({
   params: Promise<{ courseId: string }>;
 }) {
   const { courseId } = await params;
-  const user = await requireRole(["lecturer", "administrator"]);
+  const user = await requireRole("lecturer");
   const db = getDb();
 
   const [course] = await db

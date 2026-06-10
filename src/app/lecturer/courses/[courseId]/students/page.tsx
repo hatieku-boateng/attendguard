@@ -38,7 +38,7 @@ export default async function CourseStudentsPage({
 }) {
   const { courseId } = await params;
   const report = await searchParams;
-  const user = await requireRole(["lecturer", "administrator"]);
+  const user = await requireRole("lecturer");
   const db = getDb();
 
   const [course] = await db

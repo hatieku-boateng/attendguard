@@ -47,7 +47,7 @@ export default async function LecturerSessionDetailPage({
 }) {
   const { sessionId } = await params;
   const query = await searchParams;
-  const user = await requireRole(["lecturer", "administrator"]);
+  const user = await requireRole("lecturer");
   const db = getDb();
 
   const [session] = await db

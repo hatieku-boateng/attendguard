@@ -24,7 +24,7 @@ export default async function NewSessionPage({
   searchParams: Promise<{ courseId?: string; error?: string }>;
 }) {
   const params = await searchParams;
-  const user = await requireRole(["lecturer", "administrator"]);
+  const user = await requireRole("lecturer");
   const db = getDb();
   const lecturerCourses = await db
     .select()

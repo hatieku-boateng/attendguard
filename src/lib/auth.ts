@@ -179,7 +179,15 @@ export async function requireRole(role: UserRole | UserRole[]) {
   const allowedRoles = Array.isArray(role) ? role : [role];
 
   if (!allowedRoles.includes(user.role)) {
-    redirect(user.role === "student" ? "/student/dashboard" : "/lecturer/dashboard");
+    if (user.role === "student") {
+      redirect("/student/dashboard");
+    }
+
+    if (user.role === "administrator") {
+      redirect("/admin/dashboard");
+    }
+
+    redirect("/lecturer/dashboard");
   }
 
   return user;

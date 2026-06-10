@@ -19,7 +19,7 @@ import { attendanceSessions, courses } from "@/db/schema";
 import { requireRole } from "@/lib/auth";
 
 export default async function LecturerSessionsPage() {
-  const user = await requireRole(["lecturer", "administrator"]);
+  const user = await requireRole("lecturer");
   const db = getDb();
 
   const rows = await db

@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { and, eq } from "drizzle-orm";
 
 import { getDb } from "@/db/client";
-import { lecturerProfiles, studentProfiles, users } from "@/db/schema";
+import { studentProfiles, users } from "@/db/schema";
 import {
   clearSessionCookie,
   hashPassword,
@@ -18,6 +18,10 @@ function cleanString(value: FormDataEntryValue | null) {
 }
 
 function getDashboardPath(role: UserRole) {
+  if (role === "administrator") {
+    return "/admin/dashboard";
+  }
+
   return role === "student" ? "/student/dashboard" : "/lecturer/dashboard";
 }
 
@@ -48,19 +52,15 @@ export async function registerAction(formData: FormData) {
   const name = cleanString(formData.get("name"));
   const email = cleanString(formData.get("email")).toLowerCase();
   const password = cleanString(formData.get("password"));
-  const role = cleanString(formData.get("role")) as UserRole;
+  const role = "student" satisfies UserRole;
 
   if (!name || !email || password.length < 8) {
     redirect("/register?error=invalid");
   }
 
-  if (!["lecturer", "student"].includes(role)) {
-    redirect("/register?error=role");
-  }
-
   const studentIdNumber = cleanString(formData.get("studentIdNumber"));
 
-  if (role === "student" && !studentIdNumber) {
+  if (!studentIdNumber) {
     redirect("/register?error=student-id");
   }
 
@@ -89,21 +89,13 @@ export async function registerAction(formData: FormData) {
     })
     .returning();
 
-  if (role === "student") {
-    await db.insert(studentProfiles).values({
-      userId: user.id,
-      studentIdNumber,
-      programme: cleanString(formData.get("programme")) || null,
-      level: cleanString(formData.get("level")) || null,
-      classGroup: cleanString(formData.get("classGroup")) || null,
-    });
-  } else {
-    await db.insert(lecturerProfiles).values({
-      userId: user.id,
-      staffId: cleanString(formData.get("staffId")) || null,
-      department: cleanString(formData.get("department")) || null,
-    });
-  }
+  await db.insert(studentProfiles).values({
+    userId: user.id,
+    studentIdNumber,
+    programme: cleanString(formData.get("programme")) || null,
+    level: cleanString(formData.get("level")) || null,
+    classGroup: cleanString(formData.get("classGroup")) || null,
+  });
 
   await setSessionCookie(user.id);
   redirect(getDashboardPath(role));

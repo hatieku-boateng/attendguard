@@ -13,7 +13,7 @@ export default async function LecturerLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const user = await requireRole(["lecturer", "administrator"]);
+  const user = await requireRole("lecturer");
 
   return (
     <AppShell navItems={navItems} user={user}>

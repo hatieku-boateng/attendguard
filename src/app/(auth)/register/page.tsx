@@ -12,17 +12,9 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 const errorMessages: Record<string, string> = {
   invalid: "Enter a name, email, and password of at least 8 characters.",
-  role: "Choose whether this account is for a lecturer or student.",
   exists: "An account already exists for this email.",
   "student-id": "Student accounts require a student ID number.",
 };
@@ -37,15 +29,15 @@ export default async function RegisterPage({
 
   return (
     <AuthFrame
-      description="Create a role-aware account for course setup, roster imports, active sessions, and student check-ins."
-      eyebrow="Role-aware onboarding"
-      title="Create your AttendGuard workspace."
+      description="Student accounts can self-register or activate an imported record. Lecturer accounts are created by the administrator."
+      eyebrow="Student onboarding"
+      title="Create your student attendance profile."
     >
       <Card className="w-full max-w-2xl">
         <CardHeader>
-          <CardTitle>Create account</CardTitle>
+          <CardTitle>Create student account</CardTitle>
           <CardDescription>
-            Set up a lecturer or student account for the attendance platform.
+            Lecturer accounts are issued by the administrator after course assignment.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -68,20 +60,8 @@ export default async function RegisterPage({
               <Input id="password" name="password" type="password" required />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="role">Role</Label>
-              <Select name="role" required defaultValue="student">
-                <SelectTrigger id="role">
-                  <SelectValue placeholder="Choose role" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="student">Student</SelectItem>
-                  <SelectItem value="lecturer">Lecturer</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
               <Label htmlFor="studentIdNumber">Student ID</Label>
-              <Input id="studentIdNumber" name="studentIdNumber" />
+              <Input id="studentIdNumber" name="studentIdNumber" required />
             </div>
             <div className="space-y-2">
               <Label htmlFor="programme">Programme</Label>
@@ -95,17 +75,9 @@ export default async function RegisterPage({
               <Label htmlFor="classGroup">Class group</Label>
               <Input id="classGroup" name="classGroup" />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="staffId">Staff ID</Label>
-              <Input id="staffId" name="staffId" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="department">Department</Label>
-              <Input id="department" name="department" />
-            </div>
             <div className="sm:col-span-2">
               <Button className="w-full" type="submit">
-                Create account
+                Create student account
               </Button>
             </div>
           </form>

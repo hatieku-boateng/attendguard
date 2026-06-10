@@ -13,7 +13,7 @@ import { StatCard } from "@/components/stat-card";
 import { requireRole } from "@/lib/auth";
 
 export default async function LecturerDashboardPage() {
-  const user = await requireRole(["lecturer", "administrator"]);
+  const user = await requireRole("lecturer");
   const db = getDb();
 
   const lecturerId = user.lecturerProfileId ?? "";

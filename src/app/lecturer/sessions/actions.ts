@@ -35,7 +35,7 @@ function parseDate(value: FormDataEntryValue | null) {
 }
 
 export async function createAttendanceSessionAction(formData: FormData) {
-  const user = await requireRole(["lecturer", "administrator"]);
+  const user = await requireRole("lecturer");
   const courseId = cleanString(formData.get("courseId"));
   const sessionTitle = cleanString(formData.get("sessionTitle"));
   const lecturerLatitude = parseNumber(formData.get("lecturerLatitude"));
@@ -115,7 +115,7 @@ export async function createAttendanceSessionAction(formData: FormData) {
 }
 
 export async function closeAttendanceSessionAction(formData: FormData) {
-  const user = await requireRole(["lecturer", "administrator"]);
+  const user = await requireRole("lecturer");
   const sessionId = cleanString(formData.get("sessionId"));
 
   if (!user.lecturerProfileId || !sessionId) {
@@ -145,7 +145,7 @@ export async function closeAttendanceSessionAction(formData: FormData) {
 }
 
 export async function generatePasskeysAction(formData: FormData) {
-  const user = await requireRole(["lecturer", "administrator"]);
+  const user = await requireRole("lecturer");
   const sessionId = cleanString(formData.get("sessionId"));
 
   if (!user.lecturerProfileId || !sessionId) {
@@ -218,7 +218,7 @@ export async function generatePasskeysAction(formData: FormData) {
 }
 
 export async function approveAttemptAction(formData: FormData) {
-  const user = await requireRole(["lecturer", "administrator"]);
+  const user = await requireRole("lecturer");
   const attemptId = cleanString(formData.get("attemptId"));
 
   if (!user.lecturerProfileId || !attemptId) {
@@ -295,7 +295,7 @@ export async function approveAttemptAction(formData: FormData) {
 }
 
 export async function rejectAttemptAction(formData: FormData) {
-  const user = await requireRole(["lecturer", "administrator"]);
+  const user = await requireRole("lecturer");
   const attemptId = cleanString(formData.get("attemptId"));
 
   if (!user.lecturerProfileId || !attemptId) {

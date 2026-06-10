@@ -15,6 +15,7 @@ export type CurrentUser = {
   id: string;
   name: string;
   email: string;
+  avatarUrl: string | null;
   role: UserRole;
   status: "pending" | "active" | "suspended" | "disabled";
   studentProfileId?: string;
@@ -153,6 +154,7 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
     id: user.id,
     name: user.name,
     email: user.email,
+    avatarUrl: user.avatarUrl,
     role: user.role,
     status: user.status,
     studentProfileId: studentProfile?.id,

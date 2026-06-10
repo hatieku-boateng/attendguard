@@ -9,6 +9,7 @@ import Papa from "papaparse";
 import { getDb } from "@/db/client";
 import {
   auditLogs,
+  courseResources,
   courses,
   enrolments,
   studentProfiles,
@@ -230,4 +231,87 @@ export async function importStudentsAction(formData: FormData) {
 
   revalidatePath(`/lecturer/courses/${courseId}/students`);
   redirect(importReportUrl(courseId, report));
+}
+
+export async function addCourseResourceAction(formData: FormData) {
+  const user = await requireRole("lecturer");
+  const courseId = cleanString(formData.get("courseId"));
+  const title = cleanString(formData.get("title"));
+  const resourceUrl = cleanString(formData.get("resourceUrl"));
+
+  if (!user.lecturerProfileId || !courseId || !title || !resourceUrl) {
+    redirect(`/lecturer/courses/${courseId}`);
+  }
+
+  const db = getDb();
+  const [course] = await db
+    .select({ id: courses.id })
+    .from(courses)
+    .where(
+      and(
+        eq(courses.id, courseId),
+        eq(courses.lecturerId, user.lecturerProfileId),
+      ),
+    )
+    .limit(1);
+
+  if (!course) {
+    redirect("/lecturer/courses");
+  }
+
+  const [resource] = await db
+    .insert(courseResources)
+    .values({
+      courseId,
+      lecturerId: user.lecturerProfileId,
+      title,
+      resourceType: cleanString(formData.get("resourceType")) || "link",
+      resourceUrl,
+      description: cleanString(formData.get("description")) || null,
+    })
+    .returning({ id: courseResources.id });
+
+  await db.insert(auditLogs).values({
+    userId: user.id,
+    action: "course_resource_created",
+    entityType: "course_resource",
+    entityId: resource.id,
+    newValue: { courseId, title, resourceUrl },
+  });
+
+  revalidatePath(`/lecturer/courses/${courseId}`);
+  revalidatePath("/student/classes");
+  redirect(`/lecturer/courses/${courseId}#resources`);
+}
+
+export async function deleteCourseResourceAction(formData: FormData) {
+  const user = await requireRole("lecturer");
+  const courseId = cleanString(formData.get("courseId"));
+  const resourceId = cleanString(formData.get("resourceId"));
+
+  if (!user.lecturerProfileId || !courseId || !resourceId) {
+    redirect("/lecturer/courses");
+  }
+
+  const db = getDb();
+  await db
+    .delete(courseResources)
+    .where(
+      and(
+        eq(courseResources.id, resourceId),
+        eq(courseResources.courseId, courseId),
+        eq(courseResources.lecturerId, user.lecturerProfileId),
+      ),
+    );
+
+  await db.insert(auditLogs).values({
+    userId: user.id,
+    action: "course_resource_deleted",
+    entityType: "course_resource",
+    entityId: resourceId,
+  });
+
+  revalidatePath(`/lecturer/courses/${courseId}`);
+  revalidatePath("/student/classes");
+  redirect(`/lecturer/courses/${courseId}#resources`);
 }

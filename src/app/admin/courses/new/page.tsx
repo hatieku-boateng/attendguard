@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { getDb } from "@/db/client";
-import { lecturerProfiles, users } from "@/db/schema";
+import { courseCatalog, lecturerProfiles, users } from "@/db/schema";
 import { requireRole } from "@/lib/auth";
 
 export default async function NewAdminCoursePage({
@@ -33,21 +33,40 @@ export default async function NewAdminCoursePage({
     })
     .from(lecturerProfiles)
     .innerJoin(users, eq(lecturerProfiles.userId, users.id));
+  const catalogCourses = await db
+    .select()
+    .from(courseCatalog)
+    .where(eq(courseCatalog.status, "active"));
 
   return (
     <>
       <PageHeader
-        title="New assigned course"
-        description="Create a course and assign ownership to a lecturer. The lecturer will enrol students afterward."
+        title="Assign course"
+        description="Select a catalogue course and assign it to a lecturer for a semester or class group."
       />
       <Card>
         <CardContent className="pt-6">
           <form action={createAssignedCourseAction} className="grid gap-5 sm:grid-cols-2">
             {params.error ? (
               <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive sm:col-span-2">
-                Complete all required fields and select a valid lecturer.
+                Complete all required fields and select a valid course and lecturer.
               </p>
             ) : null}
+            <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor="catalogCourseId">Course</Label>
+              <Select name="catalogCourseId" required>
+                <SelectTrigger id="catalogCourseId">
+                  <SelectValue placeholder="Select course" />
+                </SelectTrigger>
+                <SelectContent>
+                  {catalogCourses.map((course) => (
+                    <SelectItem key={course.id} value={course.id}>
+                      {course.courseCode} - {course.courseTitle}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div className="space-y-2 sm:col-span-2">
               <Label htmlFor="lecturerId">Assigned lecturer</Label>
               <Select name="lecturerId" required>
@@ -64,22 +83,6 @@ export default async function NewAdminCoursePage({
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="courseCode">Course code</Label>
-              <Input id="courseCode" name="courseCode" placeholder="CSM 201" required />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="courseTitle">Course title</Label>
-              <Input id="courseTitle" name="courseTitle" required />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="programme">Programme</Label>
-              <Input id="programme" name="programme" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="level">Level</Label>
-              <Input id="level" name="level" />
-            </div>
-            <div className="space-y-2">
               <Label htmlFor="semester">Semester</Label>
               <Input id="semester" name="semester" placeholder="Semester 1" required />
             </div>
@@ -93,7 +96,7 @@ export default async function NewAdminCoursePage({
             </div>
             <div className="flex items-end">
               <Button className="w-full" type="submit">
-                Create and assign
+                Assign course
               </Button>
             </div>
           </form>

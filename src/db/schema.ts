@@ -104,6 +104,7 @@ export const users = pgTable(
     name: varchar("name", { length: 160 }).notNull(),
     email: varchar("email", { length: 254 }).notNull(),
     passwordHash: text("password_hash").notNull(),
+    avatarUrl: text("avatar_url"),
     role: userRoleEnum("role").notNull(),
     status: accountStatusEnum("status").notNull().default("pending"),
     emailVerifiedAt: timestamp("email_verified_at", { withTimezone: true }),
@@ -161,10 +162,32 @@ export const lecturerProfiles = pgTable(
   ],
 );
 
+export const courseCatalog = pgTable(
+  "course_catalog",
+  {
+    id,
+    courseCode: varchar("course_code", { length: 40 }).notNull(),
+    courseTitle: varchar("course_title", { length: 200 }).notNull(),
+    programme: varchar("programme", { length: 160 }),
+    level: varchar("level", { length: 50 }),
+    description: text("description"),
+    status: courseStatusEnum("status").notNull().default("active"),
+    createdAt,
+    updatedAt,
+  },
+  (table) => [
+    uniqueIndex("course_catalog_code_unique").on(table.courseCode),
+    index("course_catalog_status_idx").on(table.status),
+  ],
+);
+
 export const courses = pgTable(
   "courses",
   {
     id,
+    catalogCourseId: uuid("catalog_course_id").references(() => courseCatalog.id, {
+      onDelete: "set null",
+    }),
     courseCode: varchar("course_code", { length: 40 }).notNull(),
     courseTitle: varchar("course_title", { length: 200 }).notNull(),
     programme: varchar("programme", { length: 160 }),
@@ -189,6 +212,29 @@ export const courses = pgTable(
     index("courses_lecturer_id_idx").on(table.lecturerId),
     index("courses_status_idx").on(table.status),
     index("courses_code_idx").on(table.courseCode),
+  ],
+);
+
+export const courseResources = pgTable(
+  "course_resources",
+  {
+    id,
+    courseId: uuid("course_id")
+      .notNull()
+      .references(() => courses.id, { onDelete: "cascade" }),
+    lecturerId: uuid("lecturer_id")
+      .notNull()
+      .references(() => lecturerProfiles.id, { onDelete: "cascade" }),
+    title: varchar("title", { length: 200 }).notNull(),
+    resourceType: varchar("resource_type", { length: 80 }).notNull(),
+    resourceUrl: text("resource_url").notNull(),
+    description: text("description"),
+    createdAt,
+    updatedAt,
+  },
+  (table) => [
+    index("course_resources_course_id_idx").on(table.courseId),
+    index("course_resources_lecturer_id_idx").on(table.lecturerId),
   ],
 );
 
@@ -448,18 +494,39 @@ export const lecturerProfilesRelations = relations(
       references: [users.id],
     }),
     courses: many(courses),
+    courseResources: many(courseResources),
     attendanceSessions: many(attendanceSessions),
     reviewedAttempts: many(attendanceAttempts),
   }),
 );
 
+export const courseCatalogRelations = relations(courseCatalog, ({ many }) => ({
+  offerings: many(courses),
+}));
+
 export const coursesRelations = relations(courses, ({ one, many }) => ({
+  catalogCourse: one(courseCatalog, {
+    fields: [courses.catalogCourseId],
+    references: [courseCatalog.id],
+  }),
   lecturer: one(lecturerProfiles, {
     fields: [courses.lecturerId],
     references: [lecturerProfiles.id],
   }),
   enrolments: many(enrolments),
   attendanceSessions: many(attendanceSessions),
+  resources: many(courseResources),
+}));
+
+export const courseResourcesRelations = relations(courseResources, ({ one }) => ({
+  course: one(courses, {
+    fields: [courseResources.courseId],
+    references: [courses.id],
+  }),
+  lecturer: one(lecturerProfiles, {
+    fields: [courseResources.lecturerId],
+    references: [lecturerProfiles.id],
+  }),
 }));
 
 export const enrolmentsRelations = relations(enrolments, ({ one }) => ({

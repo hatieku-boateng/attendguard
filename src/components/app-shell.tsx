@@ -44,7 +44,16 @@ export function AppShell({
         <div className="mx-auto flex w-full max-w-7xl flex-col gap-2 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
           <div className="flex items-center gap-3">
             <span className="flex size-9 items-center justify-center rounded-lg bg-white/10">
-              <UserRound className="size-4" />
+              {user.avatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  alt=""
+                  className="size-9 rounded-lg object-cover"
+                  src={user.avatarUrl}
+                />
+              ) : (
+                <UserRound className="size-4" />
+              )}
             </span>
             <div>
               <p className="text-sm font-medium">{user.name}</p>

@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -7,6 +6,7 @@ import {
   KeyRound,
   MapPin,
   Radar,
+  UsersRound,
 } from "lucide-react";
 
 import { BrandMark } from "@/components/brand";
@@ -101,27 +101,43 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="relative min-h-[520px] overflow-hidden rounded-lg border bg-slate-950 shadow-2xl shadow-slate-950/20">
-          <Image
-            alt="AttendGuard lecture hall attendance dashboard"
-            className="absolute inset-0 h-full w-full object-cover"
-            fill
-            priority
-            src="/images/attendguard-hero.png"
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-slate-950/85 via-slate-950/20 to-transparent" />
-          <div className="absolute bottom-6 left-6 right-6 grid gap-3 sm:grid-cols-3">
-            {["Open", "Passkeys", "Review"].map((item, index) => (
-              <div
-                className="rounded-lg border border-white/15 bg-white/10 p-4 text-white shadow-lg backdrop-blur-md"
-                key={item}
-              >
-                <p className="font-mono text-2xl font-semibold">
-                  {index === 0 ? "14" : index === 1 ? "128" : "03"}
-                </p>
-                <p className="text-xs uppercase tracking-normal text-white/70">
-                  {item}
-                </p>
+        <div className="rounded-lg border bg-card p-5 shadow-xl shadow-slate-950/10">
+          <div className="rounded-lg border bg-slate-950 p-5 text-white">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-white/60">Administrator console</p>
+                <h2 className="mt-1 text-2xl font-semibold">Institution setup</h2>
+              </div>
+              <span className="rounded-lg bg-emerald-400/15 px-3 py-2 text-sm text-emerald-200">
+                Live
+              </span>
+            </div>
+            <div className="mt-6 grid gap-3">
+              {[
+                ["Course catalogue", "Reusable course records"],
+                ["Lecturer assignment", "Dropdown-based ownership"],
+                ["Student enrolment", "Managed by assigned lecturers"],
+              ].map(([label, value]) => (
+                <div
+                  className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 p-4"
+                  key={label}
+                >
+                  <span className="text-sm text-white/70">{label}</span>
+                  <span className="text-sm font-medium">{value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="mt-4 grid gap-3 sm:grid-cols-3">
+            {[
+              [UsersRound, "Users", "Role-based"],
+              [FileText, "Resources", "Published"],
+              [CheckCircle2, "Audit", "Logged"],
+            ].map(([Icon, label, value]) => (
+              <div className="rounded-lg border p-4" key={String(label)}>
+                <Icon className="size-5 text-primary" />
+                <p className="mt-3 text-sm font-medium">{String(label)}</p>
+                <p className="text-xs text-muted-foreground">{String(value)}</p>
               </div>
             ))}
           </div>

@@ -1,12 +1,6 @@
 import { AppShell } from "@/components/app-shell";
 import { requireRole } from "@/lib/auth";
-
-const navItems = [
-  { href: "/lecturer/dashboard", label: "Dashboard" },
-  { href: "/lecturer/courses", label: "Courses" },
-  { href: "/lecturer/sessions", label: "Sessions" },
-  { href: "/lecturer/reports", label: "Reports" },
-];
+import { getWorkspaceNavItems } from "@/lib/navigation";
 
 export default async function LecturerLayout({
   children,
@@ -16,7 +10,7 @@ export default async function LecturerLayout({
   const user = await requireRole("lecturer");
 
   return (
-    <AppShell navItems={navItems} user={user}>
+    <AppShell navItems={getWorkspaceNavItems(user.role)} user={user}>
       {children}
     </AppShell>
   );

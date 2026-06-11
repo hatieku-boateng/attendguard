@@ -16,7 +16,11 @@ export async function sendStudentActivationEmail({
   activationUrl,
 }: ActivationEmailInput) {
   const apiKey = process.env.EMAIL_API_KEY;
-  const from = process.env.EMAIL_FROM_ADDRESS;
+  const senderAddress = process.env.EMAIL_FROM_ADDRESS || process.env.EMAIL_SENDER;
+  const senderName = process.env.EMAIL_SENDER_NAME;
+  const from = senderName && senderAddress
+    ? `${senderName} <${senderAddress}>`
+    : senderAddress;
 
   if (!apiKey || !from) {
     return { sent: false, reason: "email_not_configured" };

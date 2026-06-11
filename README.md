@@ -1,6 +1,8 @@
 # AttendGuard
 
-Full-stack attendance management application foundation based on the project specification in the parent folder.
+Full-stack attendance management system for administrator-managed lecturers,
+course assignment, student enrolment, secure account activation, and
+location-aware attendance sessions.
 
 ## Stack
 
@@ -10,8 +12,7 @@ Full-stack attendance management application foundation based on the project spe
 - shadcn/ui
 - Drizzle ORM
 - Neon PostgreSQL
-- Better Auth
-- Resend
+- Gmail SMTP with Nodemailer
 
 ## Local Setup
 
@@ -23,6 +24,9 @@ At minimum, local database-backed routes require:
 DATABASE_URL="postgresql://..."
 AUTH_SECRET="a-long-random-secret"
 APP_URL="http://localhost:3000"
+EMAIL_SENDER="sender@gmail.com"
+EMAIL_SENDER_NAME="AttendGuard"
+GMAIL_APP_PASSWORD="gmail-app-password"
 ```
 
 Run the development server:
@@ -52,14 +56,18 @@ npm run db:seed
 - Drizzle schema lives in `src/db/schema.ts`.
 - The database client is lazily initialized in `src/db/client.ts` to keep Next.js builds safe.
 - CSV student import expects headings: `student name`, `student id`, `email address`, with optional `programme`, `level`, and `class group`.
-- Students imported by a lecturer can use `/activate-account` to match their email and student ID, then set a password.
+- Students imported by a lecturer receive a secure one-time activation link by email, confirm their student ID, then set a password.
 - Passkeys are validated by hash and stored encrypted only for authenticated first-version delivery.
+- More operational notes live in `PROJECT_INFORMATION.md`.
 
 ## Current Product Scope
 
-- Lecturer and student account registration
-- Imported student account activation
-- Lecturer course creation and class roster import
+- Admin-only lecturer account creation
+- Admin course catalogue management
+- Admin course-to-lecturer assignments
+- Secure imported student account activation
+- Lecturer class roster import
+- Lecturer course resource publishing
 - Attendance session creation with lecturer geolocation
 - Student-specific passkey generation
 - Student active-session check-in with location capture
@@ -68,13 +76,10 @@ npm run db:seed
 - Student class list, active sessions, and attendance history
 - CSV attendance report export
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
 ## Deploy on Vercel
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Production is deployed on Vercel:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+vercel deploy --prod --force --yes --scope harry-atieku-boateng-s-projects
+```

@@ -40,13 +40,13 @@ function activationEmailHtml({
 <head><meta charset="UTF-8"></head>
 <body style="font-family:Arial,sans-serif;max-width:640px;margin:0 auto;padding:20px;color:#1f2937;background:#f8fafc">
   <div style="background:#065f54;padding:22px;border-radius:8px 8px 0 0">
-    <h1 style="color:#ffffff;margin:0;font-size:20px">AttendGuard</h1>
+    <h1 style="color:#ffffff;margin:0;font-size:20px">PU Attendance</h1>
     <p style="color:#ccfbf1;margin:6px 0 0;font-size:13px;text-transform:uppercase">Secure attendance activation</p>
   </div>
   <div style="background:#ffffff;padding:30px;border:1px solid #dbe4ea;border-top:none;border-radius:0 0 8px 8px">
     <h2 style="color:#0f172a;margin-top:0">Activate your student account</h2>
     <p>Dear <strong>${studentName}</strong>,</p>
-    <p>You have been enrolled in <strong>${courseLabel}</strong> on AttendGuard.</p>
+    <p>You have been enrolled in <strong>${courseLabel}</strong> on PU Attendance.</p>
     <p>Use the secure one-time link below and confirm your student ID to create your password.</p>
     <p style="margin:28px 0">
       <a href="${activationUrl}" style="background:#065f54;color:#ffffff;text-decoration:none;padding:12px 18px;border-radius:6px;display:inline-block;font-weight:bold">
@@ -71,7 +71,7 @@ export async function sendStudentActivationEmail({
 }: ActivationEmailInput) {
   const transporter = createTransport();
   const senderAddress = getSenderAddress();
-  const senderName = process.env.EMAIL_SENDER_NAME ?? "AttendGuard";
+  const senderName = process.env.EMAIL_SENDER_NAME || "PU Attendance";
 
   if (!transporter || !senderAddress) {
     return { sent: false, reason: "email_not_configured" };
@@ -84,7 +84,7 @@ export async function sendStudentActivationEmail({
     text: [
       `Hello ${studentName},`,
       "",
-      `You have been enrolled in ${courseLabel} on AttendGuard.`,
+      `You have been enrolled in ${courseLabel} on PU Attendance.`,
       "Open this secure link and confirm your student ID to create your password:",
       activationUrl,
       "",

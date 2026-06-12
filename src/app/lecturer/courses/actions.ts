@@ -95,6 +95,151 @@ type ImportReport = {
   activationEmailsSkipped: number;
 };
 
+type CourseForEnrolment = {
+  id: string;
+  courseCode: string;
+  courseTitle: string;
+  programme: string | null;
+  level: string | null;
+  classGroup: string;
+};
+
+type StudentInput = {
+  name: string;
+  studentIdNumber: string;
+  email: string;
+  programme: string | null;
+  level: string | null;
+  classGroup: string | null;
+};
+
+async function enrolStudentWithActivation({
+  db,
+  course,
+  student,
+}: {
+  db: ReturnType<typeof getDb>;
+  course: CourseForEnrolment;
+  student: StudentInput;
+}) {
+  const programme = student.programme || course.programme;
+  const level = student.level || course.level;
+  const classGroup = student.classGroup || course.classGroup;
+
+  const [existingByEmail] = await db
+    .select()
+    .from(users)
+    .where(eq(users.email, student.email))
+    .limit(1);
+
+  let studentProfileId: string | null = null;
+  let studentUserId: string | null = null;
+  let shouldSendActivation = false;
+
+  if (existingByEmail) {
+    if (existingByEmail.role !== "student") {
+      return { ok: false, sent: false, emailSkipped: false };
+    }
+
+    const [profile] = await db
+      .select()
+      .from(studentProfiles)
+      .where(eq(studentProfiles.userId, existingByEmail.id))
+      .limit(1);
+
+    if (!profile || profile.studentIdNumber !== student.studentIdNumber) {
+      return { ok: false, sent: false, emailSkipped: false };
+    }
+
+    studentProfileId = profile.id;
+    studentUserId = existingByEmail.id;
+    shouldSendActivation = existingByEmail.status === "pending";
+
+    await db
+      .update(studentProfiles)
+      .set({
+        programme: profile.programme || programme,
+        level: profile.level || level,
+        classGroup: profile.classGroup || classGroup,
+        updatedAt: new Date(),
+      })
+      .where(eq(studentProfiles.id, profile.id));
+  } else {
+    const passwordHash = await hashPassword(randomBytes(18).toString("base64url"));
+    const [createdUser] = await db
+      .insert(users)
+      .values({
+        name: student.name,
+        email: student.email,
+        passwordHash,
+        role: "student",
+        status: "pending",
+      })
+      .returning({ id: users.id });
+
+    const [profile] = await db
+      .insert(studentProfiles)
+      .values({
+        userId: createdUser.id,
+        studentIdNumber: student.studentIdNumber,
+        programme,
+        level,
+        classGroup,
+      })
+      .returning({ id: studentProfiles.id });
+
+    studentProfileId = profile.id;
+    studentUserId = createdUser.id;
+    shouldSendActivation = true;
+  }
+
+  await db
+    .insert(enrolments)
+    .values({
+      courseId: course.id,
+      studentId: studentProfileId,
+      status: "active",
+    })
+    .onConflictDoUpdate({
+      target: [enrolments.courseId, enrolments.studentId],
+      set: {
+        status: "active",
+        updatedAt: new Date(),
+      },
+    });
+
+  let sent = false;
+  let emailSkipped = false;
+
+  if (shouldSendActivation && studentUserId) {
+    const token = createActivationToken();
+    const tokenHash = hashActivationToken(token);
+
+    await db
+      .update(studentActivationTokens)
+      .set({ usedAt: new Date() })
+      .where(eq(studentActivationTokens.userId, studentUserId));
+
+    await db.insert(studentActivationTokens).values({
+      userId: studentUserId,
+      tokenHash,
+      expiresAt: getActivationExpiry(),
+    });
+
+    const emailResult = await sendStudentActivationEmail({
+      to: student.email,
+      studentName: student.name,
+      courseLabel: `${course.courseCode}: ${course.courseTitle}`,
+      activationUrl: getActivationUrl(token),
+    });
+
+    sent = emailResult.sent;
+    emailSkipped = !emailResult.sent;
+  }
+
+  return { ok: true, sent, emailSkipped };
+}
+
 export async function importStudentsAction(formData: FormData) {
   const user = await requireRole("lecturer");
   const courseId = cleanString(formData.get("courseId"));
@@ -106,7 +251,14 @@ export async function importStudentsAction(formData: FormData) {
 
   const db = getDb();
   const [course] = await db
-    .select({ id: courses.id })
+    .select({
+      id: courses.id,
+      courseCode: courses.courseCode,
+      courseTitle: courses.courseTitle,
+      programme: courses.programme,
+      level: courses.level,
+      classGroup: courses.classGroup,
+    })
     .from(courses)
     .where(
       and(
@@ -146,22 +298,13 @@ export async function importStudentsAction(formData: FormData) {
   const seenEmails = new Set<string>();
   const seenStudentIds = new Set<string>();
 
-  const [courseDetails] = await db
-    .select({
-      courseCode: courses.courseCode,
-      courseTitle: courses.courseTitle,
-    })
-    .from(courses)
-    .where(eq(courses.id, courseId))
-    .limit(1);
-
   for (const row of parsed.data) {
-    const name = getField(row, "student name") ?? "";
-    const studentIdNumber = getField(row, "student id") ?? "";
+    const name = (getField(row, "student name") ?? "").toUpperCase();
+    const studentIdNumber = (getField(row, "student id") ?? "").toUpperCase();
     const email = (getField(row, "email address") ?? "").toLowerCase();
-    const programme = getField(row, "programme") || null;
-    const level = getField(row, "level") || null;
-    const classGroup = getField(row, "class group") || null;
+    const programme = getField(row, "programme")?.toUpperCase() || null;
+    const level = getField(row, "level")?.toUpperCase() || null;
+    const classGroup = getField(row, "class group")?.toUpperCase() || null;
 
     if (!name || !studentIdNumber || !email) {
       report.errors += 1;
@@ -176,112 +319,20 @@ export async function importStudentsAction(formData: FormData) {
     seenEmails.add(email);
     seenStudentIds.add(studentIdNumber);
 
-    const [existingByEmail] = await db
-      .select()
-      .from(users)
-      .where(eq(users.email, email))
-      .limit(1);
+    const result = await enrolStudentWithActivation({
+      db,
+      course,
+      student: { name, studentIdNumber, email, programme, level, classGroup },
+    });
 
-    let studentProfileId: string | null = null;
-    let studentUserId: string | null = null;
-    let shouldSendActivation = false;
-
-    if (existingByEmail) {
-      if (existingByEmail.role !== "student") {
-        report.errors += 1;
-        continue;
-      }
-
-      const [profile] = await db
-        .select()
-        .from(studentProfiles)
-        .where(eq(studentProfiles.userId, existingByEmail.id))
-        .limit(1);
-
-      if (!profile || profile.studentIdNumber !== studentIdNumber) {
-        report.errors += 1;
-        continue;
-      }
-
-      studentProfileId = profile.id;
-      studentUserId = existingByEmail.id;
-      shouldSendActivation = existingByEmail.status === "pending";
-    } else {
-      const passwordHash = await hashPassword(randomBytes(18).toString("base64url"));
-      const [createdUser] = await db
-        .insert(users)
-        .values({
-          name,
-          email,
-          passwordHash,
-          role: "student",
-          status: "pending",
-        })
-        .returning({ id: users.id });
-
-      const [profile] = await db
-        .insert(studentProfiles)
-        .values({
-          userId: createdUser.id,
-          studentIdNumber,
-          programme,
-          level,
-          classGroup,
-        })
-        .returning({ id: studentProfiles.id });
-
-      studentProfileId = profile.id;
-      studentUserId = createdUser.id;
-      shouldSendActivation = true;
+    if (!result.ok) {
+      report.errors += 1;
+      continue;
     }
-
-    await db
-      .insert(enrolments)
-      .values({
-        courseId,
-        studentId: studentProfileId,
-        status: "active",
-      })
-      .onConflictDoUpdate({
-        target: [enrolments.courseId, enrolments.studentId],
-        set: {
-          status: "active",
-          updatedAt: new Date(),
-        },
-      });
 
     report.imported += 1;
-
-    if (shouldSendActivation && studentUserId) {
-      const token = createActivationToken();
-      const tokenHash = hashActivationToken(token);
-
-      await db
-        .update(studentActivationTokens)
-        .set({ usedAt: new Date() })
-        .where(eq(studentActivationTokens.userId, studentUserId));
-
-      await db.insert(studentActivationTokens).values({
-        userId: studentUserId,
-        tokenHash,
-        expiresAt: getActivationExpiry(),
-      });
-
-      const emailResult = await sendStudentActivationEmail({
-        to: email,
-        studentName: name,
-        courseLabel: courseDetails
-          ? `${courseDetails.courseCode}: ${courseDetails.courseTitle}`
-          : "your course",
-        activationUrl: getActivationUrl(token),
-      });
-
-      if (emailResult.sent) {
-        report.activationEmailsSent += 1;
-      } else {
-        report.activationEmailsSkipped += 1;
-      }
-    }
+    if (result.sent) report.activationEmailsSent += 1;
+    if (result.emailSkipped) report.activationEmailsSkipped += 1;
   }
 
   await db.insert(auditLogs).values({
@@ -295,6 +346,78 @@ export async function importStudentsAction(formData: FormData) {
 
   revalidatePath(`/lecturer/courses/${courseId}/students`);
   redirect(importReportUrl(courseId, report));
+}
+
+export async function addStudentManuallyAction(formData: FormData) {
+  const user = await requireRole("lecturer");
+  const courseId = cleanString(formData.get("courseId"));
+  const name = cleanString(formData.get("name")).toUpperCase();
+  const studentIdNumber = cleanString(formData.get("studentIdNumber")).toUpperCase();
+  const email = cleanString(formData.get("email")).toLowerCase();
+
+  if (!user.lecturerProfileId || !courseId || !name || !studentIdNumber || !email) {
+    redirect(`/lecturer/courses/${courseId}/students?manualError=invalid#manual-student`);
+  }
+
+  const db = getDb();
+  const [course] = await db
+    .select({
+      id: courses.id,
+      courseCode: courses.courseCode,
+      courseTitle: courses.courseTitle,
+      programme: courses.programme,
+      level: courses.level,
+      classGroup: courses.classGroup,
+    })
+    .from(courses)
+    .where(
+      and(
+        eq(courses.id, courseId),
+        eq(courses.lecturerId, user.lecturerProfileId),
+      ),
+    )
+    .limit(1);
+
+  if (!course) {
+    redirect("/lecturer/courses");
+  }
+
+  const result = await enrolStudentWithActivation({
+    db,
+    course,
+    student: {
+      name,
+      studentIdNumber,
+      email,
+      programme: cleanString(formData.get("programme")).toUpperCase() || null,
+      level: cleanString(formData.get("level")).toUpperCase() || null,
+      classGroup: cleanString(formData.get("classGroup")).toUpperCase() || null,
+    },
+  });
+
+  if (!result.ok) {
+    redirect(`/lecturer/courses/${courseId}/students?manualError=conflict#manual-student`);
+  }
+
+  await db.insert(auditLogs).values({
+    userId: user.id,
+    action: "student_manual_enrolment",
+    entityType: "course",
+    entityId: courseId,
+    newValue: {
+      email,
+      studentIdNumber,
+      activationEmailSent: result.sent,
+      activationEmailSkipped: result.emailSkipped,
+    },
+  });
+
+  revalidatePath(`/lecturer/courses/${courseId}/students`);
+  redirect(
+    `/lecturer/courses/${courseId}/students?manualAdded=1&sent=${
+      result.sent ? 1 : 0
+    }&pendingEmail=${result.emailSkipped ? 1 : 0}#manual-student`,
+  );
 }
 
 export async function addCourseResourceAction(formData: FormData) {

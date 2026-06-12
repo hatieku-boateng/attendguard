@@ -1,6 +1,9 @@
 import { and, eq } from "drizzle-orm";
 
-import { importStudentsAction } from "@/app/lecturer/courses/actions";
+import {
+  addStudentManuallyAction,
+  importStudentsAction,
+} from "@/app/lecturer/courses/actions";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import {
@@ -36,6 +39,8 @@ export default async function CourseStudentsPage({
     sent?: string;
     pendingEmail?: string;
     importError?: string;
+    manualAdded?: string;
+    manualError?: string;
   }>;
 }) {
   const { courseId } = await params;
@@ -80,50 +85,120 @@ export default async function CourseStudentsPage({
         title={`${course.courseCode} students`}
         description="Registered students enrolled in this class."
         actions={
-          <Button asChild>
-            <a href="#import-students">Import students</a>
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button asChild variant="outline">
+              <a href="#manual-student">Add manually</a>
+            </Button>
+            <Button asChild>
+              <a href="#import-students">Import students</a>
+            </Button>
+          </div>
         }
       />
-      <Card id="import-students" className="mb-6">
-        <CardHeader>
-          <CardTitle>CSV import</CardTitle>
-          <CardDescription>
-            Upload a CSV with the required columns: student name, student ID, and
-            valid email address. Pending students receive a secure one-time
-            activation link by email and must confirm their student ID.
-            Optional columns: programme, level, class group.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {report.importError === "headings" ? (
-            <p className="mb-4 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-              The CSV headings are missing required columns.
-            </p>
-          ) : null}
-          {report.imported ? (
-            <p className="mb-4 rounded-md border bg-muted px-3 py-2 text-sm text-muted-foreground">
-              Imported {report.imported} row(s), skipped {report.skipped ?? 0},
-              errors {report.errors ?? 0}. Activation emails sent{" "}
-              {report.sent ?? 0}; pending email setup {report.pendingEmail ?? 0}.
-            </p>
-          ) : null}
-          <form action={importStudentsAction} className="grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
-            <input name="courseId" type="hidden" value={course.id} />
-            <div className="space-y-2">
-              <Label htmlFor="studentFile">Student CSV file</Label>
-              <Input
-                accept=".csv,text/csv"
-                id="studentFile"
-                name="studentFile"
-                required
-                type="file"
-              />
-            </div>
-            <Button type="submit">Import</Button>
-          </form>
-        </CardContent>
-      </Card>
+      <div className="mb-6 grid gap-6 xl:grid-cols-2">
+        <Card id="manual-student">
+          <CardHeader>
+            <CardTitle>Add student manually</CardTitle>
+            <CardDescription>
+              Enrol one student and email a secure activation link. Programme,
+              level, and class group default to this course when left blank.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {report.manualError ? (
+              <p className="mb-4 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                {report.manualError === "conflict"
+                  ? "A matching student could not be enrolled. Check the email and student ID."
+                  : "Enter the student's name, ID, and valid email address."}
+              </p>
+            ) : null}
+            {report.manualAdded ? (
+              <p className="mb-4 rounded-md border bg-muted px-3 py-2 text-sm text-muted-foreground">
+                Student added. Activation emails sent {report.sent ?? 0}; pending email setup{" "}
+                {report.pendingEmail ?? 0}.
+              </p>
+            ) : null}
+            <form action={addStudentManuallyAction} className="grid gap-4 sm:grid-cols-2">
+              <input name="courseId" type="hidden" value={course.id} />
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="name">Student name</Label>
+                <Input id="name" name="name" required />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="studentIdNumber">Student ID</Label>
+                <Input id="studentIdNumber" name="studentIdNumber" required />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">Email address</Label>
+                <Input id="email" name="email" required type="email" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="programme">Programme</Label>
+                <Input
+                  defaultValue={course.programme ?? ""}
+                  id="programme"
+                  name="programme"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="level">Level</Label>
+                <Input defaultValue={course.level ?? ""} id="level" name="level" />
+              </div>
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="classGroup">Class group</Label>
+                <Input
+                  defaultValue={course.classGroup}
+                  id="classGroup"
+                  name="classGroup"
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <Button className="w-full" type="submit">
+                  Add student and send activation
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+        <Card id="import-students">
+          <CardHeader>
+            <CardTitle>CSV import</CardTitle>
+            <CardDescription>
+              Upload a CSV with the required columns: student name, student ID, and
+              valid email address. Programme, level, and class group are optional
+              and default to this course when omitted.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {report.importError === "headings" ? (
+              <p className="mb-4 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                The CSV headings are missing required columns.
+              </p>
+            ) : null}
+            {report.imported ? (
+              <p className="mb-4 rounded-md border bg-muted px-3 py-2 text-sm text-muted-foreground">
+                Imported {report.imported} row(s), skipped {report.skipped ?? 0},
+                errors {report.errors ?? 0}. Activation emails sent{" "}
+                {report.sent ?? 0}; pending email setup {report.pendingEmail ?? 0}.
+              </p>
+            ) : null}
+            <form action={importStudentsAction} className="grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
+              <input name="courseId" type="hidden" value={course.id} />
+              <div className="space-y-2">
+                <Label htmlFor="studentFile">Student CSV file</Label>
+                <Input
+                  accept=".csv,text/csv"
+                  id="studentFile"
+                  name="studentFile"
+                  required
+                  type="file"
+                />
+              </div>
+              <Button type="submit">Import</Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
       <Card>
         <CardHeader>
           <CardTitle>Class list</CardTitle>

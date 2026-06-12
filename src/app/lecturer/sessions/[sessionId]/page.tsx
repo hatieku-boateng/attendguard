@@ -5,9 +5,11 @@ import { Pencil } from "lucide-react";
 import {
   approveAttemptAction,
   closeAttendanceSessionAction,
+  deleteAttendanceSessionAction,
   generatePasskeysAction,
   rejectAttemptAction,
 } from "@/app/lecturer/sessions/actions";
+import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { PageHeader } from "@/components/page-header";
 import { StatCard } from "@/components/stat-card";
 import { Badge } from "@/components/ui/badge";
@@ -159,6 +161,12 @@ export default async function LecturerSessionDetailPage({
             <form action={closeAttendanceSessionAction}>
               <input name="sessionId" type="hidden" value={session.id} />
               <Button type="submit">Close session</Button>
+            </form>
+            <form action={deleteAttendanceSessionAction}>
+              <input name="sessionId" type="hidden" value={session.id} />
+              <ConfirmSubmitButton message="Delete this attendance session? This will remove related passkeys, attendance records, and attempts.">
+                Delete session
+              </ConfirmSubmitButton>
             </form>
           </>
         }

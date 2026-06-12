@@ -283,6 +283,59 @@ export async function closeAttendanceSessionAction(formData: FormData) {
   revalidatePath(`/lecturer/sessions/${sessionId}`);
 }
 
+export async function deleteAttendanceSessionAction(formData: FormData) {
+  const user = await requireRole("lecturer");
+  const sessionId = cleanString(formData.get("sessionId"));
+
+  if (!user.lecturerProfileId || !sessionId) {
+    redirect("/lecturer/sessions");
+  }
+
+  const db = getDb();
+  const [session] = await db
+    .select({
+      id: attendanceSessions.id,
+      title: attendanceSessions.sessionTitle,
+      courseId: attendanceSessions.courseId,
+    })
+    .from(attendanceSessions)
+    .where(
+      and(
+        eq(attendanceSessions.id, sessionId),
+        eq(attendanceSessions.lecturerId, user.lecturerProfileId),
+      ),
+    )
+    .limit(1);
+
+  if (!session) {
+    redirect("/lecturer/sessions");
+  }
+
+  await db.insert(auditLogs).values({
+    userId: user.id,
+    action: "attendance_session_deleted",
+    entityType: "attendance_session",
+    entityId: session.id,
+    previousValue: {
+      courseId: session.courseId,
+      sessionTitle: session.title,
+    },
+  });
+
+  await db
+    .delete(attendanceSessions)
+    .where(
+      and(
+        eq(attendanceSessions.id, session.id),
+        eq(attendanceSessions.lecturerId, user.lecturerProfileId),
+      ),
+    );
+
+  revalidatePath("/lecturer/sessions");
+  revalidatePath("/lecturer/dashboard");
+  redirect("/lecturer/sessions");
+}
+
 export async function generatePasskeysAction(formData: FormData) {
   const user = await requireRole("lecturer");
   const sessionId = cleanString(formData.get("sessionId"));

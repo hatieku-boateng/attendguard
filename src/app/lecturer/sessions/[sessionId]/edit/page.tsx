@@ -1,7 +1,11 @@
 import Link from "next/link";
 import { and, eq } from "drizzle-orm";
 
-import { updateAttendanceSessionAction } from "@/app/lecturer/sessions/actions";
+import {
+  deleteAttendanceSessionAction,
+  updateAttendanceSessionAction,
+} from "@/app/lecturer/sessions/actions";
+import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { LocationFields } from "@/components/location-fields";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -17,7 +21,8 @@ const errorMessages: Record<string, string> = {
   "lecturer-accuracy":
     "The lecturer location accuracy is above the selected limit. Recapture the location or increase the limit.",
   location: "Enter a valid latitude and longitude for the lecture location.",
-  missing: "Complete all required session fields and keep or recapture the session location.",
+  missing:
+    "Complete all required session fields and keep or accept the captured session location.",
 };
 
 function toDateTimeLocalValue(date: Date) {
@@ -178,6 +183,7 @@ export default async function EditSessionPage({
                 latitudeName="lecturerLatitude"
                 longitudeName="lecturerLongitude"
                 maxAccuracyInputId="maxAcceptedAccuracyMeters"
+                requireAcceptance
               />
             </div>
             <div className="flex flex-col gap-3 sm:col-span-2 sm:flex-row sm:justify-end">
@@ -186,6 +192,23 @@ export default async function EditSessionPage({
               </Button>
               <Button type="submit">Save session changes</Button>
             </div>
+          </form>
+        </CardContent>
+      </Card>
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle>Delete session</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4 text-sm text-muted-foreground">
+          <p>
+            Deleting this session removes its passkeys, attendance records, and
+            review attempts.
+          </p>
+          <form action={deleteAttendanceSessionAction}>
+            <input name="sessionId" type="hidden" value={session.id} />
+            <ConfirmSubmitButton message="Delete this attendance session? This will remove related passkeys, attendance records, and attempts.">
+              Delete session
+            </ConfirmSubmitButton>
           </form>
         </CardContent>
       </Card>

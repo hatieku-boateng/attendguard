@@ -48,7 +48,7 @@ export default async function NewSessionPage({
                     ? "The captured lecturer location accuracy is above the selected limit. Recapture closer to the class location or increase the limit."
                     : params.error === "location"
                       ? "Enter a valid latitude and longitude for the lecture location."
-                    : "Complete all required session fields and capture location."}
+                    : "Complete all required session fields and accept the captured lecture location."}
               </p>
             ) : null}
             <div className="space-y-2 sm:col-span-2">
@@ -118,6 +118,7 @@ export default async function NewSessionPage({
                 latitudeName="lecturerLatitude"
                 longitudeName="lecturerLongitude"
                 maxAccuracyInputId="maxAcceptedAccuracyMeters"
+                requireAcceptance
               />
             </div>
             <div className="sm:col-span-2">

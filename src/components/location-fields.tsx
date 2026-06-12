@@ -33,12 +33,19 @@ type LocationState =
     }
   | { status: "error"; message: string };
 
+type AcceptedLocation = {
+  lat: number;
+  lng: number;
+  accuracy: number;
+};
+
 export function LocationFields({
   latitudeName,
   longitudeName,
   accuracyName,
   maxAccuracyInputId,
   maxAccuracyMeters,
+  requireAcceptance = false,
   allowManualEntry = false,
   autoStopAfterMs = defaultAutoStopMs,
   initialLatitude,
@@ -51,6 +58,7 @@ export function LocationFields({
   accuracyName: string;
   maxAccuracyInputId?: string;
   maxAccuracyMeters?: number | string | null;
+  requireAcceptance?: boolean;
   allowManualEntry?: boolean;
   autoStopAfterMs?: number | null;
   initialLatitude?: number | string | null;
@@ -93,6 +101,15 @@ export function LocationFields({
     lng: "",
     accuracy: "",
   });
+  const [acceptedLocation, setAcceptedLocation] = useState<AcceptedLocation | null>(
+    requireAcceptance && hasInitialLocation
+      ? {
+          lat: parsedInitialLatitude,
+          lng: parsedInitialLongitude,
+          accuracy: parsedInitialAccuracy,
+        }
+      : null,
+  );
 
   useEffect(() => {
     return () => {
@@ -134,6 +151,90 @@ export function LocationFields({
     return `Best reading: ${Math.round(accuracy)}m accuracy from ${samples} live sample${
       samples === 1 ? "" : "s"
     }.${accuracyWarning}`;
+  }
+
+  function canAcceptAccuracy(accuracy: number) {
+    const maxAccuracy = getMaxAccuracy();
+
+    return !maxAccuracy || accuracy <= maxAccuracy;
+  }
+
+  function isAcceptedLocation(locationToCheck: AcceptedLocation) {
+    if (!acceptedLocation) {
+      return false;
+    }
+
+    return (
+      acceptedLocation.lat === locationToCheck.lat &&
+      acceptedLocation.lng === locationToCheck.lng &&
+      acceptedLocation.accuracy === locationToCheck.accuracy
+    );
+  }
+
+  function acceptCapturedLocation() {
+    if (location.status !== "captured") {
+      return;
+    }
+
+    if (!canAcceptAccuracy(location.accuracy)) {
+      setLocation({
+        ...location,
+        message: `This reading is ${Math.round(
+          location.accuracy,
+        )}m accurate, which is above the accepted limit. Keep capturing for a better GPS lock.`,
+      });
+      return;
+    }
+
+    stopLiveCapture();
+    setManualMode(false);
+    setAcceptedLocation({
+      lat: location.lat,
+      lng: location.lng,
+      accuracy: location.accuracy,
+    });
+    setLocation({
+      ...location,
+      message: `Accepted session coordinate locked at ${Math.round(
+        location.accuracy,
+      )}m accuracy.`,
+    });
+  }
+
+  function acceptManualLocation() {
+    const lat = Number(manualLocation.lat);
+    const lng = Number(manualLocation.lng);
+    const accuracy = Number(manualLocation.accuracy);
+
+    if (
+      !hasNumericValue(manualLocation.lat) ||
+      !hasNumericValue(manualLocation.lng) ||
+      !hasNumericValue(manualLocation.accuracy) ||
+      lat < -90 ||
+      lat > 90 ||
+      lng < -180 ||
+      lng > 180
+    ) {
+      setLocation({
+        status: "error",
+        message: "Enter valid manual latitude, longitude, and accuracy before accepting.",
+      });
+      return;
+    }
+
+    if (!canAcceptAccuracy(accuracy)) {
+      setLocation({
+        status: "error",
+        message: `Manual accuracy must be within ${Math.round(getMaxAccuracy() ?? 0)}m before it can be accepted.`,
+      });
+      return;
+    }
+
+    setAcceptedLocation({ lat, lng, accuracy });
+    setLocation({
+      status: "idle",
+      message: `Accepted manual session coordinate locked at ${Math.round(accuracy)}m accuracy.`,
+    });
   }
 
   function buildErrorMessage(error: GeolocationPositionError) {
@@ -329,26 +430,48 @@ export function LocationFields({
     setIsWatching(false);
   }
 
-  const hiddenLatitude = manualMode
-    ? manualLocation.lat
-    : location.status === "captured"
+  const effectiveLatitude = requireAcceptance
+    ? acceptedLocation?.lat ?? ""
+    : manualMode
+      ? manualLocation.lat
+      : location.status === "captured"
+        ? location.lat
+        : "";
+  const effectiveLongitude = requireAcceptance
+    ? acceptedLocation?.lng ?? ""
+    : manualMode
+      ? manualLocation.lng
+      : location.status === "captured"
+        ? location.lng
+        : "";
+  const effectiveAccuracy = requireAcceptance
+    ? acceptedLocation?.accuracy ?? ""
+    : manualMode
+      ? manualLocation.accuracy
+      : location.status === "captured"
+        ? location.accuracy
+        : "";
+  const hasCompleteManualPreview =
+    manualMode &&
+    hasNumericValue(manualLocation.lat) &&
+    hasNumericValue(manualLocation.lng);
+  const previewLatitude =
+    location.status === "captured"
       ? location.lat
-      : "";
-  const hiddenLongitude = manualMode
-    ? manualLocation.lng
-    : location.status === "captured"
+      : hasCompleteManualPreview
+        ? manualLocation.lat
+        : effectiveLatitude;
+  const previewLongitude =
+    location.status === "captured"
       ? location.lng
-      : "";
-  const hiddenAccuracy = manualMode
-    ? manualLocation.accuracy
-    : location.status === "captured"
-      ? location.accuracy
-      : "";
-  const mapLatitude = Number(hiddenLatitude);
-  const mapLongitude = Number(hiddenLongitude);
+      : hasCompleteManualPreview
+        ? manualLocation.lng
+        : effectiveLongitude;
+  const mapLatitude = Number(previewLatitude);
+  const mapLongitude = Number(previewLongitude);
   const hasMapCoordinates =
-    hasNumericValue(hiddenLatitude) &&
-    hasNumericValue(hiddenLongitude) &&
+    hasNumericValue(previewLatitude) &&
+    hasNumericValue(previewLongitude) &&
     Number.isFinite(mapLatitude) &&
     Number.isFinite(mapLongitude) &&
     mapLatitude >= -90 &&
@@ -377,15 +500,26 @@ export function LocationFields({
 
   return (
     <div className="space-y-3 rounded-md border p-4">
-      <input name={latitudeName} type="hidden" value={hiddenLatitude} />
-      <input name={longitudeName} type="hidden" value={hiddenLongitude} />
-      <input name={accuracyName} type="hidden" value={hiddenAccuracy} />
+      <input name={latitudeName} type="hidden" value={effectiveLatitude} />
+      <input name={longitudeName} type="hidden" value={effectiveLongitude} />
+      <input name={accuracyName} type="hidden" value={effectiveAccuracy} />
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
           <p className="text-sm text-muted-foreground">{location.message}</p>
           {location.status === "captured" ? (
             <p className="text-xs text-muted-foreground">
               Lat {location.lat.toFixed(6)}, Lng {location.lng.toFixed(6)}
+            </p>
+          ) : null}
+          {requireAcceptance && acceptedLocation ? (
+            <p className="text-xs font-medium text-primary">
+              Accepted coordinate: {acceptedLocation.lat.toFixed(6)},{" "}
+              {acceptedLocation.lng.toFixed(6)} ({Math.round(acceptedLocation.accuracy)}m)
+            </p>
+          ) : null}
+          {requireAcceptance && !acceptedLocation ? (
+            <p className="text-xs font-medium text-destructive">
+              Accept a captured location before saving this session.
             </p>
           ) : null}
         </div>
@@ -400,6 +534,17 @@ export function LocationFields({
             {isWatching ? <Radio className="size-4 animate-pulse" /> : <MapPin className="size-4" />}
             {isWatching ? "Capturing..." : "Capture device GPS"}
           </Button>
+          {requireAcceptance &&
+          location.status === "captured" &&
+          !isAcceptedLocation(location) ? (
+            <Button
+              disabled={!canAcceptAccuracy(location.accuracy)}
+              onClick={acceptCapturedLocation}
+              type="button"
+            >
+              Accept this location
+            </Button>
+          ) : null}
         </div>
       </div>
       {isWatching ? (
@@ -453,6 +598,11 @@ export function LocationFields({
               />
             </div>
           </div>
+          {requireAcceptance ? (
+            <Button onClick={acceptManualLocation} type="button" variant="outline">
+              Accept manual coordinates
+            </Button>
+          ) : null}
         </div>
       ) : null}
       {hasMapCoordinates ? (

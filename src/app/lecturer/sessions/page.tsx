@@ -156,7 +156,7 @@ export default async function LecturerSessionsPage({
             <div className="space-y-2">
               <Label htmlFor="status">Status</Label>
               <select
-                className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+                className="h-9 w-full rounded-lg border border-input bg-card/80 px-3 text-sm shadow-sm shadow-slate-950/5 outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/45"
                 defaultValue={status}
                 id="status"
                 name="status"
@@ -172,7 +172,7 @@ export default async function LecturerSessionsPage({
             <div className="space-y-2">
               <Label htmlFor="courseId">Course</Label>
               <select
-                className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+                className="h-9 w-full rounded-lg border border-input bg-card/80 px-3 text-sm shadow-sm shadow-slate-950/5 outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/45"
                 defaultValue={courseId}
                 id="courseId"
                 name="courseId"
@@ -196,7 +196,7 @@ export default async function LecturerSessionsPage({
             <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1">
               <select
                 aria-label="Sort sessions"
-                className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+                className="h-9 w-full rounded-lg border border-input bg-card/80 px-3 text-sm shadow-sm shadow-slate-950/5 outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/45"
                 defaultValue={sort}
                 name="sort"
               >

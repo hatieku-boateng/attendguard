@@ -15,10 +15,10 @@ export function StatCard({
   return (
     <Card
       className={cn(
-        "relative overflow-hidden",
-        tone === "success" && "border-emerald-200 bg-emerald-50/80",
-        tone === "warning" && "border-amber-200 bg-amber-50/80",
-        tone === "info" && "border-cyan-200 bg-cyan-50/80",
+        "relative overflow-hidden bg-card/95",
+        tone === "success" && "border-emerald-200/80",
+        tone === "warning" && "border-amber-200/80",
+        tone === "info" && "border-cyan-200/80",
       )}
     >
       <div
@@ -29,13 +29,15 @@ export function StatCard({
           tone === "info" && "bg-cyan-500",
         )}
       />
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">
+      <CardHeader className="pb-1">
+        <CardTitle className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
           {label}
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="font-mono text-3xl font-semibold tracking-normal">{value}</div>
+        <div className="font-mono text-3xl font-semibold tracking-normal text-foreground">
+          {value}
+        </div>
         {detail ? <p className="mt-1 text-xs text-muted-foreground">{detail}</p> : null}
       </CardContent>
     </Card>

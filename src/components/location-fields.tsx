@@ -35,7 +35,7 @@ export function LocationFields({
   const watchIdRef = useRef<number | null>(null);
   const [location, setLocation] = useState<LocationState>({
     status: "idle",
-    message: "Location has not been captured.",
+    message: "Use live capture to read this device's current GPS location.",
   });
   const [isWatching, setIsWatching] = useState(false);
   const [manualMode, setManualMode] = useState(false);
@@ -100,7 +100,8 @@ export function LocationFields({
 
     setLocation({
       status: "idle",
-      message: "Capturing live GPS readings. Keep the device still near the class location.",
+      message:
+        "Capturing this device's live GPS readings. Keep the lecturer's phone or laptop still near the class location.",
     });
 
     watchIdRef.current = navigator.geolocation.watchPosition(
@@ -138,7 +139,7 @@ export function LocationFields({
           message: "Location permission was denied or unavailable.",
         });
       },
-      { enableHighAccuracy: true, maximumAge: 0, timeout: 20000 },
+      { enableHighAccuracy: true, maximumAge: 0, timeout: 60000 },
     );
 
     if (!maxAccuracyInputId) {
@@ -224,7 +225,7 @@ export function LocationFields({
           ) : null}
           <Button onClick={captureLocation} type="button" variant="outline">
             {isWatching ? <Radio className="size-4 animate-pulse" /> : <MapPin className="size-4" />}
-            {isWatching ? "Capturing..." : "Live capture"}
+            {isWatching ? "Capturing..." : "Capture device GPS"}
           </Button>
         </div>
       </div>
@@ -234,38 +235,50 @@ export function LocationFields({
         </div>
       ) : null}
       {allowManualEntry ? (
-        <div className="grid gap-3 border-t pt-4 sm:grid-cols-3">
-          <div className="space-y-2">
-            <Label htmlFor={`${latitudeName}-manual`}>Manual latitude</Label>
-            <Input
-              id={`${latitudeName}-manual`}
-              inputMode="decimal"
-              onChange={(event) => updateManualLocation("lat", event.target.value)}
-              placeholder="5.603717"
-              value={manualLocation.lat}
-            />
+        <div className="space-y-3 border-t pt-4">
+          <div>
+            <p className="text-sm font-medium">Manual GPS override</p>
+            <p className="text-xs text-muted-foreground">
+              Leave these fields blank when using live device capture. They are only used if
+              the lecturer intentionally enters coordinates.
+            </p>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor={`${longitudeName}-manual`}>Manual longitude</Label>
-            <Input
-              id={`${longitudeName}-manual`}
-              inputMode="decimal"
-              onChange={(event) => updateManualLocation("lng", event.target.value)}
-              placeholder="-0.186964"
-              value={manualLocation.lng}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor={`${accuracyName}-manual`}>Manual accuracy</Label>
-            <Input
-              id={`${accuracyName}-manual`}
-              inputMode="numeric"
-              min={1}
-              onChange={(event) => updateManualLocation("accuracy", event.target.value)}
-              placeholder="10"
-              type="number"
-              value={manualLocation.accuracy}
-            />
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div className="space-y-2">
+              <Label htmlFor={`${latitudeName}-manual`}>Manual latitude</Label>
+              <Input
+                autoComplete="off"
+                id={`${latitudeName}-manual`}
+                inputMode="decimal"
+                onChange={(event) => updateManualLocation("lat", event.target.value)}
+                placeholder="5.603717"
+                value={manualLocation.lat}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor={`${longitudeName}-manual`}>Manual longitude</Label>
+              <Input
+                autoComplete="off"
+                id={`${longitudeName}-manual`}
+                inputMode="decimal"
+                onChange={(event) => updateManualLocation("lng", event.target.value)}
+                placeholder="-0.186964"
+                value={manualLocation.lng}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor={`${accuracyName}-manual`}>Manual accuracy</Label>
+              <Input
+                autoComplete="off"
+                id={`${accuracyName}-manual`}
+                inputMode="numeric"
+                min={1}
+                onChange={(event) => updateManualLocation("accuracy", event.target.value)}
+                placeholder="10"
+                type="number"
+                value={manualLocation.accuracy}
+              />
+            </div>
           </div>
         </div>
       ) : null}

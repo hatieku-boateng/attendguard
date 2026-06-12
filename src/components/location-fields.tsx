@@ -141,9 +141,11 @@ export function LocationFields({
       { enableHighAccuracy: true, maximumAge: 0, timeout: 20000 },
     );
 
-    window.setTimeout(() => {
-      stopLiveCapture();
-    }, 20000);
+    if (!maxAccuracyInputId) {
+      window.setTimeout(() => {
+        stopLiveCapture();
+      }, 20000);
+    }
   }
 
   function stopLiveCapture() {

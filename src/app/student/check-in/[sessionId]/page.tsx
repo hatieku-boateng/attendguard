@@ -1,12 +1,9 @@
 import { and, eq } from "drizzle-orm";
 
 import { checkInAction } from "@/app/student/sessions/actions";
-import { LocationFields } from "@/components/location-fields";
 import { PageHeader } from "@/components/page-header";
-import { Button } from "@/components/ui/button";
+import { StudentAttendanceForm } from "@/components/student-attendance-form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { getDb } from "@/db/client";
 import { attendancePasskeys, attendanceSessions, courses } from "@/db/schema";
 import { requireRole } from "@/lib/auth";
@@ -89,30 +86,13 @@ export default async function CheckInPage({
               {resultMessage}
             </p>
           ) : null}
-          <form action={checkInAction} className="space-y-5">
-            <input name="sessionId" type="hidden" value={session.id} />
-            <div className="space-y-2">
-              <Label htmlFor="passkey">Assigned passkey</Label>
-              <Input
-                className="font-mono"
-                defaultValue={passkey ?? ""}
-                id="passkey"
-                name="passkey"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Current location</Label>
-              <LocationFields
-                accuracyName="locationAccuracy"
-                initialMessage={`Capture your device location. Keep capture running until the accuracy is within ${session.maxAcceptedAccuracyMeters}m.`}
-                latitudeName="studentLatitude"
-                longitudeName="studentLongitude"
-                maxAccuracyMeters={session.maxAcceptedAccuracyMeters}
-              />
-            </div>
-            <Button type="submit">Submit attendance</Button>
-          </form>
+          <StudentAttendanceForm
+            action={checkInAction}
+            maxAcceptedAccuracyMeters={session.maxAcceptedAccuracyMeters}
+            passkey={passkey ?? ""}
+            result={query.result}
+            sessionId={session.id}
+          />
         </CardContent>
       </Card>
     </>

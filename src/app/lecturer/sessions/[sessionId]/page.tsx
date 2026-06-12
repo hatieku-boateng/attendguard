@@ -160,7 +160,12 @@ export default async function LecturerSessionDetailPage({
             </form>
             <form action={closeAttendanceSessionAction}>
               <input name="sessionId" type="hidden" value={session.id} />
-              <Button type="submit">Close session</Button>
+              <ConfirmSubmitButton
+                message="Close this session and mark every enrolled student without attendance as absent?"
+                variant="default"
+              >
+                Close session
+              </ConfirmSubmitButton>
             </form>
             <form action={deleteAttendanceSessionAction}>
               <input name="sessionId" type="hidden" value={session.id} />
@@ -198,7 +203,7 @@ export default async function LecturerSessionDetailPage({
       </Card>
       <Card className="mt-6">
         <CardHeader>
-          <CardTitle>Accepted attendance</CardTitle>
+          <CardTitle>Attendance records</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>

@@ -38,7 +38,7 @@ export default async function AttendanceHistoryPage() {
     <>
       <PageHeader
         title="Attendance history"
-        description="Accepted attendance records linked to your student account."
+        description="Attendance records linked to your student account, including absences recorded when sessions close."
       />
       <Card>
         <CardContent className="pt-6">

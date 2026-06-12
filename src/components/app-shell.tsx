@@ -23,25 +23,27 @@ export function AppShell({
   return (
     <div className="min-h-screen bg-background text-foreground">
       <header className="sticky top-0 z-40 border-b border-border/80 bg-background/90 backdrop-blur-xl">
-        <div className="mx-auto flex min-h-20 w-full max-w-7xl flex-col gap-4 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
+        <div className="mx-auto flex min-h-20 w-full max-w-7xl flex-col gap-3 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
           <BrandMark />
-          <nav className="flex flex-wrap items-center gap-1 rounded-lg border bg-card/90 p-1 shadow-sm">
-            {navItems.map((item) => (
-              <Button asChild key={item.href} size="sm" variant="ghost">
-                <Link href={item.href}>{item.label}</Link>
+          <nav className="w-full overflow-x-auto rounded-lg border bg-card/90 p-1 shadow-sm sm:w-auto">
+            <div className="flex min-w-max items-center gap-1">
+              {navItems.map((item) => (
+                <Button asChild key={item.href} size="sm" variant="ghost">
+                  <Link href={item.href}>{item.label}</Link>
+                </Button>
+              ))}
+              <Separator className="mx-1 h-6" orientation="vertical" />
+              <Button asChild size="icon" variant="ghost" title="Sign out">
+                <Link href="/logout" prefetch={false}>
+                  <LogOut className="size-4" />
+                </Link>
               </Button>
-            ))}
-            <Separator className="mx-1 h-6" orientation="vertical" />
-            <Button asChild size="icon" variant="ghost" title="Sign out">
-              <Link href="/logout" prefetch={false}>
-                <LogOut className="size-4" />
-              </Link>
-            </Button>
+            </div>
           </nav>
         </div>
       </header>
       <div className="border-b border-border/70 bg-slate-950 text-white">
-        <div className="mx-auto flex w-full max-w-7xl flex-col gap-2 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
+        <div className="mx-auto flex w-full max-w-7xl flex-col gap-3 px-3 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
           <div className="flex items-center gap-3">
             <span className="flex size-9 items-center justify-center rounded-lg bg-white/10">
               {user.avatarUrl ? (
@@ -62,10 +64,10 @@ export function AppShell({
               </p>
             </div>
           </div>
-          <p className="text-sm text-white/70">{user.email}</p>
+          <p className="break-all text-sm text-white/70 sm:text-right">{user.email}</p>
         </div>
       </div>
-      <main className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <main className="mx-auto w-full max-w-7xl px-3 py-5 sm:px-6 sm:py-8 lg:px-8">
         {children}
       </main>
     </div>

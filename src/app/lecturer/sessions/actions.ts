@@ -262,6 +262,25 @@ export async function closeAttendanceSessionAction(formData: FormData) {
   }
 
   const db = getDb();
+  const [session] = await db
+    .select({
+      id: attendanceSessions.id,
+      courseId: attendanceSessions.courseId,
+      title: attendanceSessions.sessionTitle,
+    })
+    .from(attendanceSessions)
+    .where(
+      and(
+        eq(attendanceSessions.id, sessionId),
+        eq(attendanceSessions.lecturerId, user.lecturerProfileId),
+      ),
+    )
+    .limit(1);
+
+  if (!session) {
+    redirect("/lecturer/sessions");
+  }
+
   await db
     .update(attendanceSessions)
     .set({ status: "closed", updatedAt: new Date() })
@@ -272,15 +291,62 @@ export async function closeAttendanceSessionAction(formData: FormData) {
       ),
     );
 
+  const enrolledStudents = await db
+    .select({ studentId: enrolments.studentId })
+    .from(enrolments)
+    .where(
+      and(
+        eq(enrolments.courseId, session.courseId),
+        eq(enrolments.status, "active"),
+      ),
+    );
+
+  const existingRecords = await db
+    .select({ studentId: attendanceRecords.studentId })
+    .from(attendanceRecords)
+    .where(eq(attendanceRecords.sessionId, session.id));
+
+  const recordedStudentIds = new Set(
+    existingRecords.map((record) => record.studentId),
+  );
+  const absentRows = enrolledStudents
+    .filter((student) => !recordedStudentIds.has(student.studentId))
+    .map((student) => ({
+      sessionId: session.id,
+      studentId: student.studentId,
+      checkInAt: new Date(),
+      status: "absent" as const,
+      verificationMethod: "system" as const,
+      lecturerRemarks: "Marked absent when session was closed.",
+    }));
+
+  if (absentRows.length > 0) {
+    await db
+      .insert(attendanceRecords)
+      .values(absentRows)
+      .onConflictDoNothing({
+        target: [attendanceRecords.sessionId, attendanceRecords.studentId],
+      });
+  }
+
   await db.insert(auditLogs).values({
     userId: user.id,
     action: "attendance_session_closed",
     entityType: "attendance_session",
-    entityId: sessionId,
+    entityId: session.id,
+    newValue: {
+      sessionTitle: session.title,
+      enrolledStudents: enrolledStudents.length,
+      existingRecords: existingRecords.length,
+      absencesRecorded: absentRows.length,
+    },
   });
 
   revalidatePath("/lecturer/sessions");
-  revalidatePath(`/lecturer/sessions/${sessionId}`);
+  revalidatePath(`/lecturer/sessions/${session.id}`);
+  revalidatePath("/lecturer/reports");
+  revalidatePath("/student/sessions");
+  revalidatePath("/student/attendance-history");
 }
 
 export async function deleteAttendanceSessionAction(formData: FormData) {

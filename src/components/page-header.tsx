@@ -8,12 +8,12 @@ export function PageHeader({
   actions?: React.ReactNode;
 }) {
   return (
-    <div className="mb-8 flex flex-col gap-4 border-b border-border/70 pb-6 sm:flex-row sm:items-start sm:justify-between">
+    <div className="mb-6 flex flex-col gap-4 border-b border-border/70 pb-5 sm:mb-8 sm:flex-row sm:items-start sm:justify-between sm:pb-6">
       <div className="space-y-2">
         <p className="text-xs font-semibold uppercase tracking-normal text-primary">
           AttendGuard
         </p>
-        <h1 className="text-3xl font-semibold tracking-normal text-slate-950">
+        <h1 className="text-2xl font-semibold tracking-normal text-slate-950 sm:text-3xl">
           {title}
         </h1>
         {description ? (
@@ -22,7 +22,11 @@ export function PageHeader({
           </p>
         ) : null}
       </div>
-      {actions ? <div className="flex shrink-0 gap-2">{actions}</div> : null}
+      {actions ? (
+        <div className="flex w-full shrink-0 flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:justify-end">
+          {actions}
+        </div>
+      ) : null}
     </div>
   );
 }

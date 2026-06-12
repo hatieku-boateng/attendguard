@@ -15,6 +15,7 @@ import {
   enrolments,
 } from "@/db/schema";
 import { requireRole } from "@/lib/auth";
+import { isValidCoordinate } from "@/lib/geo";
 import { encryptPasskey, generatePasskey, hashPasskey } from "@/lib/passkeys";
 
 function cleanString(value: FormDataEntryValue | null) {
@@ -65,6 +66,10 @@ export async function createAttendanceSessionAction(formData: FormData) {
 
   if (geofenceRadiusMeters < 10 || maxAcceptedAccuracyMeters < 10) {
     redirect(`/lecturer/sessions/new?courseId=${courseId}&error=missing`);
+  }
+
+  if (!isValidCoordinate(lecturerLatitude, lecturerLongitude)) {
+    redirect(`/lecturer/sessions/new?courseId=${courseId}&error=location`);
   }
 
   if (lecturerLocationAccuracy > maxAcceptedAccuracyMeters) {

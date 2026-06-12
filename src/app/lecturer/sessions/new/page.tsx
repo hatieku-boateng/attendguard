@@ -46,6 +46,8 @@ export default async function NewSessionPage({
                   ? "Opening time must be before normal close, and normal close must be before final close."
                   : params.error === "lecturer-accuracy"
                     ? "The captured lecturer location accuracy is above the selected limit. Recapture closer to the class location or increase the limit."
+                    : params.error === "location"
+                      ? "Enter a valid latitude and longitude for the lecture location."
                     : "Complete all required session fields and capture location."}
               </p>
             ) : null}
@@ -112,6 +114,7 @@ export default async function NewSessionPage({
               <Label>Lecturer location</Label>
               <LocationFields
                 accuracyName="lecturerLocationAccuracy"
+                allowManualEntry
                 latitudeName="lecturerLatitude"
                 longitudeName="lecturerLongitude"
                 maxAccuracyInputId="maxAcceptedAccuracyMeters"

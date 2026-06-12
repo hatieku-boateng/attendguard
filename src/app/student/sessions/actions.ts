@@ -15,6 +15,12 @@ import {
 import { calculateDistanceMeters, isValidCoordinate } from "@/lib/geo";
 import { requireRole } from "@/lib/auth";
 import { verifyPasskey } from "@/lib/passkeys";
+import {
+  getSecurityRequestContext,
+  isSecurityRateLimited,
+  recordSecurityEvent,
+  securityWindows,
+} from "@/lib/security";
 
 function cleanString(value: FormDataEntryValue | null) {
   return String(value ?? "").trim();
@@ -38,6 +44,7 @@ export async function checkInAction(formData: FormData) {
   const studentLatitude = parseNumber(formData.get("studentLatitude"));
   const studentLongitude = parseNumber(formData.get("studentLongitude"));
   const locationAccuracyMeters = parseNumber(formData.get("locationAccuracy"));
+  const securityContext = await getSecurityRequestContext();
 
   if (!studentId || !sessionId) {
     redirect("/student/sessions");
@@ -79,7 +86,26 @@ export async function checkInAction(formData: FormData) {
       result,
       rejectionReason,
       reviewStatus: result === "requires_review" ? "pending" : "not_required",
+      ipAddress: securityContext.ipAddress,
+      userAgent: securityContext.userAgent,
     });
+
+    if (result === "rejected") {
+      await Promise.all([
+        recordSecurityEvent({
+          eventType: "attendance_check_in_rejected",
+          identifier: `attendance:${sessionId}:${studentId}`,
+          context: securityContext,
+          metadata: { rejectionReason },
+        }),
+        recordSecurityEvent({
+          eventType: "attendance_check_in_rejected",
+          identifier: `attendance-ip:${securityContext.ipAddress ?? "unknown"}`,
+          context: securityContext,
+          metadata: { rejectionReason },
+        }),
+      ]);
+    }
   }
 
   if (!session) {
@@ -108,6 +134,34 @@ export async function checkInAction(formData: FormData) {
   if (session.status !== "open" || now < session.opensAt || now > session.finalClosesAt) {
     await logAttempt("rejected", "session_closed");
     redirect(resultUrl(sessionId, "closed"));
+  }
+
+  const [studentBlocked, ipBlocked] = await Promise.all([
+    isSecurityRateLimited({
+      eventType: "attendance_check_in_rejected",
+      identifier: `attendance:${sessionId}:${studentId}`,
+      limit: 8,
+      windowMs: securityWindows.standard,
+    }),
+    isSecurityRateLimited({
+      eventType: "attendance_check_in_rejected",
+      identifier: `attendance-ip:${securityContext.ipAddress ?? "unknown"}`,
+      limit: 50,
+      windowMs: securityWindows.standard,
+    }),
+  ]);
+
+  if (studentBlocked || ipBlocked) {
+    await recordSecurityEvent({
+      eventType: "attendance_check_in_blocked",
+      identifier: studentBlocked
+        ? `attendance:${sessionId}:${studentId}`
+        : `attendance-ip:${securityContext.ipAddress ?? "unknown"}`,
+      context: securityContext,
+      metadata: { studentBlocked, ipBlocked },
+    });
+    await logAttempt("rejected", "too_many_attempts");
+    redirect(resultUrl(sessionId, "too-many"));
   }
 
   const [failedAttempts] = await db
@@ -235,6 +289,13 @@ export async function checkInAction(formData: FormData) {
     .where(eq(attendancePasskeys.id, passkey.id));
 
   await logAttempt(status === "present" ? "accepted" : "late", null, distance);
+  await recordSecurityEvent({
+    eventType: "attendance_check_in_success",
+    identifier: `attendance:${sessionId}:${studentId}`,
+    context: securityContext,
+    success: true,
+    metadata: { status },
+  });
 
   revalidatePath("/student/sessions");
   revalidatePath("/student/attendance-history");

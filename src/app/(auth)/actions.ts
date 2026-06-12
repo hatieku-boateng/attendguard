@@ -18,6 +18,12 @@ import {
   verifyPassword,
   type UserRole,
 } from "@/lib/auth";
+import {
+  getSecurityRequestContext,
+  isSecurityRateLimited,
+  recordSecurityEvent,
+  securityWindows,
+} from "@/lib/security";
 
 function cleanString(value: FormDataEntryValue | null) {
   return String(value ?? "").trim();
@@ -39,17 +45,72 @@ export async function loginAction(formData: FormData) {
     redirect("/login?error=missing");
   }
 
+  const securityContext = await getSecurityRequestContext();
+  const ipIdentifier = `login-ip:${securityContext.ipAddress ?? "unknown"}`;
+  const emailIdentifier = `login-email:${email}`;
+  const [emailBlocked, ipBlocked] = await Promise.all([
+    isSecurityRateLimited({
+      eventType: "login_failed",
+      identifier: emailIdentifier,
+      limit: 8,
+      windowMs: securityWindows.standard,
+    }),
+    isSecurityRateLimited({
+      eventType: "login_failed",
+      identifier: ipIdentifier,
+      limit: 30,
+      windowMs: securityWindows.standard,
+    }),
+  ]);
+
+  if (emailBlocked || ipBlocked) {
+    await recordSecurityEvent({
+      eventType: "login_blocked",
+      identifier: emailBlocked ? emailIdentifier : ipIdentifier,
+      context: securityContext,
+      metadata: { emailBlocked, ipBlocked },
+    });
+    redirect("/login?error=too-many");
+  }
+
   const db = getDb();
   const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
 
   if (!user || !(await verifyPassword(password, user.passwordHash))) {
+    await Promise.all([
+      recordSecurityEvent({
+        eventType: "login_failed",
+        identifier: emailIdentifier,
+        context: securityContext,
+        metadata: { reason: "invalid_credentials" },
+      }),
+      recordSecurityEvent({
+        eventType: "login_failed",
+        identifier: ipIdentifier,
+        context: securityContext,
+        metadata: { reason: "invalid_credentials" },
+      }),
+    ]);
     redirect("/login?error=invalid");
   }
 
   if (user.status !== "active") {
+    await recordSecurityEvent({
+      eventType: "login_failed",
+      identifier: emailIdentifier,
+      context: securityContext,
+      metadata: { reason: "inactive_account" },
+    });
     redirect("/login?error=inactive");
   }
 
+  await recordSecurityEvent({
+    eventType: "login_success",
+    identifier: `user:${user.id}`,
+    context: securityContext,
+    success: true,
+    metadata: { role: user.role },
+  });
   await setSessionCookie(user.id);
   redirect(getDashboardPath(user.role));
 }
@@ -71,6 +132,34 @@ export async function activateAccountAction(formData: FormData) {
 
   if (!token || !studentIdNumber || password.length < 8) {
     redirect("/activate-account?error=invalid");
+  }
+
+  const securityContext = await getSecurityRequestContext();
+  const ipIdentifier = `activation-ip:${securityContext.ipAddress ?? "unknown"}`;
+  const studentIdentifier = `activation-student:${studentIdNumber}`;
+  const [ipBlocked, studentBlocked] = await Promise.all([
+    isSecurityRateLimited({
+      eventType: "activation_failed",
+      identifier: ipIdentifier,
+      limit: 20,
+      windowMs: securityWindows.standard,
+    }),
+    isSecurityRateLimited({
+      eventType: "activation_failed",
+      identifier: studentIdentifier,
+      limit: 8,
+      windowMs: securityWindows.standard,
+    }),
+  ]);
+
+  if (ipBlocked || studentBlocked) {
+    await recordSecurityEvent({
+      eventType: "activation_blocked",
+      identifier: ipBlocked ? ipIdentifier : studentIdentifier,
+      context: securityContext,
+      metadata: { ipBlocked, studentBlocked },
+    });
+    redirect("/activate-account?error=too-many");
   }
 
   const tokenHash = hashActivationToken(token);
@@ -96,6 +185,20 @@ export async function activateAccountAction(formData: FormData) {
     .limit(1);
 
   if (!match) {
+    await Promise.all([
+      recordSecurityEvent({
+        eventType: "activation_failed",
+        identifier: ipIdentifier,
+        context: securityContext,
+        metadata: { reason: "invalid_token_or_student_id" },
+      }),
+      recordSecurityEvent({
+        eventType: "activation_failed",
+        identifier: studentIdentifier,
+        context: securityContext,
+        metadata: { reason: "invalid_token_or_student_id" },
+      }),
+    ]);
     redirect("/activate-account?error=invalid-token");
   }
 
@@ -125,6 +228,12 @@ export async function activateAccountAction(formData: FormData) {
     entityId: match.userId,
   });
 
+  await recordSecurityEvent({
+    eventType: "activation_success",
+    identifier: `user:${match.userId}`,
+    context: securityContext,
+    success: true,
+  });
   await setSessionCookie(match.userId);
   redirect("/student/dashboard");
 }

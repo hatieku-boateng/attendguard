@@ -3,8 +3,11 @@ import { and, eq } from "drizzle-orm";
 import {
   addStudentManuallyAction,
   importStudentsAction,
+  removeStudentFromCourseAction,
 } from "@/app/lecturer/courses/actions";
+import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { PageHeader } from "@/components/page-header";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -41,6 +44,7 @@ export default async function CourseStudentsPage({
     importError?: string;
     manualAdded?: string;
     manualError?: string;
+    removed?: string;
   }>;
 }) {
   const { courseId } = await params;
@@ -202,9 +206,20 @@ export default async function CourseStudentsPage({
       <Card>
         <CardHeader>
           <CardTitle>Class list</CardTitle>
-          <CardDescription>{students.length} enrolled student(s)</CardDescription>
+          <CardDescription>
+            {students.filter((student) => student.status === "active").length} active of{" "}
+            {students.length} student record(s)
+          </CardDescription>
         </CardHeader>
         <CardContent>
+          {report.removed ? (
+            <p className="mb-4 rounded-md border bg-muted px-3 py-2 text-sm text-muted-foreground">
+              Student removed from this course.{" "}
+              {report.removed === "withdrawn"
+                ? "Attendance history was preserved and the enrolment was marked withdrawn."
+                : "No attendance history existed, so the enrolment was deleted."}
+            </p>
+          ) : null}
           <Table>
             <TableHeader>
               <TableRow>
@@ -214,6 +229,7 @@ export default async function CourseStudentsPage({
                 <TableHead>Programme</TableHead>
                 <TableHead>Level</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -224,12 +240,38 @@ export default async function CourseStudentsPage({
                   <TableCell>{student.email}</TableCell>
                   <TableCell>{student.programme || "-"}</TableCell>
                   <TableCell>{student.level || "-"}</TableCell>
-                  <TableCell>{student.status}</TableCell>
+                  <TableCell>
+                    <Badge variant={student.status === "active" ? "default" : "secondary"}>
+                      {student.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {student.status === "active" ? (
+                      <form action={removeStudentFromCourseAction}>
+                        <input name="courseId" type="hidden" value={course.id} />
+                        <input
+                          name="enrolmentId"
+                          type="hidden"
+                          value={student.enrolmentId}
+                        />
+                        <ConfirmSubmitButton
+                          className="w-auto"
+                          message={`Remove ${student.name} from this course? Existing attendance history will be preserved.`}
+                          size="sm"
+                          variant="outline"
+                        >
+                          Remove
+                        </ConfirmSubmitButton>
+                      </form>
+                    ) : (
+                      <span className="text-sm text-muted-foreground">No active access</span>
+                    )}
+                  </TableCell>
                 </TableRow>
               ))}
               {students.length === 0 ? (
                 <TableRow>
-                  <TableCell className="h-24 text-center text-muted-foreground" colSpan={6}>
+                  <TableCell className="h-24 text-center text-muted-foreground" colSpan={7}>
                     No students have been enrolled yet.
                   </TableCell>
                 </TableRow>

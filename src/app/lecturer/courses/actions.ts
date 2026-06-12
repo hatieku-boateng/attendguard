@@ -3,11 +3,14 @@
 import { randomBytes } from "node:crypto";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { and, eq } from "drizzle-orm";
+import { and, count, eq, inArray } from "drizzle-orm";
 import Papa from "papaparse";
 
 import { getDb } from "@/db/client";
 import {
+  attendancePasskeys,
+  attendanceRecords,
+  attendanceSessions,
   auditLogs,
   courseResources,
   courses,
@@ -418,6 +421,111 @@ export async function addStudentManuallyAction(formData: FormData) {
       result.sent ? 1 : 0
     }&pendingEmail=${result.emailSkipped ? 1 : 0}#manual-student`,
   );
+}
+
+export async function removeStudentFromCourseAction(formData: FormData) {
+  const user = await requireRole("lecturer");
+  const courseId = cleanString(formData.get("courseId"));
+  const enrolmentId = cleanString(formData.get("enrolmentId"));
+
+  if (!user.lecturerProfileId || !courseId || !enrolmentId) {
+    redirect("/lecturer/courses");
+  }
+
+  const db = getDb();
+  const [target] = await db
+    .select({
+      enrolmentId: enrolments.id,
+      enrolmentStatus: enrolments.status,
+      studentId: enrolments.studentId,
+      studentName: users.name,
+      studentEmail: users.email,
+      studentIdNumber: studentProfiles.studentIdNumber,
+      courseCode: courses.courseCode,
+      courseTitle: courses.courseTitle,
+    })
+    .from(enrolments)
+    .innerJoin(courses, eq(enrolments.courseId, courses.id))
+    .innerJoin(studentProfiles, eq(enrolments.studentId, studentProfiles.id))
+    .innerJoin(users, eq(studentProfiles.userId, users.id))
+    .where(
+      and(
+        eq(enrolments.id, enrolmentId),
+        eq(enrolments.courseId, courseId),
+        eq(courses.lecturerId, user.lecturerProfileId),
+      ),
+    )
+    .limit(1);
+
+  if (!target) {
+    redirect("/lecturer/courses");
+  }
+
+  const courseSessions = await db
+    .select({ id: attendanceSessions.id })
+    .from(attendanceSessions)
+    .where(eq(attendanceSessions.courseId, courseId));
+  const sessionIds = courseSessions.map((session) => session.id);
+  const [recordCount] = sessionIds.length
+    ? await db
+        .select({ value: count() })
+        .from(attendanceRecords)
+        .where(
+          and(
+            eq(attendanceRecords.studentId, target.studentId),
+            inArray(attendanceRecords.sessionId, sessionIds),
+          ),
+        )
+    : [{ value: 0 }];
+
+  if (sessionIds.length > 0) {
+    await db
+      .delete(attendancePasskeys)
+      .where(
+        and(
+          eq(attendancePasskeys.studentId, target.studentId),
+          inArray(attendancePasskeys.sessionId, sessionIds),
+        ),
+      );
+  }
+
+  const removalMode = recordCount.value > 0 ? "withdrawn" : "deleted";
+
+  if (removalMode === "withdrawn") {
+    await db
+      .update(enrolments)
+      .set({ status: "withdrawn", updatedAt: new Date() })
+      .where(eq(enrolments.id, target.enrolmentId));
+  } else {
+    await db.delete(enrolments).where(eq(enrolments.id, target.enrolmentId));
+  }
+
+  await db.insert(auditLogs).values({
+    userId: user.id,
+    action: "student_removed_from_course",
+    entityType: "enrolment",
+    entityId: target.enrolmentId,
+    previousValue: {
+      status: target.enrolmentStatus,
+      studentName: target.studentName,
+      studentEmail: target.studentEmail,
+      studentIdNumber: target.studentIdNumber,
+      courseCode: target.courseCode,
+      courseTitle: target.courseTitle,
+      attendanceRecords: recordCount.value,
+    },
+    newValue: {
+      removalMode,
+      passkeysRemoved: sessionIds.length > 0,
+    },
+  });
+
+  revalidatePath(`/lecturer/courses/${courseId}/students`);
+  revalidatePath(`/lecturer/courses/${courseId}`);
+  revalidatePath("/lecturer/dashboard");
+  revalidatePath("/student/classes");
+  revalidatePath("/student/sessions");
+  redirect(`/lecturer/courses/${courseId}/students?removed=${removalMode}`);
 }
 
 export async function addCourseResourceAction(formData: FormData) {

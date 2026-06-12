@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { and, eq } from "drizzle-orm";
+import { and, desc, eq, inArray, lte } from "drizzle-orm";
 
 import { getDb } from "@/db/client";
 import {
@@ -13,8 +13,12 @@ import {
   auditLogs,
   courses,
   enrolments,
+  studentAbsenceWarnings,
+  studentProfiles,
+  users,
 } from "@/db/schema";
 import { requireRole } from "@/lib/auth";
+import { sendAbsenceWarningEmail } from "@/lib/email";
 import { isValidCoordinate } from "@/lib/geo";
 import { encryptPasskey, generatePasskey, hashPasskey } from "@/lib/passkeys";
 
@@ -37,6 +41,186 @@ function parseDate(value: FormDataEntryValue | null) {
 
 function editSessionErrorUrl(sessionId: string, error: string) {
   return `/lecturer/sessions/${sessionId}/edit?error=${error}`;
+}
+
+async function getConsecutiveAbsenceStreak({
+  db,
+  courseId,
+  studentId,
+  sessionDate,
+}: {
+  db: ReturnType<typeof getDb>;
+  courseId: string;
+  studentId: string;
+  sessionDate: Date;
+}) {
+  const recentRecords = await db
+    .select({
+      status: attendanceRecords.status,
+    })
+    .from(attendanceSessions)
+    .innerJoin(
+      attendanceRecords,
+      and(
+        eq(attendanceRecords.sessionId, attendanceSessions.id),
+        eq(attendanceRecords.studentId, studentId),
+      ),
+    )
+    .where(
+      and(
+        eq(attendanceSessions.courseId, courseId),
+        eq(attendanceSessions.status, "closed"),
+        lte(attendanceSessions.sessionDate, sessionDate),
+      ),
+    )
+    .orderBy(desc(attendanceSessions.sessionDate))
+    .limit(6);
+
+  let streak = 0;
+
+  for (const record of recentRecords) {
+    if (record.status !== "absent") {
+      break;
+    }
+
+    streak += 1;
+  }
+
+  return streak;
+}
+
+async function sendAbsenceWarningsForSession({
+  db,
+  session,
+  absentStudentIds,
+}: {
+  db: ReturnType<typeof getDb>;
+  session: {
+    id: string;
+    courseId: string;
+    courseCode: string;
+    courseTitle: string;
+    sessionDate: Date;
+  };
+  absentStudentIds: string[];
+}) {
+  const summary = {
+    warningEmailsSent: 0,
+    sternEmailsSent: 0,
+    emailFailures: 0,
+  };
+
+  if (absentStudentIds.length === 0) {
+    return summary;
+  }
+
+  const absentStudents = await db
+    .select({
+      studentId: studentProfiles.id,
+      name: users.name,
+      email: users.email,
+    })
+    .from(studentProfiles)
+    .innerJoin(users, eq(studentProfiles.userId, users.id))
+    .where(inArray(studentProfiles.id, absentStudentIds));
+
+  for (const student of absentStudents) {
+    const streakCount = await getConsecutiveAbsenceStreak({
+      db,
+      courseId: session.courseId,
+      studentId: student.studentId,
+      sessionDate: session.sessionDate,
+    });
+
+    if (streakCount !== 2 && streakCount !== 3) {
+      continue;
+    }
+
+    const warningLevel = streakCount === 2 ? "warning" : "stern";
+    const [insertedWarning] = await db
+      .insert(studentAbsenceWarnings)
+      .values({
+        studentId: student.studentId,
+        courseId: session.courseId,
+        triggeringSessionId: session.id,
+        streakCount,
+        warningLevel,
+        recipientEmail: student.email,
+      })
+      .onConflictDoNothing({
+        target: [
+          studentAbsenceWarnings.studentId,
+          studentAbsenceWarnings.courseId,
+          studentAbsenceWarnings.triggeringSessionId,
+          studentAbsenceWarnings.warningLevel,
+        ],
+      })
+      .returning({
+        id: studentAbsenceWarnings.id,
+      });
+
+    const [warningToSend] = insertedWarning
+      ? [insertedWarning]
+      : await db
+          .select({
+            id: studentAbsenceWarnings.id,
+            sent: studentAbsenceWarnings.sent,
+          })
+          .from(studentAbsenceWarnings)
+          .where(
+            and(
+              eq(studentAbsenceWarnings.studentId, student.studentId),
+              eq(studentAbsenceWarnings.courseId, session.courseId),
+              eq(studentAbsenceWarnings.triggeringSessionId, session.id),
+              eq(studentAbsenceWarnings.warningLevel, warningLevel),
+              eq(studentAbsenceWarnings.sent, false),
+            ),
+          )
+          .limit(1);
+
+    if (!warningToSend) {
+      continue;
+    }
+
+    try {
+      const result = await sendAbsenceWarningEmail({
+        to: student.email,
+        studentName: student.name,
+        courseLabel: `${session.courseCode}: ${session.courseTitle}`,
+        streakCount,
+      });
+
+      if (result.sent) {
+        await db
+          .update(studentAbsenceWarnings)
+          .set({ sent: true, sentAt: new Date(), sendError: null })
+          .where(eq(studentAbsenceWarnings.id, warningToSend.id));
+
+        if (warningLevel === "stern") {
+          summary.sternEmailsSent += 1;
+        } else {
+          summary.warningEmailsSent += 1;
+        }
+      } else {
+        summary.emailFailures += 1;
+        await db
+          .update(studentAbsenceWarnings)
+          .set({ sendError: result.reason ?? "email_not_sent" })
+          .where(eq(studentAbsenceWarnings.id, warningToSend.id));
+      }
+    } catch (error) {
+      summary.emailFailures += 1;
+      await db
+        .update(studentAbsenceWarnings)
+        .set({
+          sendError:
+            error instanceof Error ? error.message.slice(0, 500) : "email_send_failed",
+        })
+        .where(eq(studentAbsenceWarnings.id, warningToSend.id));
+    }
+  }
+
+  return summary;
 }
 
 export async function createAttendanceSessionAction(formData: FormData) {
@@ -267,8 +451,12 @@ export async function closeAttendanceSessionAction(formData: FormData) {
       id: attendanceSessions.id,
       courseId: attendanceSessions.courseId,
       title: attendanceSessions.sessionTitle,
+      sessionDate: attendanceSessions.sessionDate,
+      courseCode: courses.courseCode,
+      courseTitle: courses.courseTitle,
     })
     .from(attendanceSessions)
+    .innerJoin(courses, eq(attendanceSessions.courseId, courses.id))
     .where(
       and(
         eq(attendanceSessions.id, sessionId),
@@ -329,6 +517,18 @@ export async function closeAttendanceSessionAction(formData: FormData) {
       });
   }
 
+  const warningSummary = await sendAbsenceWarningsForSession({
+    db,
+    session: {
+      id: session.id,
+      courseId: session.courseId,
+      courseCode: session.courseCode,
+      courseTitle: session.courseTitle,
+      sessionDate: session.sessionDate,
+    },
+    absentStudentIds: absentRows.map((row) => row.studentId),
+  });
+
   await db.insert(auditLogs).values({
     userId: user.id,
     action: "attendance_session_closed",
@@ -339,6 +539,7 @@ export async function closeAttendanceSessionAction(formData: FormData) {
       enrolledStudents: enrolledStudents.length,
       existingRecords: existingRecords.length,
       absencesRecorded: absentRows.length,
+      ...warningSummary,
     },
   });
 

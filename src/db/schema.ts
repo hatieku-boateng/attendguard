@@ -463,6 +463,66 @@ export const attendanceAttempts = pgTable(
   ],
 );
 
+export const securityEvents = pgTable(
+  "security_events",
+  {
+    id,
+    eventType: varchar("event_type", { length: 120 }).notNull(),
+    identifierHash: text("identifier_hash").notNull(),
+    ipAddress: varchar("ip_address", { length: 80 }),
+    userAgent: text("user_agent"),
+    success: boolean("success").notNull().default(false),
+    metadata: jsonb("metadata"),
+    createdAt,
+  },
+  (table) => [
+    index("security_events_type_identifier_created_idx").on(
+      table.eventType,
+      table.identifierHash,
+      table.createdAt,
+    ),
+    index("security_events_created_at_idx").on(table.createdAt),
+    index("security_events_success_idx").on(table.success),
+  ],
+);
+
+export const studentAbsenceWarnings = pgTable(
+  "student_absence_warnings",
+  {
+    id,
+    studentId: uuid("student_id")
+      .notNull()
+      .references(() => studentProfiles.id, { onDelete: "cascade" }),
+    courseId: uuid("course_id")
+      .notNull()
+      .references(() => courses.id, { onDelete: "cascade" }),
+    triggeringSessionId: uuid("triggering_session_id")
+      .notNull()
+      .references(() => attendanceSessions.id, { onDelete: "cascade" }),
+    streakCount: integer("streak_count").notNull(),
+    warningLevel: varchar("warning_level", { length: 40 }).notNull(),
+    recipientEmail: varchar("recipient_email", { length: 254 }).notNull(),
+    sent: boolean("sent").notNull().default(false),
+    sentAt: timestamp("sent_at", { withTimezone: true }),
+    sendError: text("send_error"),
+    createdAt,
+  },
+  (table) => [
+    uniqueIndex("student_absence_warnings_unique").on(
+      table.studentId,
+      table.courseId,
+      table.triggeringSessionId,
+      table.warningLevel,
+    ),
+    index("student_absence_warnings_student_course_idx").on(
+      table.studentId,
+      table.courseId,
+    ),
+    index("student_absence_warnings_session_idx").on(table.triggeringSessionId),
+    index("student_absence_warnings_sent_idx").on(table.sent),
+  ],
+);
+
 export const auditLogs = pgTable(
   "audit_logs",
   {

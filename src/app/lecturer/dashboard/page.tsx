@@ -1,4 +1,4 @@
-import { and, count, eq, inArray } from "drizzle-orm";
+import { and, count, desc, eq, inArray } from "drizzle-orm";
 
 import { getDb } from "@/db/client";
 import {
@@ -7,23 +7,86 @@ import {
   attendanceSessions,
   courses,
   enrolments,
+  studentProfiles,
+  users,
 } from "@/db/schema";
+import { Badge } from "@/components/ui/badge";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { PageHeader } from "@/components/page-header";
 import { StatCard } from "@/components/stat-card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { requireRole } from "@/lib/auth";
+
+const attendedStatuses = new Set(["present", "late", "manually_present"]);
+
+function percent(value: number, total: number) {
+  return total > 0 ? Math.round((value / total) * 100) : 0;
+}
+
+function statusLabel(status: string) {
+  return status.replaceAll("_", " ");
+}
+
+function AnalyticsBar({
+  label,
+  value,
+  total,
+  tone = "default",
+}: {
+  label: string;
+  value: number;
+  total: number;
+  tone?: "default" | "success" | "warning" | "danger";
+}) {
+  const width = percent(value, total);
+  const color =
+    tone === "success"
+      ? "bg-emerald-500"
+      : tone === "warning"
+        ? "bg-amber-500"
+        : tone === "danger"
+          ? "bg-rose-500"
+          : "bg-cyan-500";
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between gap-3 text-sm">
+        <span className="font-medium capitalize">{label}</span>
+        <span className="font-mono text-muted-foreground">
+          {value} - {width}%
+        </span>
+      </div>
+      <div className="h-2 overflow-hidden rounded-full bg-muted">
+        <div className={`h-full rounded-full ${color}`} style={{ width: `${width}%` }} />
+      </div>
+    </div>
+  );
+}
 
 export default async function LecturerDashboardPage() {
   const user = await requireRole("lecturer");
   const db = getDb();
 
   const lecturerId = user.lecturerProfileId ?? "";
-  const [courseCount] = await db
-    .select({ value: count() })
-    .from(courses)
-    .where(eq(courses.lecturerId, lecturerId));
-
   const lecturerCourses = await db
-    .select({ id: courses.id })
+    .select({
+      id: courses.id,
+      code: courses.courseCode,
+      title: courses.courseTitle,
+    })
     .from(courses)
     .where(eq(courses.lecturerId, lecturerId));
   const courseIds = lecturerCourses.map((course) => course.id);
@@ -32,7 +95,12 @@ export default async function LecturerDashboardPage() {
     ? await db
         .select({ value: count() })
         .from(enrolments)
-        .where(inArray(enrolments.courseId, courseIds))
+        .where(
+          and(
+            inArray(enrolments.courseId, courseIds),
+            eq(enrolments.status, "active"),
+          ),
+        )
     : [{ value: 0 }];
 
   const [openSessionCount] = await db
@@ -68,6 +136,144 @@ export default async function LecturerDashboardPage() {
     )
     .where(eq(attendanceSessions.lecturerId, lecturerId));
 
+  const attendanceRows = await db
+    .select({
+      courseId: courses.id,
+      courseCode: courses.courseCode,
+      courseTitle: courses.courseTitle,
+      sessionId: attendanceSessions.id,
+      sessionTitle: attendanceSessions.sessionTitle,
+      sessionDate: attendanceSessions.sessionDate,
+      sessionStatus: attendanceSessions.status,
+      studentId: studentProfiles.id,
+      studentName: users.name,
+      status: attendanceRecords.status,
+    })
+    .from(attendanceRecords)
+    .innerJoin(attendanceSessions, eq(attendanceRecords.sessionId, attendanceSessions.id))
+    .innerJoin(courses, eq(attendanceSessions.courseId, courses.id))
+    .innerJoin(studentProfiles, eq(attendanceRecords.studentId, studentProfiles.id))
+    .innerJoin(users, eq(studentProfiles.userId, users.id))
+    .where(eq(attendanceSessions.lecturerId, lecturerId))
+    .orderBy(desc(attendanceSessions.sessionDate))
+    .limit(1200);
+
+  const statusCounts = attendanceRows.reduce<Record<string, number>>((acc, row) => {
+    acc[row.status] = (acc[row.status] ?? 0) + 1;
+    return acc;
+  }, {});
+  const attendedCount = attendanceRows.filter((row) =>
+    attendedStatuses.has(row.status),
+  ).length;
+  const absenceCount = statusCounts.absent ?? 0;
+  const attendanceRate = percent(attendedCount, attendedCount + absenceCount);
+
+  const coursePerformance = lecturerCourses
+    .map((course) => {
+      const rows = attendanceRows.filter((row) => row.courseId === course.id);
+      const attended = rows.filter((row) => attendedStatuses.has(row.status)).length;
+      const absent = rows.filter((row) => row.status === "absent").length;
+
+      return {
+        ...course,
+        total: rows.length,
+        attended,
+        absent,
+        rate: percent(attended, attended + absent),
+      };
+    })
+    .filter((course) => course.total > 0)
+    .sort((a, b) => b.total - a.total)
+    .slice(0, 6);
+
+  const recentSessionMap = new Map<
+    string,
+    {
+      id: string;
+      title: string;
+      courseCode: string;
+      date: Date;
+      present: number;
+      late: number;
+      absent: number;
+      total: number;
+    }
+  >();
+
+  for (const row of attendanceRows) {
+    const session =
+      recentSessionMap.get(row.sessionId) ??
+      {
+        id: row.sessionId,
+        title: row.sessionTitle,
+        courseCode: row.courseCode,
+        date: row.sessionDate,
+        present: 0,
+        late: 0,
+        absent: 0,
+        total: 0,
+      };
+
+    if (row.status === "absent") {
+      session.absent += 1;
+    } else if (row.status === "late") {
+      session.late += 1;
+    } else if (attendedStatuses.has(row.status)) {
+      session.present += 1;
+    }
+
+    session.total += 1;
+    recentSessionMap.set(row.sessionId, session);
+  }
+
+  const recentSessions = Array.from(recentSessionMap.values())
+    .sort((a, b) => b.date.getTime() - a.date.getTime())
+    .slice(0, 5);
+
+  const streakMap = new Map<
+    string,
+    {
+      courseCode: string;
+      studentName: string;
+      streak: number;
+      active: boolean;
+    }
+  >();
+
+  for (const row of attendanceRows) {
+    if (row.sessionStatus !== "closed") {
+      continue;
+    }
+
+    const key = `${row.courseId}:${row.studentId}`;
+    const current =
+      streakMap.get(key) ??
+      {
+        courseCode: row.courseCode,
+        studentName: row.studentName,
+        streak: 0,
+        active: true,
+      };
+
+    if (!current.active) {
+      continue;
+    }
+
+    if (row.status === "absent") {
+      current.streak += 1;
+    } else {
+      current.active = false;
+    }
+
+    streakMap.set(key, current);
+  }
+
+  const atRiskStudents = Array.from(streakMap.entries())
+    .map(([key, student]) => ({ ...student, key }))
+    .filter((student) => student.streak >= 2)
+    .sort((a, b) => b.streak - a.streak)
+    .slice(0, 6);
+
   return (
     <>
       <PageHeader
@@ -75,11 +281,152 @@ export default async function LecturerDashboardPage() {
         description="Overview of courses, enrolments, active attendance sessions, and submissions needing review."
       />
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-        <StatCard label="Courses" value={courseCount.value} tone="info" />
+        <StatCard label="Courses" value={lecturerCourses.length} tone="info" />
         <StatCard label="Enrolled students" value={studentCount.value} />
         <StatCard label="Open sessions" value={openSessionCount.value} tone="success" />
         <StatCard label="Attendance records" value={recordCount.value} />
         <StatCard label="Awaiting review" value={reviewCount.value} tone="warning" />
+      </div>
+      <div className="mt-6 grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+        <Card>
+          <CardHeader>
+            <CardTitle>Attendance health</CardTitle>
+            <CardDescription>
+              Live mix of recorded attendance outcomes across your assigned courses.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            <div className="grid gap-4 sm:grid-cols-3">
+              <div>
+                <p className="text-sm text-muted-foreground">Attendance rate</p>
+                <p className="font-mono text-4xl font-semibold">{attendanceRate}%</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Present or late</p>
+                <p className="font-mono text-4xl font-semibold">{attendedCount}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Absent</p>
+                <p className="font-mono text-4xl font-semibold">{absenceCount}</p>
+              </div>
+            </div>
+            <div className="space-y-4">
+              {["present", "late", "manually_present", "excused", "absent"].map((status) => (
+                <AnalyticsBar
+                  key={status}
+                  label={statusLabel(status)}
+                  tone={status === "absent" ? "danger" : status === "late" ? "warning" : "success"}
+                  total={attendanceRows.length}
+                  value={statusCounts[status] ?? 0}
+                />
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Students at risk</CardTitle>
+            <CardDescription>
+              Students currently on two or more consecutive absences.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Student</TableHead>
+                  <TableHead>Course</TableHead>
+                  <TableHead className="text-right">Streak</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {atRiskStudents.map((student) => (
+                  <TableRow key={student.key}>
+                    <TableCell className="font-medium">{student.studentName}</TableCell>
+                    <TableCell>{student.courseCode}</TableCell>
+                    <TableCell className="text-right">
+                      <Badge variant={student.streak >= 3 ? "destructive" : "secondary"}>
+                        {student.streak}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {atRiskStudents.length === 0 ? (
+                  <TableRow>
+                    <TableCell className="h-24 text-center text-muted-foreground" colSpan={3}>
+                      No students are currently flagged by consecutive absences.
+                    </TableCell>
+                  </TableRow>
+                ) : null}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </div>
+      <div className="mt-6 grid gap-6 xl:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Course comparison</CardTitle>
+            <CardDescription>
+              Attendance rate by course using present, late, and manual approvals.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {coursePerformance.map((course) => (
+              <AnalyticsBar
+                key={course.id}
+                label={`${course.code} - ${course.rate}%`}
+                tone={course.rate >= 80 ? "success" : course.rate >= 60 ? "warning" : "danger"}
+                total={course.attended + course.absent}
+                value={course.attended}
+              />
+            ))}
+            {coursePerformance.length === 0 ? (
+              <p className="rounded-md border bg-muted px-3 py-6 text-center text-sm text-muted-foreground">
+                Course analytics will appear after attendance records are captured.
+              </p>
+            ) : null}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent session outcomes</CardTitle>
+            <CardDescription>
+              Quick scan of the latest finalized or submitted attendance records.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Session</TableHead>
+                  <TableHead>Course</TableHead>
+                  <TableHead>Present</TableHead>
+                  <TableHead>Late</TableHead>
+                  <TableHead>Absent</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {recentSessions.map((session) => (
+                  <TableRow key={session.id}>
+                    <TableCell className="font-medium">{session.title}</TableCell>
+                    <TableCell>{session.courseCode}</TableCell>
+                    <TableCell>{session.present}</TableCell>
+                    <TableCell>{session.late}</TableCell>
+                    <TableCell>{session.absent}</TableCell>
+                  </TableRow>
+                ))}
+                {recentSessions.length === 0 ? (
+                  <TableRow>
+                    <TableCell className="h-24 text-center text-muted-foreground" colSpan={5}>
+                      Session analytics will appear once students submit attendance.
+                    </TableCell>
+                  </TableRow>
+                ) : null}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
       </div>
     </>
   );

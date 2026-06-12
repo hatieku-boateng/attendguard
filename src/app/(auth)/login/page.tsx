@@ -18,6 +18,7 @@ const errorMessages: Record<string, string> = {
   invalid: "The email or password is incorrect.",
   inactive: "This account is not active.",
   "already-active": "Your account is already active. Sign in to continue.",
+  "too-many": "Too many attempts were detected. Please wait a few minutes and try again.",
 };
 
 export default async function LoginPage({

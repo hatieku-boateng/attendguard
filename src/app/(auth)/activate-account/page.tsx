@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 const errorMessages: Record<string, string> = {
   invalid: "Open the activation link from your email, enter your student ID, and use a password of at least 8 characters.",
   "invalid-token": "This activation link is invalid, expired, already used, or does not match that student ID.",
+  "too-many": "Too many activation attempts were detected. Please wait a few minutes and try again.",
 };
 
 export default async function ActivateAccountPage({

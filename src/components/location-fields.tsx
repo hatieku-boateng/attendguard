@@ -14,10 +14,12 @@ export function LocationFields({
   latitudeName,
   longitudeName,
   accuracyName,
+  maxAccuracyInputId,
 }: {
   latitudeName: string;
   longitudeName: string;
   accuracyName: string;
+  maxAccuracyInputId?: string;
 }) {
   const [location, setLocation] = useState<LocationState>({
     status: "idle",
@@ -32,12 +34,25 @@ export function LocationFields({
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
+        const maxAccuracy = maxAccuracyInputId
+          ? Number(
+              (
+                document.getElementById(maxAccuracyInputId) as HTMLInputElement | null
+              )?.value,
+            )
+          : null;
+        const capturedAccuracy = position.coords.accuracy;
+        const accuracyWarning =
+          maxAccuracy && capturedAccuracy > maxAccuracy
+            ? ` This is above the ${Math.round(maxAccuracy)}m limit. Move closer to the lecture area or recapture before opening.`
+            : "";
+
         setLocation({
           status: "captured",
-          message: `Captured with ${Math.round(position.coords.accuracy)}m accuracy.`,
+          message: `Captured with ${Math.round(capturedAccuracy)}m accuracy.${accuracyWarning}`,
           lat: position.coords.latitude,
           lng: position.coords.longitude,
-          accuracy: position.coords.accuracy,
+          accuracy: capturedAccuracy,
         });
       },
       () => {

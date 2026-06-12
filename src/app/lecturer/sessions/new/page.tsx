@@ -44,7 +44,9 @@ export default async function NewSessionPage({
               <p className="sm:col-span-2 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
                 {params.error === "time"
                   ? "Opening time must be before normal close, and normal close must be before final close."
-                  : "Complete all required session fields and capture location."}
+                  : params.error === "lecturer-accuracy"
+                    ? "The captured lecturer location accuracy is above the selected limit. Recapture closer to the class location or increase the limit."
+                    : "Complete all required session fields and capture location."}
               </p>
             ) : null}
             <div className="space-y-2 sm:col-span-2">
@@ -76,9 +78,12 @@ export default async function NewSessionPage({
                 required
                 type="number"
               />
+              <p className="text-xs leading-5 text-muted-foreground">
+                Students outside this distance from the captured lecture location are flagged or rejected.
+              </p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="maxAcceptedAccuracyMeters">Max location accuracy</Label>
+              <Label htmlFor="maxAcceptedAccuracyMeters">GPS accuracy limit</Label>
               <Input
                 defaultValue={50}
                 id="maxAcceptedAccuracyMeters"
@@ -87,6 +92,9 @@ export default async function NewSessionPage({
                 required
                 type="number"
               />
+              <p className="text-xs leading-5 text-muted-foreground">
+                The lecturer and students must have GPS accuracy within this range in metres.
+              </p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="opensAt">Opens at</Label>
@@ -106,6 +114,7 @@ export default async function NewSessionPage({
                 accuracyName="lecturerLocationAccuracy"
                 latitudeName="lecturerLatitude"
                 longitudeName="lecturerLongitude"
+                maxAccuracyInputId="maxAcceptedAccuracyMeters"
               />
             </div>
             <div className="sm:col-span-2">

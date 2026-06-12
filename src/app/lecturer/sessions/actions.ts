@@ -53,6 +53,7 @@ export async function createAttendanceSessionAction(formData: FormData) {
     !sessionTitle ||
     lecturerLatitude === null ||
     lecturerLongitude === null ||
+    lecturerLocationAccuracy === null ||
     !geofenceRadiusMeters ||
     !maxAcceptedAccuracyMeters ||
     !opensAt ||
@@ -60,6 +61,14 @@ export async function createAttendanceSessionAction(formData: FormData) {
     !finalClosesAt
   ) {
     redirect(`/lecturer/sessions/new?courseId=${courseId}&error=missing`);
+  }
+
+  if (geofenceRadiusMeters < 10 || maxAcceptedAccuracyMeters < 10) {
+    redirect(`/lecturer/sessions/new?courseId=${courseId}&error=missing`);
+  }
+
+  if (lecturerLocationAccuracy > maxAcceptedAccuracyMeters) {
+    redirect(`/lecturer/sessions/new?courseId=${courseId}&error=lecturer-accuracy`);
   }
 
   if (!(opensAt < normalClosesAt && normalClosesAt <= finalClosesAt)) {
@@ -107,7 +116,13 @@ export async function createAttendanceSessionAction(formData: FormData) {
     action: "attendance_session_created",
     entityType: "attendance_session",
     entityId: session.id,
-    newValue: { courseId, sessionTitle, geofenceRadiusMeters },
+    newValue: {
+      courseId,
+      sessionTitle,
+      geofenceRadiusMeters,
+      maxAcceptedAccuracyMeters,
+      lecturerLocationAccuracy,
+    },
   });
 
   revalidatePath("/lecturer/sessions");

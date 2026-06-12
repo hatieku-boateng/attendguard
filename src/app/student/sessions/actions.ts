@@ -206,13 +206,9 @@ export async function checkInAction(formData: FormData) {
 
   const status = now <= session.normalClosesAt ? "present" : "late";
 
-  await db.transaction(async (tx) => {
-    await tx
-      .update(attendancePasskeys)
-      .set({ used: true, usedAt: now, updatedAt: now })
-      .where(eq(attendancePasskeys.id, passkey.id));
-
-    await tx.insert(attendanceRecords).values({
+  const [insertedRecord] = await db
+    .insert(attendanceRecords)
+    .values({
       sessionId,
       studentId,
       checkInAt: now,
@@ -222,8 +218,21 @@ export async function checkInAction(formData: FormData) {
       calculatedDistanceMeters: String(distance.toFixed(2)),
       status,
       verificationMethod: "passkey_location",
-    });
-  });
+    })
+    .onConflictDoNothing({
+      target: [attendanceRecords.sessionId, attendanceRecords.studentId],
+    })
+    .returning({ id: attendanceRecords.id });
+
+  if (!insertedRecord) {
+    await logAttempt("rejected", "duplicate_attendance", distance);
+    redirect(resultUrl(sessionId, "duplicate"));
+  }
+
+  await db
+    .update(attendancePasskeys)
+    .set({ used: true, usedAt: now, updatedAt: now })
+    .where(eq(attendancePasskeys.id, passkey.id));
 
   await logAttempt(status === "present" ? "accepted" : "late", null, distance);
 

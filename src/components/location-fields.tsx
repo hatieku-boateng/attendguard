@@ -172,6 +172,24 @@ export function LocationFields({
     : location.status === "captured"
       ? location.accuracy
       : "";
+  const mapLatitude = Number(hiddenLatitude);
+  const mapLongitude = Number(hiddenLongitude);
+  const hasMapCoordinates =
+    Number.isFinite(mapLatitude) &&
+    Number.isFinite(mapLongitude) &&
+    mapLatitude >= -90 &&
+    mapLatitude <= 90 &&
+    mapLongitude >= -180 &&
+    mapLongitude <= 180;
+  const mapsQuery = hasMapCoordinates
+    ? `${mapLatitude.toFixed(7)},${mapLongitude.toFixed(7)}`
+    : "";
+  const mapsEmbedUrl = hasMapCoordinates
+    ? `https://www.google.com/maps?q=${encodeURIComponent(mapsQuery)}&z=18&output=embed`
+    : "";
+  const mapsOpenUrl = hasMapCoordinates
+    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapsQuery)}`
+    : "";
 
   function updateManualLocation(field: "lat" | "lng" | "accuracy", value: string) {
     setManualMode(true);
@@ -247,6 +265,32 @@ export function LocationFields({
               placeholder="10"
               type="number"
               value={manualLocation.accuracy}
+            />
+          </div>
+        </div>
+      ) : null}
+      {hasMapCoordinates ? (
+        <div className="space-y-3 border-t pt-4">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm font-medium">Google Maps preview</p>
+              <p className="text-xs text-muted-foreground">
+                Confirm that the marker sits on or very close to the lecture location.
+              </p>
+            </div>
+            <Button asChild size="sm" variant="outline">
+              <a href={mapsOpenUrl} rel="noreferrer" target="_blank">
+                Open in Google Maps
+              </a>
+            </Button>
+          </div>
+          <div className="overflow-hidden rounded-lg border">
+            <iframe
+              className="h-64 w-full"
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+              src={mapsEmbedUrl}
+              title="Google Maps location preview"
             />
           </div>
         </div>

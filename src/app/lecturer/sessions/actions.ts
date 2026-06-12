@@ -35,6 +35,10 @@ function parseDate(value: FormDataEntryValue | null) {
   return date && !Number.isNaN(date.getTime()) ? date : null;
 }
 
+function editSessionErrorUrl(sessionId: string, error: string) {
+  return `/lecturer/sessions/${sessionId}/edit?error=${error}`;
+}
+
 export async function createAttendanceSessionAction(formData: FormData) {
   const user = await requireRole("lecturer");
   const courseId = cleanString(formData.get("courseId"));
@@ -132,6 +136,121 @@ export async function createAttendanceSessionAction(formData: FormData) {
 
   revalidatePath("/lecturer/sessions");
   redirect(`/lecturer/sessions/${session.id}`);
+}
+
+export async function updateAttendanceSessionAction(formData: FormData) {
+  const user = await requireRole("lecturer");
+  const sessionId = cleanString(formData.get("sessionId"));
+  const sessionTitle = cleanString(formData.get("sessionTitle"));
+  const lecturerLatitude = parseNumber(formData.get("lecturerLatitude"));
+  const lecturerLongitude = parseNumber(formData.get("lecturerLongitude"));
+  const lecturerLocationAccuracy = parseNumber(formData.get("lecturerLocationAccuracy"));
+  const geofenceRadiusMeters = parseNumber(formData.get("geofenceRadiusMeters"));
+  const maxAcceptedAccuracyMeters = parseNumber(formData.get("maxAcceptedAccuracyMeters"));
+  const opensAt = parseDate(formData.get("opensAt"));
+  const normalClosesAt = parseDate(formData.get("normalClosesAt"));
+  const finalClosesAt = parseDate(formData.get("finalClosesAt"));
+
+  if (
+    !user.lecturerProfileId ||
+    !sessionId ||
+    !sessionTitle ||
+    lecturerLatitude === null ||
+    lecturerLongitude === null ||
+    lecturerLocationAccuracy === null ||
+    !geofenceRadiusMeters ||
+    !maxAcceptedAccuracyMeters ||
+    !opensAt ||
+    !normalClosesAt ||
+    !finalClosesAt
+  ) {
+    redirect(sessionId ? editSessionErrorUrl(sessionId, "missing") : "/lecturer/sessions");
+  }
+
+  if (geofenceRadiusMeters < 10 || maxAcceptedAccuracyMeters < 10) {
+    redirect(editSessionErrorUrl(sessionId, "missing"));
+  }
+
+  if (!isValidCoordinate(lecturerLatitude, lecturerLongitude)) {
+    redirect(editSessionErrorUrl(sessionId, "location"));
+  }
+
+  if (lecturerLocationAccuracy > maxAcceptedAccuracyMeters) {
+    redirect(editSessionErrorUrl(sessionId, "lecturer-accuracy"));
+  }
+
+  if (!(opensAt < normalClosesAt && normalClosesAt <= finalClosesAt)) {
+    redirect(editSessionErrorUrl(sessionId, "time"));
+  }
+
+  const db = getDb();
+  const [session] = await db
+    .select({
+      id: attendanceSessions.id,
+      finalClosesAt: attendanceSessions.finalClosesAt,
+    })
+    .from(attendanceSessions)
+    .where(
+      and(
+        eq(attendanceSessions.id, sessionId),
+        eq(attendanceSessions.lecturerId, user.lecturerProfileId),
+      ),
+    )
+    .limit(1);
+
+  if (!session) {
+    redirect("/lecturer/sessions");
+  }
+
+  await db
+    .update(attendanceSessions)
+    .set({
+      sessionTitle,
+      sessionDate: opensAt,
+      lecturerLatitude: String(lecturerLatitude),
+      lecturerLongitude: String(lecturerLongitude),
+      lecturerLocationAccuracy: String(lecturerLocationAccuracy),
+      geofenceRadiusMeters,
+      maxAcceptedAccuracyMeters,
+      opensAt,
+      normalClosesAt,
+      finalClosesAt,
+      updatedAt: new Date(),
+    })
+    .where(
+      and(
+        eq(attendanceSessions.id, sessionId),
+        eq(attendanceSessions.lecturerId, user.lecturerProfileId),
+      ),
+    );
+
+  if (session.finalClosesAt.getTime() !== finalClosesAt.getTime()) {
+    await db
+      .update(attendancePasskeys)
+      .set({ expiresAt: finalClosesAt, updatedAt: new Date() })
+      .where(eq(attendancePasskeys.sessionId, sessionId));
+  }
+
+  await db.insert(auditLogs).values({
+    userId: user.id,
+    action: "attendance_session_updated",
+    entityType: "attendance_session",
+    entityId: sessionId,
+    newValue: {
+      sessionTitle,
+      geofenceRadiusMeters,
+      maxAcceptedAccuracyMeters,
+      lecturerLocationAccuracy,
+      opensAt,
+      normalClosesAt,
+      finalClosesAt,
+    },
+  });
+
+  revalidatePath("/lecturer/sessions");
+  revalidatePath(`/lecturer/sessions/${sessionId}`);
+  revalidatePath(`/lecturer/sessions/${sessionId}/edit`);
+  redirect(`/lecturer/sessions/${sessionId}`);
 }
 
 export async function closeAttendanceSessionAction(formData: FormData) {

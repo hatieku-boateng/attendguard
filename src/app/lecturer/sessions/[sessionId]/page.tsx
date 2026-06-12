@@ -1,4 +1,6 @@
+import Link from "next/link";
 import { and, count, eq } from "drizzle-orm";
+import { Pencil } from "lucide-react";
 
 import {
   approveAttemptAction,
@@ -142,6 +144,12 @@ export default async function LecturerSessionDetailPage({
         description={`${session.courseCode}: ${session.courseTitle}`}
         actions={
           <>
+            <Button asChild variant="outline">
+              <Link href={`/lecturer/sessions/${session.id}/edit`}>
+                <Pencil className="size-4" />
+                Edit session
+              </Link>
+            </Button>
             <form action={generatePasskeysAction}>
               <input name="sessionId" type="hidden" value={session.id} />
               <Button type="submit" variant="outline">

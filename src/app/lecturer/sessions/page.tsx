@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { desc, eq } from "drizzle-orm";
-import { Plus } from "lucide-react";
+import { Pencil, Plus } from "lucide-react";
 
 import { PageHeader } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
@@ -61,6 +61,7 @@ export default async function LecturerSessionsPage() {
                 <TableHead>Opens</TableHead>
                 <TableHead>Final close</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -79,11 +80,19 @@ export default async function LecturerSessionsPage() {
                   <TableCell>
                     <Badge variant="secondary">{session.status}</Badge>
                   </TableCell>
+                  <TableCell className="text-right">
+                    <Button asChild size="sm" variant="outline">
+                      <Link href={`/lecturer/sessions/${session.id}/edit`}>
+                        <Pencil className="size-4" />
+                        Edit
+                      </Link>
+                    </Button>
+                  </TableCell>
                 </TableRow>
               ))}
               {rows.length === 0 ? (
                 <TableRow>
-                  <TableCell className="h-24 text-center text-muted-foreground" colSpan={5}>
+                  <TableCell className="h-24 text-center text-muted-foreground" colSpan={6}>
                     No attendance sessions have been created yet.
                   </TableCell>
                 </TableRow>

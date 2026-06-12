@@ -15,6 +15,11 @@ const highAccuracyOptions: PositionOptions = {
 
 const stalePositionGraceMs = 5000;
 const lecturerFreshPollMs = 3500;
+const defaultAutoStopMs = 60000;
+
+function hasNumericValue(value: number | string | null | undefined) {
+  return value !== null && value !== undefined && value !== "" && Number.isFinite(Number(value));
+}
 
 type LocationState =
   | { status: "idle"; message: string }
@@ -34,19 +39,49 @@ export function LocationFields({
   accuracyName,
   maxAccuracyInputId,
   allowManualEntry = false,
+  autoStopAfterMs = defaultAutoStopMs,
+  initialLatitude,
+  initialLongitude,
+  initialAccuracy,
+  initialMessage,
 }: {
   latitudeName: string;
   longitudeName: string;
   accuracyName: string;
   maxAccuracyInputId?: string;
   allowManualEntry?: boolean;
+  autoStopAfterMs?: number | null;
+  initialLatitude?: number | string | null;
+  initialLongitude?: number | string | null;
+  initialAccuracy?: number | string | null;
+  initialMessage?: string;
 }) {
   const watchIdRef = useRef<number | null>(null);
   const freshPollTimeoutRef = useRef<number | null>(null);
   const activeCaptureIdRef = useRef(0);
+  const parsedInitialLatitude = Number(initialLatitude);
+  const parsedInitialLongitude = Number(initialLongitude);
+  const parsedInitialAccuracy = Number(initialAccuracy);
+  const hasInitialLocation =
+    hasNumericValue(initialLatitude) &&
+    hasNumericValue(initialLongitude) &&
+    hasNumericValue(initialAccuracy);
   const [location, setLocation] = useState<LocationState>({
-    status: "idle",
-    message: "Use live capture to read this device's current GPS location.",
+    ...(hasInitialLocation
+      ? {
+          status: "captured" as const,
+          message:
+            initialMessage ??
+            "Saved session location is loaded. Capture again only if the class location has changed.",
+          lat: parsedInitialLatitude,
+          lng: parsedInitialLongitude,
+          accuracy: parsedInitialAccuracy,
+          samples: 0,
+        }
+      : {
+          status: "idle" as const,
+          message: "Use live capture to read this device's current GPS location.",
+        }),
   });
   const [isWatching, setIsWatching] = useState(false);
   const [manualMode, setManualMode] = useState(false);
@@ -144,7 +179,7 @@ export function LocationFields({
     setLocation({
       status: "idle",
       message:
-        "Capturing this device's live GPS readings. Keep the lecturer's phone or laptop still near the class location.",
+        "Capturing this device's live GPS readings. Keep the phone or laptop still at the class location.",
     });
 
     const handlePosition = (position: GeolocationPosition) => {
@@ -257,12 +292,12 @@ export function LocationFields({
 
     requestFreshReading();
 
-    if (!maxAccuracyInputId) {
+    if (!maxAccuracyInputId && autoStopAfterMs !== null) {
       window.setTimeout(() => {
         if (activeCaptureIdRef.current === captureId) {
           stopLiveCapture();
         }
-      }, 20000);
+      }, autoStopAfterMs);
     }
   }
 
@@ -300,6 +335,8 @@ export function LocationFields({
   const mapLatitude = Number(hiddenLatitude);
   const mapLongitude = Number(hiddenLongitude);
   const hasMapCoordinates =
+    hasNumericValue(hiddenLatitude) &&
+    hasNumericValue(hiddenLongitude) &&
     Number.isFinite(mapLatitude) &&
     Number.isFinite(mapLongitude) &&
     mapLatitude >= -90 &&

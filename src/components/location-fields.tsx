@@ -38,6 +38,7 @@ export function LocationFields({
   longitudeName,
   accuracyName,
   maxAccuracyInputId,
+  maxAccuracyMeters,
   allowManualEntry = false,
   autoStopAfterMs = defaultAutoStopMs,
   initialLatitude,
@@ -49,6 +50,7 @@ export function LocationFields({
   longitudeName: string;
   accuracyName: string;
   maxAccuracyInputId?: string;
+  maxAccuracyMeters?: number | string | null;
   allowManualEntry?: boolean;
   autoStopAfterMs?: number | null;
   initialLatitude?: number | string | null;
@@ -80,7 +82,8 @@ export function LocationFields({
         }
       : {
           status: "idle" as const,
-          message: "Use live capture to read this device's current GPS location.",
+          message:
+            initialMessage ?? "Use live capture to read this device's current GPS location.",
         }),
   });
   const [isWatching, setIsWatching] = useState(false);
@@ -104,6 +107,12 @@ export function LocationFields({
   }, []);
 
   function getMaxAccuracy() {
+    if (hasNumericValue(maxAccuracyMeters)) {
+      const value = Number(maxAccuracyMeters);
+
+      return value > 0 ? value : null;
+    }
+
     if (!maxAccuracyInputId) {
       return null;
     }
@@ -176,10 +185,13 @@ export function LocationFields({
         }
       | null = null;
 
+    const maxAccuracy = getMaxAccuracy();
+
     setLocation({
       status: "idle",
-      message:
-        "Capturing this device's live GPS readings. Keep the phone or laptop still at the class location.",
+      message: maxAccuracy
+        ? `Capturing this device's live GPS readings. Keep the phone or laptop still until accuracy is within ${Math.round(maxAccuracy)}m.`
+        : "Capturing this device's live GPS readings. Keep the phone or laptop still at the class location.",
     });
 
     const handlePosition = (position: GeolocationPosition) => {
@@ -292,7 +304,7 @@ export function LocationFields({
 
     requestFreshReading();
 
-    if (!maxAccuracyInputId && autoStopAfterMs !== null) {
+    if (!getMaxAccuracy() && autoStopAfterMs !== null) {
       window.setTimeout(() => {
         if (activeCaptureIdRef.current === captureId) {
           stopLiveCapture();

@@ -45,6 +45,7 @@ export default async function CheckInPage({
       id: attendanceSessions.id,
       title: attendanceSessions.sessionTitle,
       finalClosesAt: attendanceSessions.finalClosesAt,
+      maxAcceptedAccuracyMeters: attendanceSessions.maxAcceptedAccuracyMeters,
       courseCode: courses.courseCode,
       courseTitle: courses.courseTitle,
       passkeyCiphertext: attendancePasskeys.passkeyCiphertext,
@@ -78,7 +79,8 @@ export default async function CheckInPage({
         <CardHeader>
           <CardTitle>Attendance submission</CardTitle>
           <CardDescription>
-            Final close: {session.finalClosesAt.toLocaleString()}
+            Final close: {session.finalClosesAt.toLocaleString()}. Required GPS accuracy:{" "}
+            {session.maxAcceptedAccuracyMeters}m.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -103,8 +105,10 @@ export default async function CheckInPage({
               <Label>Current location</Label>
               <LocationFields
                 accuracyName="locationAccuracy"
+                initialMessage={`Capture your device location. Keep capture running until the accuracy is within ${session.maxAcceptedAccuracyMeters}m.`}
                 latitudeName="studentLatitude"
                 longitudeName="studentLongitude"
+                maxAccuracyMeters={session.maxAcceptedAccuracyMeters}
               />
             </div>
             <Button type="submit">Submit attendance</Button>

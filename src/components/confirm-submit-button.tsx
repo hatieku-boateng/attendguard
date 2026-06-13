@@ -7,25 +7,32 @@ export function ConfirmSubmitButton({
   children,
   className,
   message,
+  onClick,
   size,
+  type = "submit",
   variant = "destructive",
-}: {
-  children: React.ReactNode;
-  className?: string;
+  ...props
+}: Omit<React.ComponentProps<typeof Button>, "onClick"> & {
   message: string;
-  size?: React.ComponentProps<typeof Button>["size"];
-  variant?: React.ComponentProps<typeof Button>["variant"];
+  onClick?: React.MouseEventHandler<HTMLButtonElement>;
 }) {
   return (
     <Button
+      {...props}
       className={cn("w-full", className)}
       onClick={(event) => {
+        onClick?.(event);
+
+        if (event.defaultPrevented) {
+          return;
+        }
+
         if (!window.confirm(message)) {
           event.preventDefault();
         }
       }}
       size={size}
-      type="submit"
+      type={type}
       variant={variant}
     >
       {children}

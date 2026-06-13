@@ -7,6 +7,7 @@ export function getWorkspaceNavItems(role: UserRole) {
       { href: "/admin/lecturers", label: "Lecturers" },
       { href: "/admin/catalog", label: "Catalogue" },
       { href: "/admin/courses", label: "Assignments" },
+      { href: "/admin/students", label: "Students" },
       { href: "/profile", label: "Profile" },
     ];
   }

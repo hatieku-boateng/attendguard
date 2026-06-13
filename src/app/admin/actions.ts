@@ -2,18 +2,133 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { and, eq } from "drizzle-orm";
+import { and, count, eq, inArray } from "drizzle-orm";
 
 import { getDb } from "@/db/client";
 import {
+  attendancePasskeys,
+  attendanceRecords,
+  attendanceSessions,
   auditLogs,
   courseCatalog,
   courses,
+  enrolments,
   lecturerProfiles,
+  studentProfiles,
   users,
 } from "@/db/schema";
 import { hashPassword, requireRole } from "@/lib/auth";
 import { cleanString, fileToDataUrl } from "@/lib/form-utils";
+
+const enrolmentStatuses = ["active", "withdrawn", "completed"] as const;
+type AdminDb = ReturnType<typeof getDb>;
+
+function cleanId(value: FormDataEntryValue | null) {
+  return cleanString(value, { uppercase: false });
+}
+
+function cleanIds(formData: FormData) {
+  return Array.from(new Set(formData.getAll("enrolmentId").map(cleanId).filter(Boolean)));
+}
+
+function cleanEnrolmentStatus(value: FormDataEntryValue | null) {
+  const status = cleanString(value, { uppercase: false });
+
+  return enrolmentStatuses.includes(status as (typeof enrolmentStatuses)[number])
+    ? (status as (typeof enrolmentStatuses)[number])
+    : null;
+}
+
+function revalidateEnrolmentViews(courseId?: string, enrolmentId?: string) {
+  revalidatePath("/admin/students");
+  revalidatePath("/admin/dashboard");
+  revalidatePath("/lecturer/dashboard");
+  revalidatePath("/lecturer/courses");
+  revalidatePath("/student/classes");
+  revalidatePath("/student/sessions");
+
+  if (courseId) {
+    revalidatePath(`/lecturer/courses/${courseId}`);
+    revalidatePath(`/lecturer/courses/${courseId}/students`);
+  }
+
+  if (enrolmentId) {
+    revalidatePath(`/admin/students/${enrolmentId}/edit`);
+  }
+}
+
+async function getCourseSessionIds(db: AdminDb, courseId: string) {
+  const sessions = await db
+    .select({ id: attendanceSessions.id })
+    .from(attendanceSessions)
+    .where(eq(attendanceSessions.courseId, courseId));
+
+  return sessions.map((session) => session.id);
+}
+
+async function countCourseAttendanceRecords(
+  db: AdminDb,
+  courseId: string,
+  studentId: string,
+) {
+  const sessionIds = await getCourseSessionIds(db, courseId);
+
+  if (sessionIds.length === 0) {
+    return 0;
+  }
+
+  const [recordCount] = await db
+    .select({ value: count() })
+    .from(attendanceRecords)
+    .where(
+      and(
+        eq(attendanceRecords.studentId, studentId),
+        inArray(attendanceRecords.sessionId, sessionIds),
+      ),
+    );
+
+  return recordCount?.value ?? 0;
+}
+
+async function removeAttendancePasskeysForTargets(
+  db: AdminDb,
+  targets: Array<{ courseId: string; studentId: string }>,
+) {
+  const courseIds = Array.from(new Set(targets.map((target) => target.courseId)));
+
+  if (courseIds.length === 0) {
+    return;
+  }
+
+  const sessions = await db
+    .select({ id: attendanceSessions.id, courseId: attendanceSessions.courseId })
+    .from(attendanceSessions)
+    .where(inArray(attendanceSessions.courseId, courseIds));
+  const sessionIdsByCourse = new Map<string, string[]>();
+
+  for (const session of sessions) {
+    const courseSessionIds = sessionIdsByCourse.get(session.courseId) ?? [];
+    courseSessionIds.push(session.id);
+    sessionIdsByCourse.set(session.courseId, courseSessionIds);
+  }
+
+  for (const target of targets) {
+    const sessionIds = sessionIdsByCourse.get(target.courseId) ?? [];
+
+    if (sessionIds.length === 0) {
+      continue;
+    }
+
+    await db
+      .delete(attendancePasskeys)
+      .where(
+        and(
+          eq(attendancePasskeys.studentId, target.studentId),
+          inArray(attendancePasskeys.sessionId, sessionIds),
+        ),
+      );
+  }
+}
 
 export async function createLecturerAction(formData: FormData) {
   const admin = await requireRole("administrator");
@@ -414,4 +529,333 @@ export async function deleteAssignedCourseAction(formData: FormData) {
   revalidatePath("/admin/courses");
   revalidatePath("/lecturer/courses");
   redirect("/admin/courses");
+}
+
+export async function updateEnrolledStudentAction(formData: FormData) {
+  const admin = await requireRole("administrator");
+  const enrolmentId = cleanId(formData.get("enrolmentId"));
+  const courseId = cleanId(formData.get("courseId"));
+  const name = cleanString(formData.get("name"));
+  const email = cleanString(formData.get("email"), { uppercase: false }).toLowerCase();
+  const studentIdNumber = cleanString(formData.get("studentIdNumber"));
+  const status = cleanEnrolmentStatus(formData.get("status"));
+
+  if (!enrolmentId || !courseId || !name || !email || !studentIdNumber || !status) {
+    redirect(`/admin/students/${enrolmentId}/edit?error=missing`);
+  }
+
+  const db = getDb();
+  const [target] = await db
+    .select({
+      enrolmentId: enrolments.id,
+      courseId: enrolments.courseId,
+      enrolmentStatus: enrolments.status,
+      studentId: enrolments.studentId,
+      studentUserId: studentProfiles.userId,
+      previousName: users.name,
+      previousEmail: users.email,
+      previousStudentIdNumber: studentProfiles.studentIdNumber,
+      previousProgramme: studentProfiles.programme,
+      previousLevel: studentProfiles.level,
+      previousClassGroup: studentProfiles.classGroup,
+    })
+    .from(enrolments)
+    .innerJoin(studentProfiles, eq(enrolments.studentId, studentProfiles.id))
+    .innerJoin(users, eq(studentProfiles.userId, users.id))
+    .where(eq(enrolments.id, enrolmentId))
+    .limit(1);
+
+  if (!target) {
+    redirect("/admin/students?error=missing");
+  }
+
+  const [course] = await db
+    .select({ id: courses.id })
+    .from(courses)
+    .where(eq(courses.id, courseId))
+    .limit(1);
+
+  if (!course) {
+    redirect(`/admin/students/${enrolmentId}/edit?error=course`);
+  }
+
+  const [existingEmail] = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(eq(users.email, email))
+    .limit(1);
+
+  if (existingEmail && existingEmail.id !== target.studentUserId) {
+    redirect(`/admin/students/${enrolmentId}/edit?error=email`);
+  }
+
+  const [existingStudentId] = await db
+    .select({ id: studentProfiles.id })
+    .from(studentProfiles)
+    .where(eq(studentProfiles.studentIdNumber, studentIdNumber))
+    .limit(1);
+
+  if (existingStudentId && existingStudentId.id !== target.studentId) {
+    redirect(`/admin/students/${enrolmentId}/edit?error=studentId`);
+  }
+
+  if (courseId !== target.courseId) {
+    const [existingEnrolment] = await db
+      .select({ id: enrolments.id })
+      .from(enrolments)
+      .where(
+        and(eq(enrolments.courseId, courseId), eq(enrolments.studentId, target.studentId)),
+      )
+      .limit(1);
+
+    if (existingEnrolment && existingEnrolment.id !== target.enrolmentId) {
+      redirect(`/admin/students/${enrolmentId}/edit?error=duplicate`);
+    }
+
+    const existingRecords = await countCourseAttendanceRecords(
+      db,
+      target.courseId,
+      target.studentId,
+    );
+
+    if (existingRecords > 0) {
+      redirect(`/admin/students/${enrolmentId}/edit?error=courseHistory`);
+    }
+
+    await removeAttendancePasskeysForTargets(db, [
+      { courseId: target.courseId, studentId: target.studentId },
+    ]);
+  }
+
+  if (status !== "active") {
+    await removeAttendancePasskeysForTargets(db, [
+      { courseId, studentId: target.studentId },
+    ]);
+  }
+
+  await db
+    .update(users)
+    .set({ name, email, updatedAt: new Date() })
+    .where(eq(users.id, target.studentUserId));
+
+  await db
+    .update(studentProfiles)
+    .set({
+      studentIdNumber,
+      programme: cleanString(formData.get("programme")) || null,
+      level: cleanString(formData.get("level")) || null,
+      classGroup: cleanString(formData.get("classGroup")) || null,
+      updatedAt: new Date(),
+    })
+    .where(eq(studentProfiles.id, target.studentId));
+
+  await db
+    .update(enrolments)
+    .set({ courseId, status, updatedAt: new Date() })
+    .where(eq(enrolments.id, target.enrolmentId));
+
+  await db.insert(auditLogs).values({
+    userId: admin.id,
+    action: "student_enrolment_updated",
+    entityType: "enrolment",
+    entityId: target.enrolmentId,
+    previousValue: {
+      courseId: target.courseId,
+      status: target.enrolmentStatus,
+      name: target.previousName,
+      email: target.previousEmail,
+      studentIdNumber: target.previousStudentIdNumber,
+      programme: target.previousProgramme,
+      level: target.previousLevel,
+      classGroup: target.previousClassGroup,
+    },
+    newValue: {
+      courseId,
+      status,
+      name,
+      email,
+      studentIdNumber,
+      programme: cleanString(formData.get("programme")) || null,
+      level: cleanString(formData.get("level")) || null,
+      classGroup: cleanString(formData.get("classGroup")) || null,
+    },
+  });
+
+  revalidateEnrolmentViews(target.courseId, target.enrolmentId);
+  revalidateEnrolmentViews(courseId, target.enrolmentId);
+  redirect("/admin/students?updated=1");
+}
+
+export async function deleteEnrolledStudentAction(formData: FormData) {
+  const admin = await requireRole("administrator");
+  const enrolmentId = cleanId(formData.get("enrolmentId"));
+
+  if (!enrolmentId) {
+    redirect("/admin/students");
+  }
+
+  const db = getDb();
+  const [target] = await db
+    .select({
+      enrolmentId: enrolments.id,
+      courseId: enrolments.courseId,
+      studentId: enrolments.studentId,
+      status: enrolments.status,
+      studentName: users.name,
+      studentEmail: users.email,
+      studentIdNumber: studentProfiles.studentIdNumber,
+      courseCode: courses.courseCode,
+      courseTitle: courses.courseTitle,
+    })
+    .from(enrolments)
+    .innerJoin(courses, eq(enrolments.courseId, courses.id))
+    .innerJoin(studentProfiles, eq(enrolments.studentId, studentProfiles.id))
+    .innerJoin(users, eq(studentProfiles.userId, users.id))
+    .where(eq(enrolments.id, enrolmentId))
+    .limit(1);
+
+  if (!target) {
+    redirect("/admin/students?error=missing");
+  }
+
+  await removeAttendancePasskeysForTargets(db, [
+    { courseId: target.courseId, studentId: target.studentId },
+  ]);
+
+  await db.delete(enrolments).where(eq(enrolments.id, target.enrolmentId));
+
+  await db.insert(auditLogs).values({
+    userId: admin.id,
+    action: "student_enrolment_deleted",
+    entityType: "enrolment",
+    entityId: target.enrolmentId,
+    previousValue: {
+      status: target.status,
+      studentName: target.studentName,
+      studentEmail: target.studentEmail,
+      studentIdNumber: target.studentIdNumber,
+      courseCode: target.courseCode,
+      courseTitle: target.courseTitle,
+    },
+  });
+
+  revalidateEnrolmentViews(target.courseId, target.enrolmentId);
+  redirect("/admin/students?deleted=1");
+}
+
+export async function bulkUpdateEnrolledStudentsAction(formData: FormData) {
+  const admin = await requireRole("administrator");
+  const enrolmentIds = cleanIds(formData);
+  const status = cleanEnrolmentStatus(formData.get("bulkStatus"));
+
+  if (enrolmentIds.length === 0 || !status) {
+    redirect("/admin/students?error=bulk");
+  }
+
+  const db = getDb();
+  const targets = await db
+    .select({
+      enrolmentId: enrolments.id,
+      courseId: enrolments.courseId,
+      studentId: enrolments.studentId,
+      previousStatus: enrolments.status,
+    })
+    .from(enrolments)
+    .where(inArray(enrolments.id, enrolmentIds));
+
+  if (targets.length === 0) {
+    redirect("/admin/students?error=bulk");
+  }
+
+  const targetIds = targets.map((target) => target.enrolmentId);
+
+  if (status !== "active") {
+    await removeAttendancePasskeysForTargets(db, targets);
+  }
+
+  await db
+    .update(enrolments)
+    .set({ status, updatedAt: new Date() })
+    .where(inArray(enrolments.id, targetIds));
+
+  await db.insert(auditLogs).values({
+    userId: admin.id,
+    action: "student_enrolments_bulk_updated",
+    entityType: "enrolment",
+    previousValue: {
+      count: targets.length,
+      statuses: targets.reduce<Record<string, number>>((summary, target) => {
+        summary[target.previousStatus] = (summary[target.previousStatus] ?? 0) + 1;
+        return summary;
+      }, {}),
+    },
+    newValue: { status, enrolmentIds: targetIds },
+  });
+
+  for (const courseId of Array.from(new Set(targets.map((target) => target.courseId)))) {
+    revalidateEnrolmentViews(courseId);
+  }
+
+  redirect(`/admin/students?bulkUpdated=${targets.length}`);
+}
+
+export async function bulkDeleteEnrolledStudentsAction(formData: FormData) {
+  const admin = await requireRole("administrator");
+  const enrolmentIds = cleanIds(formData);
+
+  if (enrolmentIds.length === 0) {
+    redirect("/admin/students?error=bulk");
+  }
+
+  const db = getDb();
+  const targets = await db
+    .select({
+      enrolmentId: enrolments.id,
+      courseId: enrolments.courseId,
+      studentId: enrolments.studentId,
+      status: enrolments.status,
+      studentName: users.name,
+      studentEmail: users.email,
+      studentIdNumber: studentProfiles.studentIdNumber,
+      courseCode: courses.courseCode,
+      courseTitle: courses.courseTitle,
+    })
+    .from(enrolments)
+    .innerJoin(courses, eq(enrolments.courseId, courses.id))
+    .innerJoin(studentProfiles, eq(enrolments.studentId, studentProfiles.id))
+    .innerJoin(users, eq(studentProfiles.userId, users.id))
+    .where(inArray(enrolments.id, enrolmentIds));
+
+  if (targets.length === 0) {
+    redirect("/admin/students?error=bulk");
+  }
+
+  const targetIds = targets.map((target) => target.enrolmentId);
+
+  await removeAttendancePasskeysForTargets(db, targets);
+  await db.delete(enrolments).where(inArray(enrolments.id, targetIds));
+
+  await db.insert(auditLogs).values({
+    userId: admin.id,
+    action: "student_enrolments_bulk_deleted",
+    entityType: "enrolment",
+    previousValue: {
+      count: targets.length,
+      enrolments: targets.map((target) => ({
+        enrolmentId: target.enrolmentId,
+        status: target.status,
+        studentName: target.studentName,
+        studentEmail: target.studentEmail,
+        studentIdNumber: target.studentIdNumber,
+        courseCode: target.courseCode,
+        courseTitle: target.courseTitle,
+      })),
+    },
+  });
+
+  for (const courseId of Array.from(new Set(targets.map((target) => target.courseId)))) {
+    revalidateEnrolmentViews(courseId);
+  }
+
+  redirect(`/admin/students?bulkDeleted=${targets.length}`);
 }

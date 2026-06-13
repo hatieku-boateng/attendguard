@@ -21,6 +21,7 @@ import { hashPassword, requireRole } from "@/lib/auth";
 import { cleanString, fileToDataUrl } from "@/lib/form-utils";
 
 const enrolmentStatuses = ["active", "withdrawn", "completed"] as const;
+const studentAccountStatuses = ["pending", "active", "suspended", "disabled"] as const;
 type AdminDb = ReturnType<typeof getDb>;
 
 function cleanId(value: FormDataEntryValue | null) {
@@ -31,11 +32,23 @@ function cleanIds(formData: FormData) {
   return Array.from(new Set(formData.getAll("enrolmentId").map(cleanId).filter(Boolean)));
 }
 
+function cleanStudentIds(formData: FormData) {
+  return Array.from(new Set(formData.getAll("studentId").map(cleanId).filter(Boolean)));
+}
+
 function cleanEnrolmentStatus(value: FormDataEntryValue | null) {
   const status = cleanString(value, { uppercase: false });
 
   return enrolmentStatuses.includes(status as (typeof enrolmentStatuses)[number])
     ? (status as (typeof enrolmentStatuses)[number])
+    : null;
+}
+
+function cleanStudentAccountStatus(value: FormDataEntryValue | null) {
+  const status = cleanString(value, { uppercase: false });
+
+  return studentAccountStatuses.includes(status as (typeof studentAccountStatuses)[number])
+    ? (status as (typeof studentAccountStatuses)[number])
     : null;
 }
 
@@ -529,6 +542,236 @@ export async function deleteAssignedCourseAction(formData: FormData) {
   revalidatePath("/admin/courses");
   revalidatePath("/lecturer/courses");
   redirect("/admin/courses");
+}
+
+export async function updateStudentAccountAction(formData: FormData) {
+  const admin = await requireRole("administrator");
+  const studentId = cleanId(formData.get("studentId"));
+  const name = cleanString(formData.get("name"));
+  const email = cleanString(formData.get("email"), { uppercase: false }).toLowerCase();
+  const studentIdNumber = cleanString(formData.get("studentIdNumber"));
+  const status = cleanStudentAccountStatus(formData.get("status"));
+
+  if (!studentId || !name || !email || !studentIdNumber || !status) {
+    redirect(`/admin/students/${studentId}/edit?error=missing`);
+  }
+
+  const db = getDb();
+  const [target] = await db
+    .select({
+      studentId: studentProfiles.id,
+      userId: studentProfiles.userId,
+      previousName: users.name,
+      previousEmail: users.email,
+      previousStatus: users.status,
+      previousStudentIdNumber: studentProfiles.studentIdNumber,
+      previousProgramme: studentProfiles.programme,
+      previousLevel: studentProfiles.level,
+      previousClassGroup: studentProfiles.classGroup,
+    })
+    .from(studentProfiles)
+    .innerJoin(users, eq(studentProfiles.userId, users.id))
+    .where(eq(studentProfiles.id, studentId))
+    .limit(1);
+
+  if (!target) {
+    redirect("/admin/students?error=missing");
+  }
+
+  const [existingEmail] = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(eq(users.email, email))
+    .limit(1);
+
+  if (existingEmail && existingEmail.id !== target.userId) {
+    redirect(`/admin/students/${studentId}/edit?error=email`);
+  }
+
+  const [existingStudentId] = await db
+    .select({ id: studentProfiles.id })
+    .from(studentProfiles)
+    .where(eq(studentProfiles.studentIdNumber, studentIdNumber))
+    .limit(1);
+
+  if (existingStudentId && existingStudentId.id !== target.studentId) {
+    redirect(`/admin/students/${studentId}/edit?error=studentId`);
+  }
+
+  const programme = cleanString(formData.get("programme")) || null;
+  const level = cleanString(formData.get("level")) || null;
+  const classGroup = cleanString(formData.get("classGroup")) || null;
+
+  await db
+    .update(users)
+    .set({ name, email, status, updatedAt: new Date() })
+    .where(eq(users.id, target.userId));
+
+  await db
+    .update(studentProfiles)
+    .set({
+      studentIdNumber,
+      programme,
+      level,
+      classGroup,
+      updatedAt: new Date(),
+    })
+    .where(eq(studentProfiles.id, target.studentId));
+
+  await db.insert(auditLogs).values({
+    userId: admin.id,
+    action: "student_account_updated",
+    entityType: "student_profile",
+    entityId: target.studentId,
+    previousValue: {
+      name: target.previousName,
+      email: target.previousEmail,
+      status: target.previousStatus,
+      studentIdNumber: target.previousStudentIdNumber,
+      programme: target.previousProgramme,
+      level: target.previousLevel,
+      classGroup: target.previousClassGroup,
+    },
+    newValue: {
+      name,
+      email,
+      status,
+      studentIdNumber,
+      programme,
+      level,
+      classGroup,
+    },
+  });
+
+  revalidateEnrolmentViews(undefined, undefined);
+  revalidatePath(`/admin/students/${studentId}/edit`);
+  redirect("/admin/students?accountUpdated=1");
+}
+
+export async function deleteStudentAccountAction(formData: FormData) {
+  const admin = await requireRole("administrator");
+  const studentId = cleanId(formData.get("studentId"));
+
+  if (!studentId) {
+    redirect("/admin/students");
+  }
+
+  const db = getDb();
+  const [target] = await db
+    .select({
+      studentId: studentProfiles.id,
+      userId: studentProfiles.userId,
+      studentName: users.name,
+      studentEmail: users.email,
+      studentIdNumber: studentProfiles.studentIdNumber,
+      status: users.status,
+    })
+    .from(studentProfiles)
+    .innerJoin(users, eq(studentProfiles.userId, users.id))
+    .where(eq(studentProfiles.id, studentId))
+    .limit(1);
+
+  if (!target) {
+    redirect("/admin/students?error=missing");
+  }
+
+  const [enrolmentCount] = await db
+    .select({ value: count() })
+    .from(enrolments)
+    .where(eq(enrolments.studentId, target.studentId));
+  const [attendanceRecordCount] = await db
+    .select({ value: count() })
+    .from(attendanceRecords)
+    .where(eq(attendanceRecords.studentId, target.studentId));
+
+  await db.insert(auditLogs).values({
+    userId: admin.id,
+    action: "student_account_deleted",
+    entityType: "student_profile",
+    entityId: target.studentId,
+    previousValue: {
+      studentName: target.studentName,
+      studentEmail: target.studentEmail,
+      studentIdNumber: target.studentIdNumber,
+      status: target.status,
+      enrolments: enrolmentCount?.value ?? 0,
+      attendanceRecords: attendanceRecordCount?.value ?? 0,
+    },
+  });
+
+  await db.delete(users).where(eq(users.id, target.userId));
+
+  revalidateEnrolmentViews(undefined, target.studentId);
+  redirect("/admin/students?accountDeleted=1");
+}
+
+export async function bulkDeleteStudentAccountsAction(formData: FormData) {
+  const admin = await requireRole("administrator");
+  const studentIds = cleanStudentIds(formData);
+
+  if (studentIds.length === 0) {
+    redirect("/admin/students?error=bulkStudents");
+  }
+
+  const db = getDb();
+  const targets = await db
+    .select({
+      studentId: studentProfiles.id,
+      userId: studentProfiles.userId,
+      studentName: users.name,
+      studentEmail: users.email,
+      studentIdNumber: studentProfiles.studentIdNumber,
+      status: users.status,
+    })
+    .from(studentProfiles)
+    .innerJoin(users, eq(studentProfiles.userId, users.id))
+    .where(inArray(studentProfiles.id, studentIds));
+
+  if (targets.length === 0) {
+    redirect("/admin/students?error=bulkStudents");
+  }
+
+  const targetStudentIds = targets.map((target) => target.studentId);
+  const targetUserIds = targets.map((target) => target.userId);
+  const enrolmentCounts = await db
+    .select({ studentId: enrolments.studentId, value: count() })
+    .from(enrolments)
+    .where(inArray(enrolments.studentId, targetStudentIds))
+    .groupBy(enrolments.studentId);
+  const attendanceCounts = await db
+    .select({ studentId: attendanceRecords.studentId, value: count() })
+    .from(attendanceRecords)
+    .where(inArray(attendanceRecords.studentId, targetStudentIds))
+    .groupBy(attendanceRecords.studentId);
+  const enrolmentCountByStudent = new Map(
+    enrolmentCounts.map((row) => [row.studentId, row.value]),
+  );
+  const attendanceCountByStudent = new Map(
+    attendanceCounts.map((row) => [row.studentId, row.value]),
+  );
+
+  await db.insert(auditLogs).values({
+    userId: admin.id,
+    action: "student_accounts_bulk_deleted",
+    entityType: "student_profile",
+    previousValue: {
+      count: targets.length,
+      students: targets.map((target) => ({
+        studentId: target.studentId,
+        studentName: target.studentName,
+        studentEmail: target.studentEmail,
+        studentIdNumber: target.studentIdNumber,
+        status: target.status,
+        enrolments: enrolmentCountByStudent.get(target.studentId) ?? 0,
+        attendanceRecords: attendanceCountByStudent.get(target.studentId) ?? 0,
+      })),
+    },
+  });
+
+  await db.delete(users).where(inArray(users.id, targetUserIds));
+
+  revalidateEnrolmentViews(undefined, undefined);
+  redirect(`/admin/students?bulkAccountsDeleted=${targets.length}`);
 }
 
 export async function updateEnrolledStudentAction(formData: FormData) {

@@ -24,7 +24,16 @@ export function AuthFrame({
   return (
     <main className="grid min-h-screen bg-background text-foreground lg:grid-cols-[0.95fr_1.05fr]">
       <section className="relative hidden overflow-hidden bg-[oklch(0.17_0.04_238)] p-10 text-white lg:flex lg:flex-col lg:justify-between">
-        <div className="absolute inset-0 opacity-35 [background-image:linear-gradient(90deg,rgba(255,255,255,.08)_1px,transparent_1px),linear-gradient(rgba(255,255,255,.08)_1px,transparent_1px)] [background-size:42px_42px]" />
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 bg-cover bg-center opacity-35"
+          style={{
+            backgroundImage:
+              "url('https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&w=1400&q=80')",
+          }}
+        />
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,oklch(0.12_0.04_238)_0%,oklch(0.16_0.05_238/0.95)_42%,oklch(0.18_0.04_238/0.65)_100%)]" />
+        <div className="absolute inset-0 opacity-30 [background-image:linear-gradient(90deg,rgba(255,255,255,.08)_1px,transparent_1px),linear-gradient(rgba(255,255,255,.08)_1px,transparent_1px)] [background-size:42px_42px]" />
         <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-white/10 to-transparent" />
         <div>
           <BrandMark className="relative text-white" />
@@ -38,7 +47,7 @@ export function AuthFrame({
             {title}
           </h1>
           <p className="max-w-lg text-base leading-7 text-white/70">{description}</p>
-          <div className="grid max-w-lg gap-3 rounded-lg border border-white/10 bg-white/[0.06] p-4 shadow-2xl shadow-slate-950/30">
+          <div className="grid max-w-lg gap-3 rounded-lg border border-white/10 bg-white/[0.08] p-4 shadow-2xl shadow-slate-950/30 backdrop-blur-md">
             <div className="flex items-center justify-between border-b border-white/10 pb-3">
               <div>
                 <p className="text-sm font-semibold">Session assurance</p>
@@ -56,7 +65,7 @@ export function AuthFrame({
 
                 return (
                   <div
-                    className="rounded-lg border border-white/10 bg-black/15 p-3"
+                    className="rounded-lg border border-white/10 bg-black/20 p-3 shadow-inner shadow-white/5"
                     key={item.label}
                   >
                     <Icon className="mb-3 size-4 text-amber-200" />
@@ -81,7 +90,7 @@ export function AuthFrame({
             </div>
           </div>
         </div>
-        <div className="relative grid gap-3 rounded-lg border border-white/10 bg-white/[0.06] p-4 text-sm text-white/75 shadow-xl shadow-slate-950/20">
+        <div className="relative grid gap-3 rounded-lg border border-white/10 bg-white/[0.08] p-4 text-sm text-white/75 shadow-xl shadow-slate-950/20 backdrop-blur-md">
           <div className="flex items-center justify-between">
             <span>Identity</span>
             <span className="font-medium text-emerald-300">Verified</span>

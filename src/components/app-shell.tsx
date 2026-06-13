@@ -22,15 +22,15 @@ export function AppShell({
 }) {
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <header className="sticky top-0 z-40 border-b border-border/70 bg-background/90 shadow-sm shadow-slate-950/5 backdrop-blur-xl">
-        <div className="mx-auto flex min-h-20 w-full max-w-[88rem] flex-col gap-3 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
+      <header className="sticky top-0 z-40 border-b border-white/70 bg-white/82 shadow-sm shadow-slate-950/[0.04] backdrop-blur-xl">
+        <div className="mx-auto flex min-h-20 w-full max-w-[90rem] flex-col gap-3 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
           <BrandMark />
-          <nav className="w-full overflow-x-auto rounded-lg border border-border/80 bg-card/95 p-1 shadow-md shadow-slate-950/5 ring-1 ring-white/70 sm:w-auto">
+          <nav className="w-full overflow-x-auto rounded-lg border border-border/75 bg-white/88 p-1.5 shadow-lg shadow-slate-950/[0.055] ring-1 ring-white/80 sm:w-auto">
             <div className="flex min-w-max items-center gap-1">
               {navItems.map((item) => (
                 <Button
                   asChild
-                  className="px-3 text-muted-foreground hover:text-foreground"
+                  className="px-3.5 text-muted-foreground hover:text-foreground"
                   key={item.href}
                   size="sm"
                   variant="ghost"
@@ -48,10 +48,10 @@ export function AppShell({
           </nav>
         </div>
       </header>
-      <div className="border-b border-white/10 bg-[oklch(0.18_0.038_238)] text-white shadow-lg shadow-slate-950/10">
-        <div className="mx-auto flex w-full max-w-[88rem] flex-col gap-3 px-3 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
+      <div className="border-b border-white/10 bg-[linear-gradient(135deg,oklch(0.18_0.04_238),oklch(0.27_0.065_190)_58%,oklch(0.34_0.08_88))] text-white shadow-xl shadow-slate-950/10">
+        <div className="mx-auto flex w-full max-w-[90rem] flex-col gap-3 px-3 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
           <div className="flex items-center gap-3">
-            <span className="flex size-10 items-center justify-center rounded-lg border border-white/15 bg-white/10 shadow-inner shadow-white/5">
+            <span className="flex size-11 items-center justify-center rounded-lg border border-white/18 bg-white/12 shadow-inner shadow-white/10">
               {user.avatarUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -71,7 +71,7 @@ export function AppShell({
             </div>
           </div>
           <div className="flex flex-col gap-2 sm:items-end">
-            <span className="inline-flex w-fit items-center gap-2 rounded-lg border border-emerald-300/25 bg-emerald-300/10 px-3 py-1 text-xs font-medium text-emerald-100">
+            <span className="inline-flex w-fit items-center gap-2 rounded-lg border border-emerald-300/25 bg-emerald-300/12 px-3 py-1.5 text-xs font-medium text-emerald-100">
               <CircleCheck className="size-3.5" />
               Secure session
             </span>
@@ -79,7 +79,7 @@ export function AppShell({
           </div>
         </div>
       </div>
-      <main className="mx-auto w-full max-w-[88rem] px-3 py-5 sm:px-6 sm:py-8 lg:px-8">
+      <main className="mx-auto w-full max-w-[90rem] px-3 py-5 sm:px-6 sm:py-8 lg:px-8">
         {children}
       </main>
     </div>

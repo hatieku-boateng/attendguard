@@ -12,7 +12,7 @@ const nextConfig: NextConfig = {
           "object-src 'none'",
           "frame-ancestors 'none'",
           "form-action 'self'",
-          "img-src 'self' data: blob: https://*.google.com https://*.googleusercontent.com",
+          "img-src 'self' data: blob: https://*.google.com https://*.googleusercontent.com https://images.unsplash.com",
           "frame-src https://www.google.com https://maps.google.com",
           "connect-src 'self' https://*.google.com https://maps.googleapis.com",
           "script-src 'self' 'unsafe-inline' 'unsafe-eval'",

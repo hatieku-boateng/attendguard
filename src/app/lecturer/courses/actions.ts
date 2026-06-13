@@ -150,7 +150,10 @@ async function enrolStudentWithActivation({
       .where(eq(studentProfiles.userId, existingByEmail.id))
       .limit(1);
 
-    if (!profile || profile.studentIdNumber !== student.studentIdNumber) {
+    if (
+      !profile ||
+      profile.studentIdNumber.toUpperCase() !== student.studentIdNumber.toUpperCase()
+    ) {
       return { ok: false, sent: false, emailSkipped: false };
     }
 
@@ -526,6 +529,89 @@ export async function removeStudentFromCourseAction(formData: FormData) {
   revalidatePath("/student/classes");
   revalidatePath("/student/sessions");
   redirect(`/lecturer/courses/${courseId}/students?removed=${removalMode}`);
+}
+
+export async function resendStudentActivationAction(formData: FormData) {
+  const user = await requireRole("lecturer");
+  const courseId = cleanString(formData.get("courseId"));
+  const studentUserId = cleanString(formData.get("studentUserId"));
+
+  if (!user.lecturerProfileId || !courseId || !studentUserId) {
+    redirect("/lecturer/courses");
+  }
+
+  const db = getDb();
+  const [target] = await db
+    .select({
+      userId: users.id,
+      studentName: users.name,
+      studentEmail: users.email,
+      userStatus: users.status,
+      courseCode: courses.courseCode,
+      courseTitle: courses.courseTitle,
+    })
+    .from(enrolments)
+    .innerJoin(courses, eq(enrolments.courseId, courses.id))
+    .innerJoin(studentProfiles, eq(enrolments.studentId, studentProfiles.id))
+    .innerJoin(users, eq(studentProfiles.userId, users.id))
+    .where(
+      and(
+        eq(enrolments.courseId, courseId),
+        eq(courses.lecturerId, user.lecturerProfileId),
+        eq(users.id, studentUserId),
+        eq(users.role, "student"),
+      ),
+    )
+    .limit(1);
+
+  if (!target) {
+    redirect(`/lecturer/courses/${courseId}/students?manualError=conflict`);
+  }
+
+  if (target.userStatus === "active") {
+    redirect(`/lecturer/courses/${courseId}/students?activation=already-active`);
+  }
+
+  const token = createActivationToken();
+  const tokenHash = hashActivationToken(token);
+
+  await db
+    .update(studentActivationTokens)
+    .set({ usedAt: new Date() })
+    .where(eq(studentActivationTokens.userId, target.userId));
+
+  await db.insert(studentActivationTokens).values({
+    userId: target.userId,
+    tokenHash,
+    expiresAt: getActivationExpiry(),
+  });
+
+  const emailResult = await sendStudentActivationEmail({
+    to: target.studentEmail,
+    studentName: target.studentName,
+    courseLabel: `${target.courseCode}: ${target.courseTitle}`,
+    activationUrl: getActivationUrl(token),
+  });
+
+  await db.insert(auditLogs).values({
+    userId: user.id,
+    action: "student_activation_resent",
+    entityType: "user",
+    entityId: target.userId,
+    newValue: {
+      courseId,
+      email: target.studentEmail,
+      sent: emailResult.sent,
+      reason: emailResult.sent ? null : emailResult.reason,
+    },
+  });
+
+  revalidatePath(`/lecturer/courses/${courseId}/students`);
+  redirect(
+    `/lecturer/courses/${courseId}/students?activation=${
+      emailResult.sent ? "resent" : "email-failed"
+    }`,
+  );
 }
 
 export async function addCourseResourceAction(formData: FormData) {

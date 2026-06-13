@@ -127,7 +127,7 @@ export async function logoutAction() {
 
 export async function activateAccountAction(formData: FormData) {
   const token = cleanString(formData.get("token"));
-  const studentIdNumber = cleanString(formData.get("studentIdNumber"));
+  const studentIdNumber = cleanString(formData.get("studentIdNumber")).toUpperCase();
   const password = cleanString(formData.get("password"));
 
   if (!token || !studentIdNumber || password.length < 8) {

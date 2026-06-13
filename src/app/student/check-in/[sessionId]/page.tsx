@@ -12,7 +12,8 @@ import { decryptPasskey } from "@/lib/passkeys";
 const resultMessages: Record<string, string> = {
   present: "Attendance recorded as present.",
   late: "Attendance recorded as late.",
-  review: "Your submission requires lecturer review.",
+  review:
+    "Your submission has been sent to your lecturer for review. It will only count after the lecturer approves it.",
   outside: "Your location is outside the permitted lecture area.",
   closed: "This attendance session is closed.",
   duplicate: "Attendance has already been recorded for this session.",

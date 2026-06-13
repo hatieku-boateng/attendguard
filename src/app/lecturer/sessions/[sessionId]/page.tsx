@@ -11,6 +11,7 @@ import {
 } from "@/app/lecturer/sessions/actions";
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { PageHeader } from "@/components/page-header";
+import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { StatCard } from "@/components/stat-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -154,9 +155,9 @@ export default async function LecturerSessionDetailPage({
             </Button>
             <form action={generatePasskeysAction}>
               <input name="sessionId" type="hidden" value={session.id} />
-              <Button type="submit" variant="outline">
+              <PendingSubmitButton pendingLabel="Generating..." variant="outline">
                 Generate passkeys
-              </Button>
+              </PendingSubmitButton>
             </form>
             <form action={closeAttendanceSessionAction}>
               <input name="sessionId" type="hidden" value={session.id} />
@@ -271,15 +272,23 @@ export default async function LecturerSessionDetailPage({
                       <div className="flex flex-wrap gap-2">
                         <form action={approveAttemptAction}>
                           <input name="attemptId" type="hidden" value={attempt.id} />
-                          <Button size="sm" type="submit" variant="outline">
+                          <PendingSubmitButton
+                            pendingLabel="Approving..."
+                            size="sm"
+                            variant="outline"
+                          >
                             Approve
-                          </Button>
+                          </PendingSubmitButton>
                         </form>
                         <form action={rejectAttemptAction}>
                           <input name="attemptId" type="hidden" value={attempt.id} />
-                          <Button size="sm" type="submit" variant="outline">
+                          <PendingSubmitButton
+                            pendingLabel="Rejecting..."
+                            size="sm"
+                            variant="outline"
+                          >
                             Reject
-                          </Button>
+                          </PendingSubmitButton>
                         </form>
                       </div>
                     ) : (

@@ -36,6 +36,15 @@ function resultUrl(sessionId: string, result: string) {
   return `/student/check-in/${sessionId}?result=${result}`;
 }
 
+const reviewableRejectionReasons = new Set([
+  "invalid_passkey",
+  "expired_passkey",
+  "passkey_already_used",
+  "outside_permitted_area",
+  "duplicate_attendance",
+  "too_many_attempts",
+]);
+
 export async function checkInAction(formData: FormData) {
   const user = await requireRole("student");
   const studentId = user.studentProfileId;
@@ -75,6 +84,12 @@ export async function checkInAction(formData: FormData) {
       | null,
     distance?: number,
   ) {
+    const shouldRequireReview =
+      result === "requires_review" ||
+      (result === "rejected" &&
+        rejectionReason !== null &&
+        reviewableRejectionReasons.has(rejectionReason));
+
     await db.insert(attendanceAttempts).values({
       sessionId,
       studentId,
@@ -85,7 +100,7 @@ export async function checkInAction(formData: FormData) {
       calculatedDistanceMeters: distance === undefined ? null : String(distance.toFixed(2)),
       result,
       rejectionReason,
-      reviewStatus: result === "requires_review" ? "pending" : "not_required",
+      reviewStatus: shouldRequireReview ? "pending" : "not_required",
       ipAddress: securityContext.ipAddress,
       userAgent: securityContext.userAgent,
     });
@@ -161,7 +176,7 @@ export async function checkInAction(formData: FormData) {
       metadata: { studentBlocked, ipBlocked },
     });
     await logAttempt("rejected", "too_many_attempts");
-    redirect(resultUrl(sessionId, "too-many"));
+    redirect(resultUrl(sessionId, "review"));
   }
 
   const [failedAttempts] = await db
@@ -177,7 +192,7 @@ export async function checkInAction(formData: FormData) {
 
   if (failedAttempts.value >= 5) {
     await logAttempt("rejected", "too_many_attempts");
-    redirect(resultUrl(sessionId, "too-many"));
+    redirect(resultUrl(sessionId, "review"));
   }
 
   const [existingRecord] = await db
@@ -193,7 +208,7 @@ export async function checkInAction(formData: FormData) {
 
   if (existingRecord) {
     await logAttempt("rejected", "duplicate_attendance");
-    redirect(resultUrl(sessionId, "duplicate"));
+    redirect(resultUrl(sessionId, "review"));
   }
 
   const [passkey] = await db
@@ -209,17 +224,17 @@ export async function checkInAction(formData: FormData) {
 
   if (!passkey || !(await verifyPasskey(enteredPasskey, passkey.passkeyHash))) {
     await logAttempt("rejected", "invalid_passkey");
-    redirect(resultUrl(sessionId, "invalid-passkey"));
+    redirect(resultUrl(sessionId, "review"));
   }
 
   if (passkey.used) {
     await logAttempt("rejected", "passkey_already_used");
-    redirect(resultUrl(sessionId, "passkey-used"));
+    redirect(resultUrl(sessionId, "review"));
   }
 
   if (passkey.expiresAt < now) {
     await logAttempt("rejected", "expired_passkey");
-    redirect(resultUrl(sessionId, "expired-passkey"));
+    redirect(resultUrl(sessionId, "review"));
   }
 
   if (
@@ -250,7 +265,7 @@ export async function checkInAction(formData: FormData) {
 
   if (distance > session.geofenceRadiusMeters + locationAccuracyMeters) {
     await logAttempt("rejected", "outside_permitted_area", distance);
-    redirect(resultUrl(sessionId, "outside"));
+    redirect(resultUrl(sessionId, "review"));
   }
 
   if (distance > session.geofenceRadiusMeters) {

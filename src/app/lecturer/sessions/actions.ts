@@ -494,11 +494,30 @@ export async function closeAttendanceSessionAction(formData: FormData) {
     .from(attendanceRecords)
     .where(eq(attendanceRecords.sessionId, session.id));
 
+  const pendingReviewAttempts = await db
+    .select({ studentId: attendanceAttempts.studentId })
+    .from(attendanceAttempts)
+    .where(
+      and(
+        eq(attendanceAttempts.sessionId, session.id),
+        eq(attendanceAttempts.reviewStatus, "pending"),
+      ),
+    );
+
   const recordedStudentIds = new Set(
     existingRecords.map((record) => record.studentId),
   );
+  const pendingReviewStudentIds = new Set(
+    pendingReviewAttempts
+      .map((attempt) => attempt.studentId)
+      .filter((studentId): studentId is string => Boolean(studentId)),
+  );
   const absentRows = enrolledStudents
-    .filter((student) => !recordedStudentIds.has(student.studentId))
+    .filter(
+      (student) =>
+        !recordedStudentIds.has(student.studentId) &&
+        !pendingReviewStudentIds.has(student.studentId),
+    )
     .map((student) => ({
       sessionId: session.id,
       studentId: student.studentId,
@@ -538,6 +557,7 @@ export async function closeAttendanceSessionAction(formData: FormData) {
       sessionTitle: session.title,
       enrolledStudents: enrolledStudents.length,
       existingRecords: existingRecords.length,
+      pendingReviewsDeferred: pendingReviewStudentIds.size,
       absencesRecorded: absentRows.length,
       ...warningSummary,
     },
@@ -545,6 +565,7 @@ export async function closeAttendanceSessionAction(formData: FormData) {
 
   revalidatePath("/lecturer/sessions");
   revalidatePath(`/lecturer/sessions/${session.id}`);
+  revalidatePath("/lecturer/reviews");
   revalidatePath("/lecturer/reports");
   revalidatePath("/student/sessions");
   revalidatePath("/student/attendance-history");
@@ -751,6 +772,7 @@ export async function approveAttemptAction(formData: FormData) {
   });
 
   revalidatePath(`/lecturer/sessions/${attempt.sessionId}`);
+  revalidatePath("/lecturer/reviews");
 }
 
 export async function rejectAttemptAction(formData: FormData) {
@@ -766,7 +788,9 @@ export async function rejectAttemptAction(formData: FormData) {
     .select({
       id: attendanceAttempts.id,
       sessionId: attendanceAttempts.sessionId,
+      studentId: attendanceAttempts.studentId,
       lecturerId: attendanceSessions.lecturerId,
+      sessionStatus: attendanceSessions.status,
     })
     .from(attendanceAttempts)
     .innerJoin(
@@ -778,6 +802,24 @@ export async function rejectAttemptAction(formData: FormData) {
 
   if (!attempt || attempt.lecturerId !== user.lecturerProfileId) {
     redirect("/lecturer/sessions");
+  }
+
+  if (attempt.studentId && attempt.sessionStatus === "closed") {
+    await db
+      .insert(attendanceRecords)
+      .values({
+        sessionId: attempt.sessionId,
+        studentId: attempt.studentId,
+        checkInAt: new Date(),
+        status: "absent",
+        verificationMethod: "manual",
+        lecturerRemarks:
+          cleanString(formData.get("remarks")) ||
+          "Marked absent after lecturer rejected review attempt.",
+      })
+      .onConflictDoNothing({
+        target: [attendanceRecords.sessionId, attendanceRecords.studentId],
+      });
   }
 
   await db
@@ -799,4 +841,5 @@ export async function rejectAttemptAction(formData: FormData) {
   });
 
   revalidatePath(`/lecturer/sessions/${attempt.sessionId}`);
+  revalidatePath("/lecturer/reviews");
 }

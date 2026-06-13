@@ -4,9 +4,11 @@ import {
   addStudentManuallyAction,
   importStudentsAction,
   removeStudentFromCourseAction,
+  resendStudentActivationAction,
 } from "@/app/lecturer/courses/actions";
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { PageHeader } from "@/components/page-header";
+import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -45,6 +47,7 @@ export default async function CourseStudentsPage({
     manualAdded?: string;
     manualError?: string;
     removed?: string;
+    activation?: string;
   }>;
 }) {
   const { courseId } = await params;
@@ -71,6 +74,9 @@ export default async function CourseStudentsPage({
     .select({
       enrolmentId: enrolments.id,
       status: enrolments.status,
+      userId: users.id,
+      accountStatus: users.status,
+      activatedAt: users.emailVerifiedAt,
       name: users.name,
       email: users.email,
       studentIdNumber: studentProfiles.studentIdNumber,
@@ -157,9 +163,9 @@ export default async function CourseStudentsPage({
                 />
               </div>
               <div className="sm:col-span-2">
-                <Button className="w-full" type="submit">
+                <PendingSubmitButton className="w-full" pendingLabel="Adding student...">
                   Add student and send activation
-                </Button>
+                </PendingSubmitButton>
               </div>
             </form>
           </CardContent>
@@ -198,7 +204,7 @@ export default async function CourseStudentsPage({
                   type="file"
                 />
               </div>
-              <Button type="submit">Import</Button>
+              <PendingSubmitButton pendingLabel="Importing...">Import</PendingSubmitButton>
             </form>
           </CardContent>
         </Card>
@@ -220,6 +226,15 @@ export default async function CourseStudentsPage({
                 : "No attendance history existed, so the enrolment was deleted."}
             </p>
           ) : null}
+          {report.activation ? (
+            <p className="mb-4 rounded-md border bg-muted px-3 py-2 text-sm text-muted-foreground">
+              {report.activation === "resent"
+                ? "Activation link resent successfully."
+                : report.activation === "already-active"
+                  ? "That student account is already active."
+                  : "Activation link could not be emailed. Check email configuration."}
+            </p>
+          ) : null}
           <Table>
             <TableHeader>
               <TableRow>
@@ -229,6 +244,7 @@ export default async function CourseStudentsPage({
                 <TableHead>Programme</TableHead>
                 <TableHead>Level</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Account</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -245,24 +261,44 @@ export default async function CourseStudentsPage({
                       {student.status}
                     </Badge>
                   </TableCell>
+                  <TableCell>
+                    <Badge variant={student.accountStatus === "active" ? "default" : "secondary"}>
+                      {student.activatedAt ? "activated" : student.accountStatus}
+                    </Badge>
+                  </TableCell>
                   <TableCell className="text-right">
                     {student.status === "active" ? (
-                      <form action={removeStudentFromCourseAction}>
-                        <input name="courseId" type="hidden" value={course.id} />
-                        <input
-                          name="enrolmentId"
-                          type="hidden"
-                          value={student.enrolmentId}
-                        />
-                        <ConfirmSubmitButton
-                          className="w-auto"
-                          message={`Remove ${student.name} from this course? Existing attendance history will be preserved.`}
-                          size="sm"
-                          variant="outline"
-                        >
-                          Remove
-                        </ConfirmSubmitButton>
-                      </form>
+                      <div className="flex flex-wrap justify-end gap-2">
+                        {student.accountStatus !== "active" ? (
+                          <form action={resendStudentActivationAction}>
+                            <input name="courseId" type="hidden" value={course.id} />
+                            <input name="studentUserId" type="hidden" value={student.userId} />
+                            <PendingSubmitButton
+                              pendingLabel="Sending..."
+                              size="sm"
+                              variant="outline"
+                            >
+                              Resend activation
+                            </PendingSubmitButton>
+                          </form>
+                        ) : null}
+                        <form action={removeStudentFromCourseAction}>
+                          <input name="courseId" type="hidden" value={course.id} />
+                          <input
+                            name="enrolmentId"
+                            type="hidden"
+                            value={student.enrolmentId}
+                          />
+                          <ConfirmSubmitButton
+                            className="w-auto"
+                            message={`Remove ${student.name} from this course? Existing attendance history will be preserved.`}
+                            size="sm"
+                            variant="outline"
+                          >
+                            Remove
+                          </ConfirmSubmitButton>
+                        </form>
+                      </div>
                     ) : (
                       <span className="text-sm text-muted-foreground">No active access</span>
                     )}
@@ -271,7 +307,7 @@ export default async function CourseStudentsPage({
               ))}
               {students.length === 0 ? (
                 <TableRow>
-                  <TableCell className="h-24 text-center text-muted-foreground" colSpan={7}>
+                  <TableCell className="h-24 text-center text-muted-foreground" colSpan={8}>
                     No students have been enrolled yet.
                   </TableCell>
                 </TableRow>

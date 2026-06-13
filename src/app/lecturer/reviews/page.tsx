@@ -41,6 +41,7 @@ export default async function LecturerReviewsPage() {
     .select({
       id: attendanceAttempts.id,
       sessionId: attendanceAttempts.sessionId,
+      courseId: attendanceSessions.courseId,
       sessionTitle: attendanceSessions.sessionTitle,
       courseCode: courses.courseCode,
       courseTitle: courses.courseTitle,
@@ -111,7 +112,7 @@ export default async function LecturerReviewsPage() {
                     </p>
                     <Link
                       className="text-xs font-medium text-primary underline-offset-4 hover:underline"
-                      href={`/lecturer/sessions/${attempt.sessionId}`}
+                      href={`/lecturer/courses/${attempt.courseId}/sessions/${attempt.sessionId}/reviews`}
                     >
                       {attempt.sessionTitle}
                     </Link>

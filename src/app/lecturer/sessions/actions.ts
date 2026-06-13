@@ -43,6 +43,18 @@ function editSessionErrorUrl(sessionId: string, error: string) {
   return `/lecturer/sessions/${sessionId}/edit?error=${error}`;
 }
 
+function newSessionErrorUrl(courseId: string, error: string, source: string) {
+  if (source === "course" && courseId) {
+    return `/lecturer/courses/${courseId}/sessions/new?error=${error}`;
+  }
+
+  return `/lecturer/sessions/new?courseId=${courseId}&error=${error}`;
+}
+
+function sessionUrl(courseId: string, sessionId: string, suffix = "") {
+  return `/lecturer/courses/${courseId}/sessions/${sessionId}${suffix}`;
+}
+
 async function getConsecutiveAbsenceStreak({
   db,
   courseId,
@@ -226,6 +238,7 @@ async function sendAbsenceWarningsForSession({
 export async function createAttendanceSessionAction(formData: FormData) {
   const user = await requireRole("lecturer");
   const courseId = cleanString(formData.get("courseId"));
+  const source = cleanString(formData.get("source"));
   const sessionTitle = cleanString(formData.get("sessionTitle"));
   const lecturerLatitude = parseNumber(formData.get("lecturerLatitude"));
   const lecturerLongitude = parseNumber(formData.get("lecturerLongitude"));
@@ -249,23 +262,23 @@ export async function createAttendanceSessionAction(formData: FormData) {
     !normalClosesAt ||
     !finalClosesAt
   ) {
-    redirect(`/lecturer/sessions/new?courseId=${courseId}&error=missing`);
+    redirect(newSessionErrorUrl(courseId, "missing", source));
   }
 
   if (geofenceRadiusMeters < 10 || maxAcceptedAccuracyMeters < 10) {
-    redirect(`/lecturer/sessions/new?courseId=${courseId}&error=missing`);
+    redirect(newSessionErrorUrl(courseId, "missing", source));
   }
 
   if (!isValidCoordinate(lecturerLatitude, lecturerLongitude)) {
-    redirect(`/lecturer/sessions/new?courseId=${courseId}&error=location`);
+    redirect(newSessionErrorUrl(courseId, "location", source));
   }
 
   if (lecturerLocationAccuracy > maxAcceptedAccuracyMeters) {
-    redirect(`/lecturer/sessions/new?courseId=${courseId}&error=lecturer-accuracy`);
+    redirect(newSessionErrorUrl(courseId, "lecturer-accuracy", source));
   }
 
   if (!(opensAt < normalClosesAt && normalClosesAt <= finalClosesAt)) {
-    redirect(`/lecturer/sessions/new?courseId=${courseId}&error=time`);
+    redirect(newSessionErrorUrl(courseId, "time", source));
   }
 
   const db = getDb();
@@ -319,7 +332,9 @@ export async function createAttendanceSessionAction(formData: FormData) {
   });
 
   revalidatePath("/lecturer/sessions");
-  redirect(`/lecturer/sessions/${session.id}`);
+  revalidatePath(`/lecturer/courses/${courseId}`);
+  revalidatePath(`/lecturer/courses/${courseId}/sessions`);
+  redirect(source === "course" ? sessionUrl(courseId, session.id) : `/lecturer/sessions/${session.id}`);
 }
 
 export async function updateAttendanceSessionAction(formData: FormData) {
@@ -371,6 +386,7 @@ export async function updateAttendanceSessionAction(formData: FormData) {
   const [session] = await db
     .select({
       id: attendanceSessions.id,
+      courseId: attendanceSessions.courseId,
       finalClosesAt: attendanceSessions.finalClosesAt,
     })
     .from(attendanceSessions)
@@ -432,9 +448,11 @@ export async function updateAttendanceSessionAction(formData: FormData) {
   });
 
   revalidatePath("/lecturer/sessions");
+  revalidatePath(`/lecturer/courses/${session.courseId}`);
+  revalidatePath(`/lecturer/courses/${session.courseId}/sessions`);
   revalidatePath(`/lecturer/sessions/${sessionId}`);
   revalidatePath(`/lecturer/sessions/${sessionId}/edit`);
-  redirect(`/lecturer/sessions/${sessionId}`);
+  redirect(`/lecturer/courses/${session.courseId}/sessions/${sessionId}`);
 }
 
 export async function closeAttendanceSessionAction(formData: FormData) {
@@ -564,6 +582,10 @@ export async function closeAttendanceSessionAction(formData: FormData) {
   });
 
   revalidatePath("/lecturer/sessions");
+  revalidatePath(`/lecturer/courses/${session.courseId}`);
+  revalidatePath(`/lecturer/courses/${session.courseId}/sessions`);
+  revalidatePath(`/lecturer/courses/${session.courseId}/sessions/${session.id}`);
+  revalidatePath(`/lecturer/courses/${session.courseId}/sessions/${session.id}/reviews`);
   revalidatePath(`/lecturer/sessions/${session.id}`);
   revalidatePath("/lecturer/reviews");
   revalidatePath("/lecturer/reports");
@@ -620,8 +642,10 @@ export async function deleteAttendanceSessionAction(formData: FormData) {
     );
 
   revalidatePath("/lecturer/sessions");
+  revalidatePath(`/lecturer/courses/${session.courseId}`);
+  revalidatePath(`/lecturer/courses/${session.courseId}/sessions`);
   revalidatePath("/lecturer/dashboard");
-  redirect("/lecturer/sessions");
+  redirect(`/lecturer/courses/${session.courseId}`);
 }
 
 export async function generatePasskeysAction(formData: FormData) {
@@ -694,7 +718,12 @@ export async function generatePasskeysAction(formData: FormData) {
   });
 
   revalidatePath(`/lecturer/sessions/${session.id}`);
-  redirect(`/lecturer/sessions/${session.id}?passkeys=${students.length}`);
+  revalidatePath(`/lecturer/courses/${session.courseId}`);
+  revalidatePath(`/lecturer/courses/${session.courseId}/sessions`);
+  revalidatePath(`/lecturer/courses/${session.courseId}/sessions/${session.id}`);
+  redirect(
+    `/lecturer/courses/${session.courseId}/sessions/${session.id}?passkeys=${students.length}`,
+  );
 }
 
 export async function approveAttemptAction(formData: FormData) {
@@ -711,6 +740,7 @@ export async function approveAttemptAction(formData: FormData) {
       id: attendanceAttempts.id,
       sessionId: attendanceAttempts.sessionId,
       studentId: attendanceAttempts.studentId,
+      courseId: attendanceSessions.courseId,
       studentLatitude: attendanceAttempts.studentLatitude,
       studentLongitude: attendanceAttempts.studentLongitude,
       locationAccuracyMeters: attendanceAttempts.locationAccuracyMeters,
@@ -729,6 +759,8 @@ export async function approveAttemptAction(formData: FormData) {
     redirect("/lecturer/sessions");
   }
 
+  const remarks = cleanString(formData.get("remarks")) || null;
+
   await db
     .insert(attendanceRecords)
     .values({
@@ -741,14 +773,14 @@ export async function approveAttemptAction(formData: FormData) {
       calculatedDistanceMeters: attempt.calculatedDistanceMeters,
       status: "manually_present",
       verificationMethod: "manual",
-      lecturerRemarks: cleanString(formData.get("remarks")) || null,
+      lecturerRemarks: remarks,
     })
     .onConflictDoUpdate({
       target: [attendanceRecords.sessionId, attendanceRecords.studentId],
       set: {
         status: "manually_present",
         verificationMethod: "manual",
-        lecturerRemarks: cleanString(formData.get("remarks")) || null,
+        lecturerRemarks: remarks,
         updatedAt: new Date(),
       },
     });
@@ -759,19 +791,31 @@ export async function approveAttemptAction(formData: FormData) {
       reviewStatus: "approved",
       reviewedByLecturerId: user.lecturerProfileId,
       reviewedAt: new Date(),
-      lecturerRemarks: cleanString(formData.get("remarks")) || null,
+      lecturerRemarks: remarks,
     })
-    .where(eq(attendanceAttempts.id, attempt.id));
+    .where(
+      and(
+        eq(attendanceAttempts.sessionId, attempt.sessionId),
+        eq(attendanceAttempts.studentId, attempt.studentId),
+        eq(attendanceAttempts.reviewStatus, "pending"),
+      ),
+    );
 
   await db.insert(auditLogs).values({
     userId: user.id,
     action: "attendance_attempt_approved",
     entityType: "attendance_attempt",
     entityId: attempt.id,
-    reason: cleanString(formData.get("remarks")) || null,
+    reason: remarks,
   });
 
   revalidatePath(`/lecturer/sessions/${attempt.sessionId}`);
+  revalidatePath(`/lecturer/courses/${attempt.courseId}`);
+  revalidatePath(`/lecturer/courses/${attempt.courseId}/sessions`);
+  revalidatePath(`/lecturer/courses/${attempt.courseId}/sessions/${attempt.sessionId}`);
+  revalidatePath(
+    `/lecturer/courses/${attempt.courseId}/sessions/${attempt.sessionId}/reviews`,
+  );
   revalidatePath("/lecturer/reviews");
 }
 
@@ -791,6 +835,7 @@ export async function rejectAttemptAction(formData: FormData) {
       studentId: attendanceAttempts.studentId,
       lecturerId: attendanceSessions.lecturerId,
       sessionStatus: attendanceSessions.status,
+      courseId: attendanceSessions.courseId,
     })
     .from(attendanceAttempts)
     .innerJoin(
@@ -841,5 +886,11 @@ export async function rejectAttemptAction(formData: FormData) {
   });
 
   revalidatePath(`/lecturer/sessions/${attempt.sessionId}`);
+  revalidatePath(`/lecturer/courses/${attempt.courseId}`);
+  revalidatePath(`/lecturer/courses/${attempt.courseId}/sessions`);
+  revalidatePath(`/lecturer/courses/${attempt.courseId}/sessions/${attempt.sessionId}`);
+  revalidatePath(
+    `/lecturer/courses/${attempt.courseId}/sessions/${attempt.sessionId}/reviews`,
+  );
   revalidatePath("/lecturer/reviews");
 }

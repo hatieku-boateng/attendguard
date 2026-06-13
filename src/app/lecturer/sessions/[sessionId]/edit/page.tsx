@@ -54,6 +54,7 @@ export default async function EditSessionPage({
       lecturerLatitude: attendanceSessions.lecturerLatitude,
       lecturerLongitude: attendanceSessions.lecturerLongitude,
       lecturerLocationAccuracy: attendanceSessions.lecturerLocationAccuracy,
+      courseId: attendanceSessions.courseId,
       courseCode: courses.courseCode,
       courseTitle: courses.courseTitle,
     })
@@ -80,7 +81,9 @@ export default async function EditSessionPage({
         description={`${session.courseCode}: ${session.courseTitle}`}
         actions={
           <Button asChild variant="outline">
-            <Link href={`/lecturer/sessions/${session.id}`}>Cancel</Link>
+            <Link href={`/lecturer/courses/${session.courseId}/sessions/${session.id}`}>
+              Cancel
+            </Link>
           </Button>
         }
       />
@@ -188,7 +191,9 @@ export default async function EditSessionPage({
             </div>
             <div className="flex flex-col gap-3 sm:col-span-2 sm:flex-row sm:justify-end">
               <Button asChild variant="outline">
-                <Link href={`/lecturer/sessions/${session.id}`}>Cancel</Link>
+                <Link href={`/lecturer/courses/${session.courseId}/sessions/${session.id}`}>
+                  Cancel
+                </Link>
               </Button>
               <Button type="submit">Save session changes</Button>
             </div>

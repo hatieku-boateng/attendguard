@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { and, count, eq } from "drizzle-orm";
+import { and, count, desc, eq } from "drizzle-orm";
 
 import {
   addCourseResourceAction,
@@ -22,6 +22,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { getDb } from "@/db/client";
 import {
   attendanceSessions,
@@ -68,6 +76,17 @@ export default async function CourseDetailPage({
     .select()
     .from(courseResources)
     .where(eq(courseResources.courseId, course.id));
+  const sessions = await db
+    .select({
+      id: attendanceSessions.id,
+      title: attendanceSessions.sessionTitle,
+      status: attendanceSessions.status,
+      opensAt: attendanceSessions.opensAt,
+      finalClosesAt: attendanceSessions.finalClosesAt,
+    })
+    .from(attendanceSessions)
+    .where(eq(attendanceSessions.courseId, course.id))
+    .orderBy(desc(attendanceSessions.opensAt));
 
   return (
     <>
@@ -80,7 +99,7 @@ export default async function CourseDetailPage({
               <Link href={`/lecturer/courses/${course.id}/students`}>Students</Link>
             </Button>
             <Button asChild>
-              <Link href={`/lecturer/sessions/new?courseId=${course.id}`}>
+              <Link href={`/lecturer/courses/${course.id}/sessions/new`}>
                 Start session
               </Link>
             </Button>
@@ -122,6 +141,62 @@ export default async function CourseDetailPage({
               Archive
             </Button>
           </form>
+        </CardContent>
+      </Card>
+      <Card className="mt-6" id="sessions">
+        <CardHeader>
+          <CardTitle>Attendance sessions</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Session</TableHead>
+                <TableHead>Opens</TableHead>
+                <TableHead>Final close</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {sessions.map((session) => (
+                <TableRow key={session.id}>
+                  <TableCell className="font-medium">
+                    <Link
+                      className="text-primary underline-offset-4 hover:underline"
+                      href={`/lecturer/courses/${course.id}/sessions/${session.id}`}
+                    >
+                      {session.title}
+                    </Link>
+                  </TableCell>
+                  <TableCell>{session.opensAt.toLocaleString()}</TableCell>
+                  <TableCell>{session.finalClosesAt.toLocaleString()}</TableCell>
+                  <TableCell>
+                    <Badge variant="secondary">{session.status}</Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button asChild size="sm" variant="outline">
+                      <Link
+                        href={`/lecturer/courses/${course.id}/sessions/${session.id}`}
+                      >
+                        Manage
+                      </Link>
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {sessions.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    className="h-24 text-center text-muted-foreground"
+                    colSpan={5}
+                  >
+                    No attendance sessions have been created for this course.
+                  </TableCell>
+                </TableRow>
+              ) : null}
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
       <Card className="mt-6" id="resources">

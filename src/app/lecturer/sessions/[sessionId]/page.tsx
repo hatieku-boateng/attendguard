@@ -148,7 +148,12 @@ export default async function LecturerSessionDetailPage({
         actions={
           <>
             <Button asChild variant="outline">
-              <Link href={`/lecturer/sessions/${session.id}/edit`}>
+              <Link href={`/lecturer/courses/${session.courseId}/sessions/${session.id}/reviews`}>
+                Reviews
+              </Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href={`/lecturer/courses/${session.courseId}/sessions/${session.id}/edit`}>
                 <Pencil className="size-4" />
                 Edit session
               </Link>

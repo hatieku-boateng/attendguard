@@ -16,8 +16,6 @@ export function getWorkspaceNavItems(role: UserRole) {
     return [
       { href: "/lecturer/dashboard", label: "Dashboard" },
       { href: "/lecturer/courses", label: "Courses" },
-      { href: "/lecturer/sessions", label: "Sessions" },
-      { href: "/lecturer/reviews", label: "Reviews" },
       { href: "/lecturer/reports", label: "Reports" },
       { href: "/profile", label: "Profile" },
     ];

@@ -110,6 +110,7 @@ export default async function LecturerSessionsPage({
     db
       .select({
         id: attendanceSessions.id,
+        courseId: attendanceSessions.courseId,
         title: attendanceSessions.sessionTitle,
         status: attendanceSessions.status,
         opensAt: attendanceSessions.opensAt,
@@ -234,7 +235,7 @@ export default async function LecturerSessionsPage({
               {rows.map((session) => (
                 <TableRow key={session.id}>
                   <TableCell className="font-medium">
-                    <Link href={`/lecturer/sessions/${session.id}`}>
+                    <Link href={`/lecturer/courses/${session.courseId}/sessions/${session.id}`}>
                       {session.title}
                     </Link>
                   </TableCell>
@@ -248,7 +249,9 @@ export default async function LecturerSessionsPage({
                   </TableCell>
                   <TableCell className="text-right">
                     <Button asChild size="sm" variant="outline">
-                      <Link href={`/lecturer/sessions/${session.id}/edit`}>
+                      <Link
+                        href={`/lecturer/courses/${session.courseId}/sessions/${session.id}/edit`}
+                      >
                         <Pencil className="size-4" />
                         Edit
                       </Link>

@@ -304,6 +304,23 @@ export async function checkInAction(formData: FormData) {
     .where(eq(attendancePasskeys.id, passkey.id));
 
   await logAttempt(status === "present" ? "accepted" : "late", null, distance);
+
+  await db
+    .update(attendanceAttempts)
+    .set({
+      reviewStatus: "approved",
+      reviewedAt: new Date(),
+      lecturerRemarks:
+        "Cleared automatically after successful attendance submission.",
+    })
+    .where(
+      and(
+        eq(attendanceAttempts.sessionId, sessionId),
+        eq(attendanceAttempts.studentId, studentId),
+        eq(attendanceAttempts.reviewStatus, "pending"),
+      ),
+    );
+
   await recordSecurityEvent({
     eventType: "attendance_check_in_success",
     identifier: `attendance:${sessionId}:${studentId}`,

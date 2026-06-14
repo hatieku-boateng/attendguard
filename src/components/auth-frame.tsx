@@ -26,32 +26,32 @@ export function AuthFrame({
       </div>
 
       {/* Structured Header - Aligns with Landing Page Header */}
-      <header className="mx-auto flex w-full max-w-[85rem] items-center justify-between px-6 py-6 sm:px-8 z-30 relative">
+      <header className="mx-auto flex w-full max-w-[85rem] items-center justify-between px-4 py-5 sm:px-8 sm:py-6 z-30 relative">
         <BrandMark />
-        <nav className="flex items-center gap-4">
+        <nav className="flex items-center gap-2 sm:gap-4">
           <ThemeToggle />
-          <Button asChild variant="outline" className="rounded-full px-5 text-sm font-semibold h-8.5 border-border hover:bg-muted dark:hover:bg-white/[0.06]">
+          <Button asChild variant="outline" className="size-9 rounded-full px-0 text-sm font-semibold border-border hover:bg-muted dark:hover:bg-white/[0.06] sm:size-auto sm:h-8.5 sm:px-5">
             <Link href="/" className="inline-flex items-center gap-1.5">
               <ArrowLeft className="size-3.5" />
-              Return Home
+              <span className="hidden sm:inline">Return Home</span>
             </Link>
           </Button>
         </nav>
       </header>
 
       {/* Main Grid - Aligns with Landing Page Hero Grid */}
-      <section className="mx-auto max-w-[85rem] px-6 pt-8 pb-12 sm:px-8 z-10 relative">
-        <div className="grid gap-16 lg:grid-cols-[1fr_0.9fr] items-center">
+      <section className="mx-auto max-w-[85rem] px-4 pt-4 pb-12 sm:px-8 sm:pt-8 z-10 relative">
+        <div className="grid gap-8 lg:grid-cols-[1fr_0.9fr] lg:gap-16 items-center">
           
           {/* Left Column: Brand Details & Value Props */}
-          <div className="space-y-8 text-left">
+          <div className="order-2 space-y-6 text-left sm:space-y-8 lg:order-1">
             <div className="inline-flex items-center gap-2.5 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-xs font-bold text-primary shadow-sm tracking-wide uppercase dark:bg-primary/10">
               <ShieldCheck className="size-4 text-emerald-500 animate-pulse" />
               {eyebrow}
             </div>
             
             <div className="space-y-4">
-              <h1 className="text-4xl font-black leading-[1.08] tracking-tight text-foreground sm:text-5xl lg:text-[3.75rem]">
+              <h1 className="text-3xl font-black leading-[1.08] tracking-tight text-foreground sm:text-5xl lg:text-[3.75rem]">
                 {title}
               </h1>
               <p className="text-base leading-relaxed text-muted-foreground font-semibold max-w-lg">
@@ -98,7 +98,7 @@ export function AuthFrame({
           </div>
 
           {/* Right Column: Auth Card */}
-          <div className="w-full flex justify-center">
+          <div className="order-1 w-full flex justify-center lg:order-2">
             <div className="w-full max-w-md">
               {children}
             </div>

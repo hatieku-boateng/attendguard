@@ -63,8 +63,8 @@ export default async function LoginPage({
         {/* Dynamic header highlight */}
         <div className="absolute inset-x-0 top-0 h-1 bg-[linear-gradient(90deg,var(--primary),oklch(0.64_0.16_145))]" />
 
-        <CardHeader className="pt-8 pb-4">
-          <div className="flex flex-wrap gap-2 pb-2">
+        <CardHeader className="pt-7 pb-4 sm:pt-8">
+          <div className="hidden flex-wrap gap-2 pb-2 min-[360px]:flex">
             {[
               { role: "Admin", icon: ShieldCheck, color: "text-amber-600 bg-amber-500/10 border-amber-500/20 dark:text-amber-400" },
               { role: "Lecturer", icon: BookOpen, color: "text-primary bg-primary/10 border-primary/20" },
@@ -91,7 +91,7 @@ export default async function LoginPage({
           </CardDescription>
         </CardHeader>
 
-        <CardContent className="space-y-6 pb-8">
+        <CardContent className="space-y-5 pb-6 sm:space-y-6 sm:pb-8">
           <form action={loginAction} className="space-y-4">
             {message ? (
               <p className="rounded-2xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-xs font-semibold text-destructive leading-relaxed">
@@ -103,7 +103,7 @@ export default async function LoginPage({
               <Label className="text-xs font-extrabold text-muted-foreground uppercase tracking-widest leading-none">
                 Login portal
               </Label>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 gap-2 min-[360px]:grid-cols-3">
                 {portalOptions.map((portal) => {
                   const Icon = portal.icon;
 
@@ -111,7 +111,7 @@ export default async function LoginPage({
                     <Label
                       key={portal.value}
                       className={cn(
-                        "flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border border-border/70 bg-background/50 px-2 py-3 text-center text-[10px] font-black uppercase tracking-wide text-muted-foreground shadow-sm transition-all hover:border-primary/50 hover:bg-primary/5 has-checked:text-foreground",
+                        "flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-border/70 bg-background/50 px-3 py-3 text-center text-[10px] font-black uppercase tracking-wide text-muted-foreground shadow-sm transition-all hover:border-primary/50 hover:bg-primary/5 has-checked:text-foreground min-[360px]:flex-col min-[360px]:px-2",
                         portal.color,
                       )}
                     >

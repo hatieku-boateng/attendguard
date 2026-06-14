@@ -29,9 +29,8 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
-      <body className="min-h-full flex flex-col">
+      <head>
         <script
-          id="theme-initializer"
           dangerouslySetInnerHTML={{
             __html: `
               try {
@@ -46,8 +45,8 @@ export default function RootLayout({
             `,
           }}
         />
-        {children}
-      </body>
+      </head>
+      <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );
 }

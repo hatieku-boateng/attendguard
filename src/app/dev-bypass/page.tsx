@@ -12,6 +12,56 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 export const dynamic = "force-dynamic";
 
 export default async function DevBypassPage() {
+  const databaseUrl = process.env.DATABASE_URL;
+  
+  if (!databaseUrl) {
+    return (
+      <main className="relative min-h-screen bg-background text-foreground overflow-x-hidden pb-16 flex items-center justify-center text-center p-6 transition-colors duration-500">
+        {/* Subtle background ambient lights */}
+        <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+          <div className="absolute top-[-10%] left-[-10%] w-[60rem] h-[60rem] rounded-full bg-primary/5 blur-[120px] dark:bg-primary/3" />
+          <div className="absolute bottom-[10%] right-[-15%] w-[50rem] h-[50rem] rounded-full bg-cyan-500/5 blur-[130px] dark:bg-cyan-500/3 animate-pulse" />
+        </div>
+
+        <Card className="w-full max-w-md glass-panel rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden border-none text-left space-y-6 z-10">
+          <div className="size-12 rounded-2xl bg-rose-500/10 border border-rose-500/25 flex items-center justify-center shadow-inner">
+            <Key className="size-6 text-rose-500 animate-pulse" />
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-2xl font-black tracking-tight text-foreground leading-none">DATABASE_URL Missing</h2>
+            <p className="text-xs font-semibold text-muted-foreground leading-relaxed">
+              Your local <code className="px-1.5 py-0.5 rounded bg-muted font-mono text-2xs">.env.local</code> file does not contain database credentials.
+            </p>
+          </div>
+          
+          <div className="p-5 rounded-2xl bg-zinc-950/45 border border-white/5 space-y-4 shadow-inner">
+            <p className="text-[10px] font-black uppercase tracking-widest text-primary leading-none">How to configure:</p>
+            <ol className="list-decimal list-inside text-xs font-semibold text-muted-foreground space-y-3 leading-relaxed">
+              <li>
+                Open <code className="px-1 py-0.5 rounded bg-black/45 font-mono text-2xs">.env.local</code> in the root directory.
+              </li>
+              <li>
+                Paste your Neon PostgreSQL connection string:
+                <pre className="p-3 rounded-xl bg-black/85 font-mono text-[10px] text-emerald-400 overflow-x-auto mt-2 border border-white/5 select-all">
+                  DATABASE_URL="postgresql://..."
+                </pre>
+              </li>
+              <li>
+                Save the file. Next.js will reload and compile the database connection automatically!
+              </li>
+            </ol>
+          </div>
+          
+          <div className="flex gap-3 pt-2">
+            <Button asChild variant="outline" className="flex-1 h-11 rounded-2xl font-bold border-border hover:bg-muted dark:hover:bg-white/[0.06] transition-all">
+              <Link href="/">Return Home</Link>
+            </Button>
+          </div>
+        </Card>
+      </main>
+    );
+  }
+
   const db = getDb();
   
   // Fetch active users

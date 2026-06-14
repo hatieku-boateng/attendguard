@@ -5,6 +5,7 @@ import { Pencil, Search, Trash2, UserCheck, UsersRound } from "lucide-react";
 import {
   bulkDeleteStudentAccountsAction,
   deleteStudentAccountAction,
+  updateStudentAccountAction,
 } from "@/app/admin/actions";
 import { BulkSelectionToggle } from "@/components/bulk-selection-toggle";
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
@@ -14,6 +15,15 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { FormModal } from "@/components/form-modal";
 import {
   Table,
   TableBody,
@@ -25,6 +35,7 @@ import {
 import { getDb } from "@/db/client";
 import {
   academicYears,
+  attendanceRecords,
   courses,
   departments,
   enrolments,
@@ -33,9 +44,42 @@ import {
   users,
 } from "@/db/schema";
 import { requireRole } from "@/lib/auth";
-import { programmeLevelLabel, studentCategoryLabel } from "@/lib/institution";
+import { programmeLevelLabel, studentCategoryLabel, programmeLevels, studentCategories } from "@/lib/institution";
 
 const accountStatuses = ["pending", "active", "suspended", "disabled"] as const;
+
+type StudentEditRecord = {
+  studentId: string;
+  userId: string;
+  studentName: string;
+  studentEmail: string;
+  accountStatus: typeof users.$inferSelect.status;
+  activatedAt: Date | null;
+  createdAt: Date;
+  studentIdNumber: string;
+  studentCategory: typeof studentProfiles.$inferSelect.studentCategory;
+  programmeLevel: typeof studentProfiles.$inferSelect.programmeLevel;
+  facultyId: string | null;
+  departmentId: string | null;
+  academicYearId: string | null;
+  programme: string | null;
+  level: string | null;
+  classGroup: string | null;
+};
+
+type StudentModalEnrolment = {
+  enrolmentId: string;
+  status: typeof enrolments.$inferSelect.status;
+  courseCode: string;
+  courseTitle: string;
+  semester: string;
+  academicYear: string;
+  classGroup: string;
+};
+
+type FacultyRow = typeof faculties.$inferSelect;
+type DepartmentRow = typeof departments.$inferSelect;
+type AcademicYearRow = typeof academicYears.$inferSelect;
 
 function normalizeAccountStatus(value?: string) {
   return accountStatuses.includes(value as (typeof accountStatuses)[number])
@@ -83,6 +127,8 @@ export default async function AdminStudentsPage({
     accountDeleted?: string;
     bulkAccountsDeleted?: string;
     error?: string;
+    modal?: string;
+    id?: string;
   }>;
 }) {
   await requireRole("administrator");
@@ -92,6 +138,76 @@ export default async function AdminStudentsPage({
   const selectedStatus = normalizeAccountStatus(query.status);
   const selectedCourseId = query.courseId ?? "all";
   const db = getDb();
+
+  let editStudent: StudentEditRecord | null = null;
+  let studentEnrolmentsList: StudentModalEnrolment[] = [];
+  let attendanceCount = 0;
+  let facultyRows: FacultyRow[] = [];
+  let departmentRows: DepartmentRow[] = [];
+  let academicYearRows: AcademicYearRow[] = [];
+
+  if (query.modal === "edit" && query.id) {
+    const [target] = await db
+      .select({
+        studentId: studentProfiles.id,
+        userId: users.id,
+        studentName: users.name,
+        studentEmail: users.email,
+        accountStatus: users.status,
+        activatedAt: users.emailVerifiedAt,
+        createdAt: users.createdAt,
+        studentIdNumber: studentProfiles.studentIdNumber,
+        studentCategory: studentProfiles.studentCategory,
+        programmeLevel: studentProfiles.programmeLevel,
+        facultyId: studentProfiles.facultyId,
+        departmentId: studentProfiles.departmentId,
+        academicYearId: studentProfiles.academicYearId,
+        programme: studentProfiles.programme,
+        level: studentProfiles.level,
+        classGroup: studentProfiles.classGroup,
+      })
+      .from(studentProfiles)
+      .innerJoin(users, eq(studentProfiles.userId, users.id))
+      .where(eq(studentProfiles.id, query.id))
+      .limit(1);
+
+    if (target) {
+      editStudent = target;
+      const [targetEnrolments, attendanceRows, facs, depts, years] = await Promise.all([
+        db
+          .select({
+            enrolmentId: enrolments.id,
+            status: enrolments.status,
+            courseCode: courses.courseCode,
+            courseTitle: courses.courseTitle,
+            semester: courses.semester,
+            academicYear: courses.academicYear,
+            classGroup: courses.classGroup,
+          })
+          .from(enrolments)
+          .innerJoin(courses, eq(enrolments.courseId, courses.id))
+          .where(eq(enrolments.studentId, target.studentId)),
+        db
+          .select({ id: attendanceRecords.id })
+          .from(attendanceRecords)
+          .where(eq(attendanceRecords.studentId, target.studentId)),
+        db.select().from(faculties).orderBy(asc(faculties.name)),
+        db.select().from(departments).orderBy(asc(departments.name)),
+        db.select().from(academicYears).orderBy(asc(academicYears.startYear)),
+      ]);
+      studentEnrolmentsList = targetEnrolments;
+      attendanceCount = attendanceRows.length;
+      facultyRows = facs;
+      departmentRows = depts;
+      academicYearRows = years;
+    }
+  }
+
+  const errorMessages: Record<string, string> = {
+    email: "That email address already belongs to another account.",
+    studentId: "That student ID already belongs to another student profile.",
+    invalid: "Complete all required fields before saving.",
+  };
 
   const [students, studentEnrolments, courseOptions] = await Promise.all([
     db
@@ -429,7 +545,7 @@ export default async function AdminStudentsPage({
                     <TableCell className="px-6 py-4.5">
                       <div className="flex justify-end gap-2">
                         <Button asChild size="sm" variant="outline" className="h-8.5 rounded-lg text-xs font-bold shadow-sm">
-                          <Link href={`/admin/students/${student.studentId}/edit`} className="flex items-center gap-1">
+                          <Link href={`/admin/students?modal=edit&id=${student.studentId}`} className="flex items-center gap-1">
                             <Pencil className="size-3.5" />
                             <span>Edit</span>
                           </Link>
@@ -546,7 +662,7 @@ export default async function AdminStudentsPage({
 
                 <div className="flex items-center gap-2 pt-1.5">
                   <Button asChild size="sm" variant="outline" className="h-8.5 rounded-lg text-xs font-bold shadow-sm flex-1">
-                    <Link href={`/admin/students/${student.studentId}/edit`} className="flex items-center justify-center gap-1.5">
+                    <Link href={`/admin/students?modal=edit&id=${student.studentId}`} className="flex items-center justify-center gap-1.5">
                       <Pencil className="size-3.5" />
                       <span>Edit Profile</span>
                     </Link>
@@ -576,6 +692,252 @@ export default async function AdminStudentsPage({
           </div>
         </CardContent>
       </Card>
+
+      {editStudent && (
+        <FormModal
+          isOpen={query.modal === "edit" && !!editStudent}
+          title="Manage student account"
+          description={`${editStudent.studentName} / ${editStudent.studentIdNumber}`}
+          className="sm:max-w-4xl"
+        >
+          <div className="grid gap-6 pt-2 lg:grid-cols-[1fr_320px]">
+            <Card className="border-0 shadow-none bg-transparent">
+              <CardContent className="p-0">
+                <form action={updateStudentAccountAction} className="grid gap-4 sm:grid-cols-2">
+                  <input name="studentId" type="hidden" value={editStudent.studentId} />
+                  {query.error && errorMessages[query.error] ? (
+                    <p className="rounded-xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-xs font-semibold text-destructive leading-relaxed sm:col-span-2">
+                      {errorMessages[query.error]}
+                    </p>
+                  ) : null}
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="name" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Student name</Label>
+                    <Input defaultValue={editStudent.studentName} id="name" name="name" required />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="email" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Email address</Label>
+                    <Input
+                      defaultValue={editStudent.studentEmail}
+                      id="email"
+                      name="email"
+                      required
+                      type="email"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="studentIdNumber" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Student ID</Label>
+                    <Input
+                      className="uppercase-input"
+                      defaultValue={editStudent.studentIdNumber}
+                      id="studentIdNumber"
+                      name="studentIdNumber"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="status" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Account status</Label>
+                    <Select defaultValue={editStudent.accountStatus} name="status">
+                      <SelectTrigger className="w-full" id="status">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="pending">Pending</SelectItem>
+                        <SelectItem value="active">Active</SelectItem>
+                        <SelectItem value="suspended">Suspended</SelectItem>
+                        <SelectItem value="disabled">Disabled</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="studentCategory" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Student category</Label>
+                    <Select defaultValue={editStudent.studentCategory} name="studentCategory">
+                      <SelectTrigger className="w-full" id="studentCategory">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {studentCategories.map((category) => (
+                          <SelectItem key={category.value} value={category.value}>
+                            {category.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="programmeLevel" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Programme level</Label>
+                    <Select defaultValue={editStudent.programmeLevel} name="programmeLevel">
+                      <SelectTrigger className="w-full" id="programmeLevel">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {programmeLevels.map((level) => (
+                          <SelectItem key={level.value} value={level.value}>
+                            {level.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="facultyId" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Faculty</Label>
+                    <select
+                      className="h-10 w-full rounded-lg border border-input bg-card px-3 text-sm"
+                      defaultValue={editStudent.facultyId ?? ""}
+                      id="facultyId"
+                      name="facultyId"
+                    >
+                      <option value="">Select faculty</option>
+                      {facultyRows.map((faculty) => (
+                        <option key={faculty.id} value={faculty.id}>
+                          {faculty.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="departmentId" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Department</Label>
+                    <select
+                      className="h-10 w-full rounded-lg border border-input bg-card px-3 text-sm"
+                      defaultValue={editStudent.departmentId ?? ""}
+                      id="departmentId"
+                      name="departmentId"
+                    >
+                      <option value="">Select department</option>
+                      {departmentRows.map((department) => (
+                        <option key={department.id} value={department.id}>
+                          {department.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="academicYearId" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Academic year</Label>
+                    <select
+                      className="h-10 w-full rounded-lg border border-input bg-card px-3 text-sm"
+                      defaultValue={editStudent.academicYearId ?? ""}
+                      id="academicYearId"
+                      name="academicYearId"
+                    >
+                      <option value="">Select academic year</option>
+                      {academicYearRows.map((year) => (
+                        <option key={year.id} value={year.id}>
+                          {year.displayName}
+                          {year.isCurrent ? " (current)" : ""}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="programme" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Programme</Label>
+                    <Input
+                      defaultValue={editStudent.programme ?? ""}
+                      id="programme"
+                      name="programme"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="level" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Level</Label>
+                    <Input defaultValue={editStudent.level ?? ""} id="level" name="level" />
+                  </div>
+                  <div className="space-y-1.5 sm:col-span-2">
+                    <Label htmlFor="classGroup" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Student class group</Label>
+                    <Input
+                      defaultValue={editStudent.classGroup ?? ""}
+                      id="classGroup"
+                      name="classGroup"
+                    />
+                  </div>
+                  <div className="rounded-xl border border-border/70 bg-muted/35 px-4 py-3 text-xs text-muted-foreground sm:col-span-2">
+                    <p>
+                      This edits the student account and profile globally, whether or not the
+                      student has course assignments.
+                    </p>
+                  </div>
+                  <div className="sm:col-span-2 pt-2">
+                    <Button className="w-full py-5 rounded-xl font-bold shadow-md shadow-primary/20 hover:shadow-lg text-sm" type="submit">
+                      Save student account
+                    </Button>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
+
+            <div className="space-y-5">
+              <Card className="glass-panel border-border/30">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-bold">Account summary</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3 text-xs">
+                  <div className="flex items-center justify-between gap-4">
+                    <span className="text-muted-foreground">Status</span>
+                    <Badge>{editStudent.accountStatus}</Badge>
+                  </div>
+                  <div className="flex items-center justify-between gap-4">
+                    <span className="text-muted-foreground">Activation</span>
+                    <span>{editStudent.activatedAt ? "Activated" : "Not activated"}</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-4">
+                    <span className="text-muted-foreground">Courses</span>
+                    <span>{studentEnrolmentsList.length}</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-4">
+                    <span className="text-muted-foreground">Attendance records</span>
+                    <span>{attendanceCount}</span>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="glass-panel border-border/30">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-bold">Course assignments</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3 text-xs">
+                  {studentEnrolmentsList.length > 0 ? (
+                    studentEnrolmentsList.map((enrolment) => (
+                      <div
+                        className="rounded-lg border border-border/70 bg-muted/30 p-3"
+                        key={enrolment.enrolmentId}
+                      >
+                        <p className="font-semibold text-foreground">
+                          {enrolment.courseCode}: {enrolment.courseTitle}
+                        </p>
+                        <p className="mt-1 text-[10px] text-muted-foreground">
+                          {enrolment.status} / {enrolment.classGroup} / {enrolment.semester}{" "}
+                          {enrolment.academicYear}
+                        </p>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-muted-foreground">
+                      This student is not currently assigned to any course.
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card className="border-destructive/20 bg-destructive/5 dark:bg-destructive/2">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-bold text-destructive">Delete student account</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4 text-xs text-muted-foreground">
+                  <p className="leading-relaxed">
+                    This removes the student account, profile, course enrolments, attendance
+                    records, activation tokens, and passkeys.
+                  </p>
+                  <form action={deleteStudentAccountAction}>
+                    <input name="studentId" type="hidden" value={editStudent.studentId} />
+                    <ConfirmSubmitButton message="Delete this student account? This removes the profile, course enrolments, attendance records, activation tokens, and passkeys." className="w-full bg-destructive text-destructive-foreground hover:bg-destructive/90 h-8.5 rounded-lg flex items-center justify-center gap-1.5 font-bold">
+                      <Trash2 className="size-3.5" />
+                      Delete student account
+                    </ConfirmSubmitButton>
+                  </form>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </FormModal>
+      )}
     </>
   );
 }

@@ -34,29 +34,33 @@ export default async function StudentDashboardPage() {
   const courseIds = studentEnrolments.map((enrolment) => enrolment.courseId);
 
   // Stats queries
-  const [classCount] = courseIds.length
-    ? await db
-        .select({ value: count() })
-        .from(courses)
-        .where(inArray(courses.id, courseIds))
-    : [{ value: 0 }];
-
-  const [activeSessionCount] = courseIds.length
-    ? await db
-        .select({ value: count() })
-        .from(attendanceSessions)
-        .where(
-          and(
-            inArray(attendanceSessions.courseId, courseIds),
-            eq(attendanceSessions.status, "open"),
-          ),
-        )
-    : [{ value: 0 }];
-
-  const [attendanceCount] = await db
-    .select({ value: count() })
-    .from(attendanceRecords)
-    .where(eq(attendanceRecords.studentId, studentId));
+  const [
+    [classCount],
+    [activeSessionCount],
+    [attendanceCount]
+  ] = await Promise.all([
+    courseIds.length
+      ? db
+          .select({ value: count() })
+          .from(courses)
+          .where(inArray(courses.id, courseIds))
+      : Promise.resolve([{ value: 0 }]),
+    courseIds.length
+      ? db
+          .select({ value: count() })
+          .from(attendanceSessions)
+          .where(
+            and(
+              inArray(attendanceSessions.courseId, courseIds),
+              eq(attendanceSessions.status, "open"),
+            ),
+          )
+      : Promise.resolve([{ value: 0 }]),
+    db
+      .select({ value: count() })
+      .from(attendanceRecords)
+      .where(eq(attendanceRecords.studentId, studentId)),
+  ]);
 
   // 2. Query active sessions (limit 5)
   const activeSessionsList = courseIds.length

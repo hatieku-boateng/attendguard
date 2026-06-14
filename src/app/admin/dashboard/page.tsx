@@ -12,13 +12,17 @@ export default async function AdminDashboardPage() {
   await requireRole("administrator");
   const db = getDb();
 
-  const [lecturerCount] = await db.select({ value: count() }).from(lecturerProfiles);
-  const [courseCount] = await db.select({ value: count() }).from(courses);
-  const [studentCount] = await db.select({ value: count() }).from(studentProfiles);
-  const [activeUsers] = await db
-    .select({ value: count() })
-    .from(users)
-    .where(eq(users.status, "active"));
+  const [
+    [lecturerCount],
+    [courseCount],
+    [studentCount],
+    [activeUsers]
+  ] = await Promise.all([
+    db.select({ value: count() }).from(lecturerProfiles),
+    db.select({ value: count() }).from(courses),
+    db.select({ value: count() }).from(studentProfiles),
+    db.select({ value: count() }).from(users).where(eq(users.status, "active")),
+  ]);
 
   return (
     <>

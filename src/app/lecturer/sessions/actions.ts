@@ -39,16 +39,20 @@ function parseDate(value: FormDataEntryValue | null) {
   return date && !Number.isNaN(date.getTime()) ? date : null;
 }
 
-function editSessionErrorUrl(sessionId: string, error: string) {
-  return `/lecturer/sessions/${sessionId}/edit?error=${error}`;
+function editSessionErrorUrl(sessionId: string, error: string, source?: string) {
+  if (source === "detail") {
+    return `/lecturer/sessions/${sessionId}?modal=edit&error=${error}`;
+  }
+
+  return `/lecturer/sessions?modal=edit&id=${sessionId}&error=${error}`;
 }
 
 function newSessionErrorUrl(courseId: string, error: string, source: string) {
   if (source === "course" && courseId) {
-    return `/lecturer/courses/${courseId}/sessions/new?error=${error}`;
+    return `/lecturer/courses/${courseId}?modal=new&error=${error}`;
   }
 
-  return `/lecturer/sessions/new?courseId=${courseId}&error=${error}`;
+  return `/lecturer/sessions?modal=new&courseId=${courseId}&error=${error}`;
 }
 
 function sessionUrl(courseId: string, sessionId: string, suffix = "") {
@@ -340,6 +344,7 @@ export async function createAttendanceSessionAction(formData: FormData) {
 export async function updateAttendanceSessionAction(formData: FormData) {
   const user = await requireRole("lecturer");
   const sessionId = cleanString(formData.get("sessionId"));
+  const source = cleanString(formData.get("source"));
   const sessionTitle = cleanString(formData.get("sessionTitle"));
   const lecturerLatitude = parseNumber(formData.get("lecturerLatitude"));
   const lecturerLongitude = parseNumber(formData.get("lecturerLongitude"));
@@ -363,23 +368,23 @@ export async function updateAttendanceSessionAction(formData: FormData) {
     !normalClosesAt ||
     !finalClosesAt
   ) {
-    redirect(sessionId ? editSessionErrorUrl(sessionId, "missing") : "/lecturer/sessions");
+    redirect(sessionId ? editSessionErrorUrl(sessionId, "missing", source) : "/lecturer/sessions");
   }
 
   if (geofenceRadiusMeters < 10 || maxAcceptedAccuracyMeters < 10) {
-    redirect(editSessionErrorUrl(sessionId, "missing"));
+    redirect(editSessionErrorUrl(sessionId, "missing", source));
   }
 
   if (!isValidCoordinate(lecturerLatitude, lecturerLongitude)) {
-    redirect(editSessionErrorUrl(sessionId, "location"));
+    redirect(editSessionErrorUrl(sessionId, "location", source));
   }
 
   if (lecturerLocationAccuracy > maxAcceptedAccuracyMeters) {
-    redirect(editSessionErrorUrl(sessionId, "lecturer-accuracy"));
+    redirect(editSessionErrorUrl(sessionId, "lecturer-accuracy", source));
   }
 
   if (!(opensAt < normalClosesAt && normalClosesAt <= finalClosesAt)) {
-    redirect(editSessionErrorUrl(sessionId, "time"));
+    redirect(editSessionErrorUrl(sessionId, "time", source));
   }
 
   const db = getDb();
@@ -452,7 +457,7 @@ export async function updateAttendanceSessionAction(formData: FormData) {
   revalidatePath(`/lecturer/courses/${session.courseId}/sessions`);
   revalidatePath(`/lecturer/sessions/${sessionId}`);
   revalidatePath(`/lecturer/sessions/${sessionId}/edit`);
-  redirect(`/lecturer/courses/${session.courseId}/sessions/${sessionId}`);
+  redirect(source === "detail" ? `/lecturer/sessions/${sessionId}` : `/lecturer/sessions`);
 }
 
 export async function closeAttendanceSessionAction(formData: FormData) {

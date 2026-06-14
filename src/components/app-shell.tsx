@@ -190,8 +190,8 @@ export function AppShell({
             {/* Page Title Context */}
             <div className="block">
               <h1 className="text-[10px] sm:text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5 sm:gap-2">
-                <span className="text-muted-foreground/60 truncate max-w-[80px] sm:max-w-none">PU Attendance</span>
-                <ChevronRight className="size-2.5 sm:size-3 text-muted-foreground/40 shrink-0" />
+                <span className="text-muted-foreground/60 truncate max-w-[80px] sm:max-w-none hidden sm:inline">PU Attendance</span>
+                <ChevronRight className="size-2.5 sm:size-3 text-muted-foreground/40 shrink-0 hidden sm:block" />
                 <span className="text-primary truncate">{user.role} Portal</span>
               </h1>
             </div>
@@ -200,7 +200,7 @@ export function AppShell({
           <div className="flex shrink-0 items-center gap-2 sm:gap-4">
             <span className="hidden items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/5 px-3 py-1 text-[0.68rem] font-bold text-emerald-600 dark:text-emerald-400 shadow-sm shadow-emerald-500/[0.02] sm:inline-flex">
               <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              Secure Session
+              <span className="hidden sm:inline">Secure Session</span>
             </span>
             <ThemeToggle className="scale-90" />
           </div>

@@ -23,6 +23,7 @@ import { lecturerProfiles, studentProfiles, users } from "@/db/schema";
 import { requireUser } from "@/lib/auth";
 import { getWorkspaceNavItems } from "@/lib/navigation";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
+import { ImageUploadPreview } from "@/components/image-upload-preview";
 
 const errorMessages: Record<string, string> = {
   invalid: "Enter a valid name.",
@@ -206,17 +207,8 @@ export default async function ProfilePage({
                     </div>
                     
                     <div className="space-y-2">
-                      <Label htmlFor="avatar" className="text-sm font-bold tracking-tight">Profile picture</Label>
-                      <Input 
-                        accept="image/*" 
-                        id="avatar" 
-                        name="avatar" 
-                        type="file" 
-                        className="rounded-xl h-11 file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-extrabold file:bg-primary/10 file:text-primary hover:file:bg-primary/15 file:cursor-pointer cursor-pointer pt-2"
-                      />
-                      <p className="text-[0.62rem] text-muted-foreground/60 font-semibold pl-1">
-                        Select a square profile picture. Under 750 KB limit.
-                      </p>
+                      <Label className="text-sm font-bold tracking-tight">Profile picture</Label>
+                      <ImageUploadPreview id="avatar" name="avatar" defaultImage={account?.avatarUrl} />
                     </div>
                   </div>
                 </div>

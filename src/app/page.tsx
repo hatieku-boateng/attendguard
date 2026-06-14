@@ -14,6 +14,8 @@ import {
   FileSpreadsheet,
   MailOpen,
   ClipboardCheck,
+  Fingerprint,
+  Lock,
   Radar,
 } from "lucide-react";
 
@@ -79,7 +81,7 @@ export default function Home() {
             </div>
             
             <div className="space-y-4">
-              <h1 className="text-5xl font-black leading-[1.05] tracking-tight text-foreground sm:text-6xl lg:text-[4.5rem]">
+              <h1 className="text-4xl font-black leading-[1.05] tracking-tight text-foreground sm:text-5xl lg:text-[4.5rem]">
                 Your Attendance,<br />
                 <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-cyan-500">
                   Simplified.
@@ -90,15 +92,15 @@ export default function Home() {
               </p>
             </div>
 
-            <div className="flex flex-wrap gap-4 pt-2">
-              <Button asChild size="lg" className="rounded-full px-8 shadow-md shadow-primary/10 hover:shadow-lg transition-all font-bold h-12 bg-primary text-primary-foreground">
-                <Link href="/login">
+            <div className="flex flex-col sm:flex-row gap-3 pt-2">
+              <Button asChild size="lg" className="w-full sm:w-auto rounded-full px-8 shadow-md shadow-primary/10 hover:shadow-lg transition-all font-bold h-12 bg-primary text-primary-foreground">
+                <Link href="/login" className="justify-center">
                   Sign In to Console
                   <ArrowRight className="size-4.5" />
                 </Link>
               </Button>
-              <Button asChild size="lg" variant="outline" className="rounded-full px-8 font-semibold glass-panel-hover h-12 border-border hover:bg-muted dark:hover:bg-zinc-900">
-                <Link href="/activate-account">Activate Student</Link>
+              <Button asChild size="lg" variant="outline" className="w-full sm:w-auto rounded-full px-8 font-semibold glass-panel-hover h-12 border-border hover:bg-muted dark:hover:bg-zinc-900">
+                <Link href="/activate-account" className="justify-center">Activate Student</Link>
               </Button>
             </div>
 
@@ -233,9 +235,9 @@ export default function Home() {
             ].map((metric, i) => (
               <div 
                 key={i} 
-                className={`rounded-3xl border p-8 text-center flex flex-col items-center justify-center shadow-sm ${metric.color}`}
+                className={`rounded-3xl border p-6 sm:p-8 text-center flex flex-col items-center justify-center shadow-sm ${metric.color}`}
               >
-                <span className="text-4xl font-black tracking-tight">{metric.value}</span>
+                <span className="text-3xl sm:text-4xl font-black tracking-tight">{metric.value}</span>
                 <span className="text-xs font-extrabold uppercase tracking-widest text-muted-foreground mt-2">{metric.label}</span>
               </div>
             ))}
@@ -277,7 +279,7 @@ export default function Home() {
               return (
                 <div 
                   key={i} 
-                  className="glass-panel relative overflow-hidden rounded-3xl p-6 shadow-sm hover:scale-[1.01] transition-transform duration-300 select-none"
+                  className="glass-panel relative overflow-hidden rounded-3xl p-5 sm:p-6 shadow-sm hover:scale-[1.01] transition-transform duration-300 select-none"
                 >
                   <div className="space-y-4">
                     <span className={`flex size-11 items-center justify-center rounded-2xl border ${feature.color}`}>
@@ -326,7 +328,7 @@ export default function Home() {
           ].map((item, i) => {
             const Icon = item.icon;
             return (
-              <div key={i} className="flex flex-col items-center space-y-4 max-w-[240px] mx-auto">
+              <div key={i} className="flex flex-col items-center space-y-4 max-w-[280px] md:max-w-none w-full mx-auto">
                 <span className={`flex size-20 items-center justify-center rounded-full border shadow-sm ${item.color}`}>
                   <Icon className="size-8" />
                 </span>
@@ -394,7 +396,7 @@ export default function Home() {
             ].map((card, i) => (
               <div 
                 key={i} 
-                className={`rounded-3xl border bg-background/50 backdrop-blur-xl p-8 shadow-sm flex flex-col justify-between ${card.border}`}
+                className={`rounded-3xl border bg-background/50 backdrop-blur-xl p-6 sm:p-8 shadow-sm flex flex-col justify-between ${card.border}`}
               >
                 <div className="space-y-4 text-left">
                   <span className={`inline-flex items-center rounded-full px-3 py-0.5 text-[10px] font-black uppercase tracking-wider border ${card.badgeColor}`}>
@@ -434,8 +436,8 @@ export default function Home() {
               </p>
             </div>
 
-            <Button asChild size="lg" className="rounded-full px-8 shadow-sm font-bold h-12 bg-primary text-primary-foreground">
-              <Link href="/login">
+            <Button asChild size="lg" className="w-full sm:w-auto rounded-full px-8 shadow-sm font-bold h-12 bg-primary text-primary-foreground justify-center">
+              <Link href="/login" className="justify-center">
                 Sign In to Console
                 <ArrowRight className="size-4.5" />
               </Link>
@@ -472,58 +474,86 @@ export default function Home() {
 
 
       {/* Footer */}
-      <footer className="border-t border-border/50 bg-zinc-50/50 dark:bg-zinc-950/20 pt-16 pb-8 relative z-10 transition-colors">
-        <div className="mx-auto max-w-[85rem] px-6 sm:px-8 grid gap-8 sm:grid-cols-2 md:grid-cols-[1.5fr_1fr_1fr_1fr] pb-12">
+      <footer className="border-t border-border/50 bg-zinc-50/50 dark:bg-zinc-950/20 pt-16 pb-8 relative z-10 transition-colors overflow-hidden">
+        {/* Decorative ambient light inside footer */}
+        <div className="absolute bottom-0 right-1/4 w-72 h-72 rounded-full bg-primary/3 blur-[80px] dark:bg-primary/2 pointer-events-none" />
+
+        <div className="mx-auto max-w-[85rem] px-6 sm:px-8 grid gap-10 grid-cols-2 md:grid-cols-[1.5fr_1fr_1fr_1fr] pb-12 relative z-10">
           
           {/* Logo column */}
-          <div className="space-y-4 text-left">
+          <div className="space-y-4 text-left col-span-2 md:col-span-1">
             <BrandMark />
-            <p className="text-xs text-muted-foreground font-semibold leading-relaxed max-w-xs">
+            <p className="text-xs text-muted-foreground/85 font-medium leading-relaxed max-w-sm">
               Pentecost University Attendance is a secure geolocation verification platform designed to manage institutional registers, verify coordinate check-ins, and export immutable academic logs.
             </p>
           </div>
 
           {/* Features Column */}
-          <div className="space-y-3.5 text-left">
-            <h5 className="text-[10px] font-extrabold uppercase tracking-widest text-foreground">Features</h5>
-            <ul className="space-y-2.5 text-xs font-semibold text-muted-foreground">
-              <li className="hover:text-primary transition-colors cursor-default">Geofenced Perimeters</li>
-              <li className="hover:text-primary transition-colors cursor-default">Device Security Keys</li>
-              <li className="hover:text-primary transition-colors cursor-default">Lecturer Console</li>
-              <li className="hover:text-primary transition-colors cursor-default">CSV Audit Trail</li>
+          <div className="space-y-4 text-left col-span-1">
+            <h5 className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-foreground/80">Features</h5>
+            <ul className="space-y-3 text-xs font-semibold text-muted-foreground">
+              <li className="flex items-center gap-2 hover:text-primary transition-colors cursor-default">
+                <Radar className="size-3.5 text-primary/70 shrink-0" />
+                <span>Geofenced Perimeters</span>
+              </li>
+              <li className="flex items-center gap-2 hover:text-primary transition-colors cursor-default">
+                <KeyRound className="size-3.5 text-primary/70 shrink-0" />
+                <span>Device Security Keys</span>
+              </li>
+              <li className="flex items-center gap-2 hover:text-primary transition-colors cursor-default">
+                <UserCheck className="size-3.5 text-primary/70 shrink-0" />
+                <span>Lecturer Console</span>
+              </li>
+              <li className="flex items-center gap-2 hover:text-primary transition-colors cursor-default">
+                <FileSpreadsheet className="size-3.5 text-primary/70 shrink-0" />
+                <span>CSV Audit Trail</span>
+              </li>
             </ul>
           </div>
 
           {/* Academic Portal Column */}
-          <div className="space-y-3.5 text-left">
-            <h5 className="text-[10px] font-extrabold uppercase tracking-widest text-foreground">Academic Portal</h5>
-            <ul className="space-y-2.5 text-xs font-semibold text-muted-foreground">
+          <div className="space-y-4 text-left col-span-1">
+            <h5 className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-foreground/80">Academic Portal</h5>
+            <ul className="space-y-3 text-xs font-semibold text-muted-foreground">
               <li>
-                <Link href="/login" className="hover:text-primary transition-colors">
-                  Sign In to Console
+                <Link href="/login" className="group flex items-center gap-2 hover:text-primary transition-colors">
+                  <Lock className="size-3.5 text-primary/70 shrink-0 group-hover:text-primary transition-colors" />
+                  <span>Sign In to Console</span>
+                  <ArrowRight className="size-3 opacity-0 -translate-x-1.5 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-200 shrink-0" />
                 </Link>
               </li>
               <li>
-                <Link href="/activate-account" className="hover:text-primary transition-colors">
-                  Activate Student
+                <Link href="/activate-account" className="group flex items-center gap-2 hover:text-primary transition-colors">
+                  <Fingerprint className="size-3.5 text-primary/70 shrink-0 group-hover:text-primary transition-colors" />
+                  <span>Activate Student</span>
+                  <ArrowRight className="size-3 opacity-0 -translate-x-1.5 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-200 shrink-0" />
                 </Link>
               </li>
             </ul>
           </div>
 
           {/* Contact Column */}
-          <div className="space-y-3.5 text-left">
-            <h5 className="text-[10px] font-extrabold uppercase tracking-widest text-foreground">Contact</h5>
-            <ul className="space-y-2.5 text-xs font-semibold text-muted-foreground">
-              <li className="hover:text-primary transition-colors cursor-default">support@pentvars.edu.gh</li>
-              <li className="hover:text-primary transition-colors cursor-default">PU Institution</li>
-              <li className="hover:text-primary transition-colors cursor-default">Verification Operations</li>
+          <div className="space-y-4 text-left col-span-2 sm:col-span-1">
+            <h5 className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-foreground/80">Contact</h5>
+            <ul className="space-y-3 text-xs font-semibold text-muted-foreground">
+              <li className="flex items-center gap-2 hover:text-primary transition-colors cursor-default">
+                <MailOpen className="size-3.5 text-primary/70 shrink-0" />
+                <span>support@pentvars.edu.gh</span>
+              </li>
+              <li className="flex items-center gap-2 hover:text-primary transition-colors cursor-default">
+                <MapPin className="size-3.5 text-primary/70 shrink-0" />
+                <span>PU Institution</span>
+              </li>
+              <li className="flex items-center gap-2 hover:text-primary transition-colors cursor-default">
+                <ShieldCheck className="size-3.5 text-primary/70 shrink-0" />
+                <span>Verification Operations</span>
+              </li>
             </ul>
           </div>
         </div>
 
         {/* Footer Bottom copyright */}
-        <div className="mx-auto max-w-[85rem] px-6 sm:px-8 pt-8 border-t border-border/40 flex flex-col sm:flex-row gap-4 justify-between items-center text-[10px] font-black uppercase tracking-widest text-muted-foreground leading-none">
+        <div className="mx-auto max-w-[85rem] px-6 sm:px-8 pt-8 border-t border-border/40 flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground leading-relaxed sm:leading-none relative z-10">
           <span>© 2026 Pentecost University. All rights reserved.</span>
           <div className="flex gap-6">
             <Link href="#" className="hover:text-primary transition-colors">Privacy Policy</Link>

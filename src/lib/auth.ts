@@ -132,33 +132,36 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
   }
 
   const db = getDb();
-  const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+  const [userData] = await db
+    .select({
+      id: users.id,
+      name: users.name,
+      email: users.email,
+      avatarUrl: users.avatarUrl,
+      role: users.role,
+      status: users.status,
+      studentProfileId: studentProfiles.id,
+      lecturerProfileId: lecturerProfiles.id,
+    })
+    .from(users)
+    .leftJoin(studentProfiles, eq(studentProfiles.userId, users.id))
+    .leftJoin(lecturerProfiles, eq(lecturerProfiles.userId, users.id))
+    .where(eq(users.id, userId))
+    .limit(1);
 
-  if (!user) {
+  if (!userData) {
     return null;
   }
 
-  const [studentProfile] = await db
-    .select({ id: studentProfiles.id })
-    .from(studentProfiles)
-    .where(eq(studentProfiles.userId, user.id))
-    .limit(1);
-
-  const [lecturerProfile] = await db
-    .select({ id: lecturerProfiles.id })
-    .from(lecturerProfiles)
-    .where(eq(lecturerProfiles.userId, user.id))
-    .limit(1);
-
   return {
-    id: user.id,
-    name: user.name,
-    email: user.email,
-    avatarUrl: user.avatarUrl,
-    role: user.role,
-    status: user.status,
-    studentProfileId: studentProfile?.id,
-    lecturerProfileId: lecturerProfile?.id,
+    id: userData.id,
+    name: userData.name,
+    email: userData.email,
+    avatarUrl: userData.avatarUrl,
+    role: userData.role,
+    status: userData.status,
+    studentProfileId: userData.studentProfileId ?? undefined,
+    lecturerProfileId: userData.lecturerProfileId ?? undefined,
   };
 }
 

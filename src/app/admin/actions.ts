@@ -72,7 +72,7 @@ export async function createFacultyAction(formData: FormData) {
   const code = cleanString(formData.get("code")).toUpperCase();
 
   if (!name || !code) {
-    redirect("/admin/faculties/new?error=missing");
+    redirect("/admin/faculties?modal=new&error=missing");
   }
 
   const db = getDb();
@@ -83,7 +83,7 @@ export async function createFacultyAction(formData: FormData) {
     .limit(1);
 
   if (existing) {
-    redirect("/admin/faculties/new?error=exists");
+    redirect("/admin/faculties?modal=new&error=exists");
   }
 
   const [faculty] = await db
@@ -115,7 +115,7 @@ export async function updateFacultyAction(formData: FormData) {
   const code = cleanString(formData.get("code")).toUpperCase();
 
   if (!facultyId || !name || !code) {
-    redirect(`/admin/faculties/${facultyId}/edit?error=missing`);
+    redirect(`/admin/faculties?modal=edit&id=${facultyId}&error=missing`);
   }
 
   const db = getDb();
@@ -188,7 +188,7 @@ export async function createDepartmentAction(formData: FormData) {
   const code = cleanString(formData.get("code")).toUpperCase();
 
   if (!facultyId || !name || !code) {
-    redirect("/admin/departments/new?error=missing");
+    redirect("/admin/departments?modal=new&error=missing");
   }
 
   const db = getDb();
@@ -224,7 +224,7 @@ export async function updateDepartmentAction(formData: FormData) {
   const code = cleanString(formData.get("code")).toUpperCase();
 
   if (!departmentId || !facultyId || !name || !code) {
-    redirect(`/admin/departments/${departmentId}/edit?error=missing`);
+    redirect(`/admin/departments?modal=edit&id=${departmentId}&error=missing`);
   }
 
   const db = getDb();
@@ -293,7 +293,7 @@ export async function createAcademicYearAction(formData: FormData) {
   const parsed = parseAcademicYear(cleanString(formData.get("displayName"), { uppercase: false }));
 
   if (!parsed) {
-    redirect("/admin/academic-years/new?error=format");
+    redirect("/admin/academic-years?modal=new&error=format");
   }
 
   const db = getDb();
@@ -327,7 +327,7 @@ export async function updateAcademicYearAction(formData: FormData) {
   const isCurrent = formData.get("isCurrent") === "on";
 
   if (!academicYearId || !parsed) {
-    redirect(`/admin/academic-years/${academicYearId}/edit?error=format`);
+    redirect(`/admin/academic-years?modal=edit&id=${academicYearId}&error=format`);
   }
 
   const db = getDb();
@@ -461,7 +461,7 @@ export async function createLecturerAction(formData: FormData) {
   const password = cleanString(formData.get("password"), { uppercase: false });
 
   if (!name || !email || password.length < 8) {
-    redirect("/admin/lecturers/new?error=invalid");
+    redirect("/admin/lecturers?modal=new&error=invalid");
   }
 
   const db = getDb();
@@ -472,13 +472,13 @@ export async function createLecturerAction(formData: FormData) {
     .limit(1);
 
   if (existingUser) {
-    redirect("/admin/lecturers/new?error=exists");
+    redirect("/admin/lecturers?modal=new&error=exists");
   }
 
   const avatarUrl = await fileToDataUrl(formData.get("avatar"));
 
   if (avatarUrl === "invalid") {
-    redirect("/admin/lecturers/new?error=image");
+    redirect("/admin/lecturers?modal=new&error=image");
   }
 
   const [lecturerUser] = await db
@@ -522,13 +522,13 @@ export async function updateLecturerAction(formData: FormData) {
   const email = cleanString(formData.get("email"), { uppercase: false }).toLowerCase();
 
   if (!lecturerId || !name || !email) {
-    redirect(`/admin/lecturers/${lecturerId}/edit?error=invalid`);
+    redirect(`/admin/lecturers?modal=edit&id=${lecturerId}&error=invalid`);
   }
 
   const avatarUrl = await fileToDataUrl(formData.get("avatar"));
 
   if (avatarUrl === "invalid") {
-    redirect(`/admin/lecturers/${lecturerId}/edit?error=image`);
+    redirect(`/admin/lecturers?modal=edit&id=${lecturerId}&error=image`);
   }
 
   const db = getDb();
@@ -589,7 +589,7 @@ export async function deleteLecturerAction(formData: FormData) {
     .limit(1);
 
   if (assignedCourse) {
-    redirect(`/admin/lecturers/${lecturerId}/edit?error=assigned`);
+    redirect(`/admin/lecturers?modal=edit&id=${lecturerId}&error=assigned`);
   }
 
   const [lecturer] = await db
@@ -618,7 +618,7 @@ export async function createCatalogCourseAction(formData: FormData) {
   const courseTitle = cleanString(formData.get("courseTitle"));
 
   if (!courseCode || !courseTitle) {
-    redirect("/admin/catalog/new?error=missing");
+    redirect("/admin/catalog?modal=new&error=missing");
   }
 
   const db = getDb();
@@ -634,7 +634,7 @@ export async function createCatalogCourseAction(formData: FormData) {
       .limit(1);
 
     if (!department) {
-      redirect("/admin/catalog/new?error=department");
+      redirect("/admin/catalog?modal=new&error=department");
     }
   }
 
@@ -645,7 +645,7 @@ export async function createCatalogCourseAction(formData: FormData) {
     .limit(1);
 
   if (existingCourse) {
-    redirect("/admin/catalog/new?error=exists");
+    redirect("/admin/catalog?modal=new&error=exists");
   }
 
   const [catalogCourse] = await db
@@ -682,7 +682,7 @@ export async function updateCatalogCourseAction(formData: FormData) {
   const courseTitle = cleanString(formData.get("courseTitle"));
 
   if (!catalogCourseId || !courseCode || !courseTitle) {
-    redirect(`/admin/catalog/${catalogCourseId}/edit?error=missing`);
+    redirect(`/admin/catalog?modal=edit&id=${catalogCourseId}&error=missing`);
   }
 
   const db = getDb();
@@ -698,7 +698,7 @@ export async function updateCatalogCourseAction(formData: FormData) {
       .limit(1);
 
     if (!department) {
-      redirect(`/admin/catalog/${catalogCourseId}/edit?error=department`);
+      redirect(`/admin/catalog?modal=edit&id=${catalogCourseId}&error=department`);
     }
   }
 
@@ -800,7 +800,7 @@ export async function createAssignedCourseAction(formData: FormData) {
   const academicYear = cleanString(formData.get("academicYear"));
 
   if (!catalogCourseId || !lecturerId || !semester || !academicYear) {
-    redirect("/admin/courses/new?error=missing");
+    redirect("/admin/courses?modal=new&error=missing");
   }
 
   const db = getDb();
@@ -817,7 +817,7 @@ export async function createAssignedCourseAction(formData: FormData) {
     .limit(1);
 
   if (!catalogCourse || !lecturer) {
-    redirect("/admin/courses/new?error=invalid");
+    redirect("/admin/courses?modal=new&error=invalid");
   }
 
   const [course] = await db
@@ -856,7 +856,7 @@ export async function updateAssignedCourseAction(formData: FormData) {
   const status = cleanString(formData.get("status"), { uppercase: false });
 
   if (!courseId || !lecturerId) {
-    redirect(`/admin/courses/${courseId}/edit?error=missing`);
+    redirect(`/admin/courses?modal=edit&id=${courseId}&error=missing`);
   }
 
   const db = getDb();
@@ -867,7 +867,7 @@ export async function updateAssignedCourseAction(formData: FormData) {
     .limit(1);
 
   if (!lecturer) {
-    redirect(`/admin/courses/${courseId}/edit?error=lecturer`);
+    redirect(`/admin/courses?modal=edit&id=${courseId}&error=lecturer`);
   }
 
   await db
@@ -935,7 +935,7 @@ export async function updateStudentAccountAction(formData: FormData) {
   const academicYearId = cleanId(formData.get("academicYearId")) || null;
 
   if (!studentId || !name || !email || !studentIdNumber || !status || !studentCategory || !programmeLevel) {
-    redirect(`/admin/students/${studentId}/edit?error=missing`);
+    redirect(`/admin/students?modal=edit&id=${studentId}&error=missing`);
   }
 
   const db = getDb();
@@ -972,7 +972,7 @@ export async function updateStudentAccountAction(formData: FormData) {
     .limit(1);
 
   if (existingEmail && existingEmail.id !== target.userId) {
-    redirect(`/admin/students/${studentId}/edit?error=email`);
+    redirect(`/admin/students?modal=edit&id=${studentId}&error=email`);
   }
 
   const [existingStudentId] = await db
@@ -982,7 +982,7 @@ export async function updateStudentAccountAction(formData: FormData) {
     .limit(1);
 
   if (existingStudentId && existingStudentId.id !== target.studentId) {
-    redirect(`/admin/students/${studentId}/edit?error=studentId`);
+    redirect(`/admin/students?modal=edit&id=${studentId}&error=studentId`);
   }
 
   const programme = cleanString(formData.get("programme")) || null;
@@ -997,7 +997,7 @@ export async function updateStudentAccountAction(formData: FormData) {
       .limit(1);
 
     if (!department) {
-      redirect(`/admin/students/${studentId}/edit?error=department`);
+      redirect(`/admin/students?modal=edit&id=${studentId}&error=department`);
     }
   }
 

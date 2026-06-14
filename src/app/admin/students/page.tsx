@@ -48,6 +48,39 @@ import { programmeLevelLabel, studentCategoryLabel, programmeLevels, studentCate
 
 const accountStatuses = ["pending", "active", "suspended", "disabled"] as const;
 
+type StudentEditRecord = {
+  studentId: string;
+  userId: string;
+  studentName: string;
+  studentEmail: string;
+  accountStatus: typeof users.$inferSelect.status;
+  activatedAt: Date | null;
+  createdAt: Date;
+  studentIdNumber: string;
+  studentCategory: typeof studentProfiles.$inferSelect.studentCategory;
+  programmeLevel: typeof studentProfiles.$inferSelect.programmeLevel;
+  facultyId: string | null;
+  departmentId: string | null;
+  academicYearId: string | null;
+  programme: string | null;
+  level: string | null;
+  classGroup: string | null;
+};
+
+type StudentModalEnrolment = {
+  enrolmentId: string;
+  status: typeof enrolments.$inferSelect.status;
+  courseCode: string;
+  courseTitle: string;
+  semester: string;
+  academicYear: string;
+  classGroup: string;
+};
+
+type FacultyRow = typeof faculties.$inferSelect;
+type DepartmentRow = typeof departments.$inferSelect;
+type AcademicYearRow = typeof academicYears.$inferSelect;
+
 function normalizeAccountStatus(value?: string) {
   return accountStatuses.includes(value as (typeof accountStatuses)[number])
     ? (value as (typeof accountStatuses)[number])
@@ -106,12 +139,12 @@ export default async function AdminStudentsPage({
   const selectedCourseId = query.courseId ?? "all";
   const db = getDb();
 
-  let editStudent = null;
-  let studentEnrolmentsList: any[] = [];
+  let editStudent: StudentEditRecord | null = null;
+  let studentEnrolmentsList: StudentModalEnrolment[] = [];
   let attendanceCount = 0;
-  let facultyRows: any[] = [];
-  let departmentRows: any[] = [];
-  let academicYearRows: any[] = [];
+  let facultyRows: FacultyRow[] = [];
+  let departmentRows: DepartmentRow[] = [];
+  let academicYearRows: AcademicYearRow[] = [];
 
   if (query.modal === "edit" && query.id) {
     const [target] = await db

@@ -6,7 +6,10 @@ import { drizzle, type NeonHttpDatabase } from "drizzle-orm/neon-http";
 import * as schema from "./schema";
 
 // Configure dynamic query fetch with automatic retries globally
-neonConfig.fetchFunction = async (input: any, init?: any) => {
+neonConfig.fetchFunction = async (
+  input: Parameters<typeof fetch>[0],
+  init?: Parameters<typeof fetch>[1],
+) => {
   let attempts = 3;
   let delay = 300;
   while (attempts > 0) {

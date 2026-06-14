@@ -9,7 +9,7 @@ import {
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { PageHeader } from "@/components/page-header";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -136,7 +136,7 @@ export default async function CourseStudentsPage({
               </div>
               <div className="space-y-2">
                 <Label htmlFor="studentIdNumber">Student ID</Label>
-                <Input id="studentIdNumber" name="studentIdNumber" required />
+                <Input className="uppercase-input" id="studentIdNumber" name="studentIdNumber" required />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email">Email address</Label>
@@ -257,14 +257,10 @@ export default async function CourseStudentsPage({
                   <TableCell>{student.programme || "-"}</TableCell>
                   <TableCell>{student.level || "-"}</TableCell>
                   <TableCell>
-                    <Badge variant={student.status === "active" ? "default" : "secondary"}>
-                      {student.status}
-                    </Badge>
+                    <StatusBadge status={student.status} />
                   </TableCell>
                   <TableCell>
-                    <Badge variant={student.accountStatus === "active" ? "default" : "secondary"}>
-                      {student.activatedAt ? "activated" : student.accountStatus}
-                    </Badge>
+                    <StatusBadge status={student.activatedAt ? "active" : student.accountStatus} />
                   </TableCell>
                   <TableCell className="text-right">
                     {student.status === "active" ? (

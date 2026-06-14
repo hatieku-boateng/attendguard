@@ -3,7 +3,7 @@ import { and, asc, desc, eq, gte, ilike, lte, or } from "drizzle-orm";
 import { Pencil, Plus, Search } from "lucide-react";
 
 import { PageHeader } from "@/components/page-header";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -245,7 +245,7 @@ export default async function LecturerSessionsPage({
                   <TableCell>{session.opensAt.toLocaleString()}</TableCell>
                   <TableCell>{session.finalClosesAt.toLocaleString()}</TableCell>
                   <TableCell>
-                    <Badge variant="secondary">{session.status}</Badge>
+                    <StatusBadge status={session.status} />
                   </TableCell>
                   <TableCell className="text-right">
                     <Button asChild size="sm" variant="outline">

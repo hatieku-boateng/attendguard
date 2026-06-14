@@ -1,14 +1,9 @@
-import { KeyRound, MapPinned, Radio, ShieldCheck } from "lucide-react";
+import Link from "next/link";
+import { ArrowLeft, KeyRound, MapPin, FileText, ShieldCheck } from "lucide-react";
 
 import { BrandMark } from "@/components/brand";
-
-const assuranceMetrics = [
-  { icon: KeyRound, label: "Passkey", value: "128" },
-  { icon: MapPinned, label: "GPS lock", value: "12m" },
-  { icon: Radio, label: "Audit", value: "Live" },
-];
-
-const sessionBars = [78, 64, 88, 52, 93];
+import { ThemeToggle } from "@/components/theme-toggle";
+import { Button } from "@/components/ui/button";
 
 export function AuthFrame({
   eyebrow,
@@ -22,92 +17,96 @@ export function AuthFrame({
   children: React.ReactNode;
 }) {
   return (
-    <main className="grid min-h-screen bg-background text-foreground lg:grid-cols-[0.95fr_1.05fr]">
-      <section className="relative hidden overflow-hidden bg-[oklch(0.17_0.04_238)] p-10 text-white lg:flex lg:flex-col lg:justify-between">
-        <div
-          aria-hidden="true"
-          className="absolute inset-0 bg-cover bg-center opacity-35"
-          style={{
-            backgroundImage:
-              "url('https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&w=1400&q=80')",
-          }}
-        />
-        <div className="absolute inset-0 bg-[linear-gradient(90deg,oklch(0.12_0.04_238)_0%,oklch(0.16_0.05_238/0.95)_42%,oklch(0.18_0.04_238/0.65)_100%)]" />
-        <div className="absolute inset-0 opacity-30 [background-image:linear-gradient(90deg,rgba(255,255,255,.08)_1px,transparent_1px),linear-gradient(rgba(255,255,255,.08)_1px,transparent_1px)] [background-size:42px_42px]" />
-        <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-white/10 to-transparent" />
-        <div>
-          <BrandMark className="relative text-white" />
-        </div>
-        <div className="relative max-w-xl space-y-6">
-          <div className="inline-flex items-center gap-2 rounded-lg border border-white/15 bg-white/10 px-3 py-2 text-sm text-white/75 shadow-lg shadow-slate-950/20 backdrop-blur-md">
-            <ShieldCheck className="size-4 text-emerald-300" />
-            {eyebrow}
-          </div>
-          <h1 className="max-w-2xl text-5xl font-semibold leading-tight tracking-normal">
-            {title}
-          </h1>
-          <p className="max-w-lg text-base leading-7 text-white/70">{description}</p>
-          <div className="grid max-w-lg gap-3 rounded-lg border border-white/10 bg-white/[0.08] p-4 shadow-2xl shadow-slate-950/30 backdrop-blur-md">
-            <div className="flex items-center justify-between border-b border-white/10 pb-3">
-              <div>
-                <p className="text-sm font-semibold">Session assurance</p>
-                <p className="text-xs uppercase tracking-[0.14em] text-white/45">
-                  Live verification model
-                </p>
-              </div>
-              <span className="rounded-lg border border-emerald-300/25 bg-emerald-300/10 px-2.5 py-1 text-xs font-medium text-emerald-100">
-                Active
-              </span>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-3">
-              {assuranceMetrics.map((item) => {
-                const Icon = item.icon;
+    <main className="relative min-h-screen bg-background text-foreground overflow-x-hidden pb-16 transition-colors duration-500">
+      
+      {/* Subtle background ambient lights */}
+      <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-[-10%] left-[-10%] w-[60rem] h-[60rem] rounded-full bg-primary/5 blur-[120px] dark:bg-primary/3" />
+        <div className="absolute bottom-[10%] right-[-15%] w-[50rem] h-[50rem] rounded-full bg-cyan-500/5 blur-[130px] dark:bg-cyan-500/3 animate-pulse" />
+      </div>
 
+      {/* Structured Header - Aligns with Landing Page Header */}
+      <header className="mx-auto flex w-full max-w-[85rem] items-center justify-between px-6 py-6 sm:px-8 z-30 relative">
+        <BrandMark />
+        <nav className="flex items-center gap-4">
+          <ThemeToggle />
+          <Button asChild variant="outline" className="rounded-full px-5 text-sm font-semibold h-8.5 border-border hover:bg-muted dark:hover:bg-white/[0.06]">
+            <Link href="/" className="inline-flex items-center gap-1.5">
+              <ArrowLeft className="size-3.5" />
+              Return Home
+            </Link>
+          </Button>
+        </nav>
+      </header>
+
+      {/* Main Grid - Aligns with Landing Page Hero Grid */}
+      <section className="mx-auto max-w-[85rem] px-6 pt-8 pb-12 sm:px-8 z-10 relative">
+        <div className="grid gap-16 lg:grid-cols-[1fr_0.9fr] items-center">
+          
+          {/* Left Column: Brand Details & Value Props */}
+          <div className="space-y-8 text-left">
+            <div className="inline-flex items-center gap-2.5 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-xs font-bold text-primary shadow-sm tracking-wide uppercase dark:bg-primary/10">
+              <ShieldCheck className="size-4 text-emerald-500 animate-pulse" />
+              {eyebrow}
+            </div>
+            
+            <div className="space-y-4">
+              <h1 className="text-4xl font-black leading-[1.08] tracking-tight text-foreground sm:text-5xl lg:text-[3.75rem]">
+                {title}
+              </h1>
+              <p className="text-base leading-relaxed text-muted-foreground font-semibold max-w-lg">
+                {description}
+              </p>
+            </div>
+
+            {/* Feature Highlights List */}
+            <div className="space-y-6 pt-6 border-t border-border/50 max-w-lg">
+              {[
+                {
+                  icon: MapPin,
+                  title: "Geofenced checks",
+                  desc: "Location perimeters validate device coordinates within lecture bounds.",
+                  color: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20",
+                },
+                {
+                  icon: KeyRound,
+                  title: "Enrolment passkeys",
+                  desc: "Device identities are securely bound during activation, preventing proxies.",
+                  color: "text-cyan-500 bg-cyan-500/10 border-cyan-500/20",
+                },
+                {
+                  icon: FileText,
+                  title: "Auditable journals",
+                  desc: "Every attendance session is logged into immutable, exportable registers.",
+                  color: "text-purple-500 bg-purple-500/10 border-purple-500/20",
+                },
+              ].map((item, index) => {
+                const Icon = item.icon;
                 return (
-                  <div
-                    className="rounded-lg border border-white/10 bg-black/20 p-3 shadow-inner shadow-white/5"
-                    key={item.label}
-                  >
-                    <Icon className="mb-3 size-4 text-amber-200" />
-                    <p className="font-mono text-2xl font-semibold">{item.value}</p>
-                    <p className="text-xs text-white/55">{item.label}</p>
+                  <div key={index} className="flex gap-4.5 group/item items-start text-left select-none">
+                    <span className={`flex size-10 items-center justify-center rounded-2xl border shrink-0 transition-transform duration-300 group-hover/item:scale-105 shadow-inner ${item.color}`}>
+                      <Icon className="size-4.5" />
+                    </span>
+                    <div className="space-y-0.5">
+                      <h3 className="text-sm font-extrabold text-foreground tracking-tight">{item.title}</h3>
+                      <p className="text-xs text-muted-foreground leading-relaxed font-semibold">{item.desc}</p>
+                    </div>
                   </div>
                 );
               })}
             </div>
-            <div className="space-y-2 pt-1">
-              {sessionBars.map((width, index) => (
-                <div className="flex items-center gap-3" key={`session-${index}`}>
-                  <span className="w-12 text-xs text-white/45">S{index + 1}</span>
-                  <span className="h-2 flex-1 overflow-hidden rounded-full bg-white/10">
-                    <span
-                      className="block h-full rounded-full bg-emerald-300"
-                      style={{ width: `${width}%` }}
-                    />
-                  </span>
-                </div>
-              ))}
+          </div>
+
+          {/* Right Column: Auth Card */}
+          <div className="w-full flex justify-center">
+            <div className="w-full max-w-md">
+              {children}
             </div>
           </div>
-        </div>
-        <div className="relative grid gap-3 rounded-lg border border-white/10 bg-white/[0.08] p-4 text-sm text-white/75 shadow-xl shadow-slate-950/20 backdrop-blur-md">
-          <div className="flex items-center justify-between">
-            <span>Identity</span>
-            <span className="font-medium text-emerald-300">Verified</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span>Course ownership</span>
-            <span className="font-medium text-emerald-300">Assigned</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span>Attendance audit</span>
-            <span className="font-medium text-emerald-300">Tracked</span>
-          </div>
+
         </div>
       </section>
-      <section className="flex min-h-screen items-center justify-center px-4 py-10 sm:px-6 sm:py-12">
-        <div className="w-full max-w-md">{children}</div>
-      </section>
+
     </main>
   );
 }

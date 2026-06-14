@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { WifiOff, RefreshCw } from "lucide-react";
 
 import { LocationFields } from "@/components/location-fields";
 import { Button } from "@/components/ui/button";
@@ -95,28 +96,40 @@ export function StudentAttendanceForm({
   return (
     <form
       action={action}
-      className="space-y-5"
+      className="space-y-6"
       onSubmit={saveSubmissionBackup}
       ref={formRef}
     >
       <input name="sessionId" type="hidden" value={sessionId} />
+      
       {!isOnline ? (
-        <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-          You appear to be offline. Capture is saved on this device, then submit
-          again when internet returns.
-        </p>
+        <div className="rounded-xl border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive flex items-start gap-3 backdrop-blur-md">
+          <WifiOff className="size-5 shrink-0 mt-0.5" />
+          <div className="space-y-0.5">
+            <p className="font-bold">Connection Offline</p>
+            <p className="text-xs text-destructive/80 leading-relaxed">
+              Your device is currently offline. Your check-in data will be saved locally. Please re-submit once your internet connection is restored.
+            </p>
+          </div>
+        </div>
       ) : null}
+
       {pendingSubmission ? (
-        <p className="rounded-md border bg-muted px-3 py-2 text-sm text-muted-foreground">
-          A pending attendance attempt from{" "}
-          {new Date(pendingSubmission.savedAt).toLocaleString()} is saved on this
-          device. Review the details and submit again if needed.
-        </p>
+        <div className="rounded-xl border border-primary/20 bg-primary/10 p-4 text-sm text-primary flex items-start gap-3 backdrop-blur-md">
+          <RefreshCw className="size-5 shrink-0 mt-0.5 animate-spin-slow" />
+          <div className="space-y-0.5">
+            <p className="font-bold">Pending Attendance Backup</p>
+            <p className="text-xs text-primary/85 leading-relaxed">
+              A pending check-in from {new Date(pendingSubmission.savedAt).toLocaleString()} was recovered. Check the details and submit again.
+            </p>
+          </div>
+        </div>
       ) : null}
+
       <div className="space-y-2">
-        <Label htmlFor="passkey">Assigned passkey</Label>
+        <Label htmlFor="passkey" className="text-sm font-bold tracking-tight">Assigned passkey</Label>
         <Input
-          className="font-mono"
+          className="font-mono text-base tracking-widest py-5 rounded-xl text-center font-bold uppercase-input"
           defaultValue={pendingSubmission?.passkey || passkey}
           id="passkey"
           key={pendingSubmission?.savedAt ?? "current-passkey"}
@@ -124,8 +137,9 @@ export function StudentAttendanceForm({
           required
         />
       </div>
+
       <div className="space-y-2">
-        <Label>Current location</Label>
+        <Label className="text-sm font-bold tracking-tight">Current location</Label>
         <LocationFields
           accuracyName="locationAccuracy"
           initialAccuracy={pendingSubmission?.locationAccuracy}
@@ -133,8 +147,8 @@ export function StudentAttendanceForm({
           initialLongitude={pendingSubmission?.studentLongitude}
           initialMessage={
             pendingSubmission
-              ? `Recovered saved GPS details. Capture again if you need a fresher reading within ${maxAcceptedAccuracyMeters}m.`
-              : `Capture your device location. Keep capture running until the accuracy is within ${maxAcceptedAccuracyMeters}m.`
+              ? `Recovered saved GPS coordinates. Capture again if you need a fresher reading within ${maxAcceptedAccuracyMeters}m.`
+              : `Capture your device location. Keep GPS running until the accuracy is within ${maxAcceptedAccuracyMeters}m.`
           }
           key={pendingSubmission?.savedAt ?? "current-location"}
           latitudeName="studentLatitude"
@@ -142,8 +156,9 @@ export function StudentAttendanceForm({
           maxAccuracyMeters={maxAcceptedAccuracyMeters}
         />
       </div>
-      <Button className="w-full sm:w-auto" type="submit">
-        Submit attendance
+
+      <Button className="w-full py-5 rounded-xl font-bold shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 transition-all text-sm" type="submit">
+        Submit attendance check-in
       </Button>
     </form>
   );

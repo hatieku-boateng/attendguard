@@ -9,6 +9,7 @@ import {
 import { BulkSelectionToggle } from "@/components/bulk-selection-toggle";
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { PageHeader } from "@/components/page-header";
+import { StatusBadge } from "@/components/status-badge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -31,18 +32,6 @@ function normalizeAccountStatus(value?: string) {
   return accountStatuses.includes(value as (typeof accountStatuses)[number])
     ? (value as (typeof accountStatuses)[number])
     : "all";
-}
-
-function accountStatusVariant(status: string) {
-  if (status === "active") {
-    return "default" as const;
-  }
-
-  if (status === "pending") {
-    return "secondary" as const;
-  }
-
-  return "destructive" as const;
 }
 
 function noticeFor(query: {
@@ -195,59 +184,66 @@ export default async function AdminStudentsPage({
   return (
     <>
       <PageHeader
-        title="Students"
-        description="Supervise every student account in the system, including students who have not yet been assigned to any course."
+        title="Student Registry"
+        description="Supervise every registered student account, configure course enrolments, and track activation states."
       />
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        <Card size="sm">
-          <CardContent className="flex items-center justify-between gap-4">
+      <div className="grid gap-5 sm:grid-cols-3">
+        <Card className="glass-panel glass-panel-hover border-border/40 overflow-hidden relative">
+          <div className="absolute inset-x-0 top-0 h-1 bg-cyan-500" />
+          <CardContent className="flex items-center justify-between gap-4 pt-6">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                Visible students
+              <p className="text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground">
+                Visible Students
               </p>
-              <p className="mt-2 text-2xl font-semibold">{rows.length}</p>
+              <p className="mt-2.5 text-3xl font-extrabold text-foreground font-mono">{rows.length}</p>
             </div>
-            <UsersRound className="size-8 text-primary" />
+            <span className="flex size-10 items-center justify-center rounded-xl bg-cyan-500/10 text-cyan-500 border border-cyan-500/15">
+              <UsersRound className="size-5.5" />
+            </span>
           </CardContent>
         </Card>
-        <Card size="sm">
-          <CardContent className="flex items-center justify-between gap-4">
+        <Card className="glass-panel glass-panel-hover border-border/40 overflow-hidden relative">
+          <div className="absolute inset-x-0 top-0 h-1 bg-emerald-500" />
+          <CardContent className="flex items-center justify-between gap-4 pt-6">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                Active accounts
+              <p className="text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground">
+                Active Accounts
               </p>
-              <p className="mt-2 text-2xl font-semibold">{activeCount}</p>
+              <p className="mt-2.5 text-3xl font-extrabold text-foreground font-mono">{activeCount}</p>
             </div>
-            <UserCheck className="size-8 text-primary" />
+            <span className="flex size-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500 border border-emerald-500/15">
+              <UserCheck className="size-5.5" />
+            </span>
           </CardContent>
         </Card>
-        <Card size="sm">
-          <CardContent>
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-              Assigned / pending
+        <Card className="glass-panel glass-panel-hover border-border/40 overflow-hidden relative">
+          <div className="absolute inset-x-0 top-0 h-1 bg-[linear-gradient(90deg,var(--primary),oklch(0.52_0.14_200))]" />
+          <CardContent className="pt-6">
+            <p className="text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground">
+              Assigned / Pending
             </p>
-            <p className="mt-2 text-2xl font-semibold">
-              {assignedCount} / {pendingCount}
+            <p className="mt-2.5 text-3xl font-extrabold text-foreground font-mono">
+              {assignedCount} <span className="text-muted-foreground/45 text-xl">/</span> {pendingCount}
             </p>
           </CardContent>
         </Card>
       </div>
 
-      <Card className="mt-5">
-        <CardContent className="pt-6">
-          <form className="grid gap-3 lg:grid-cols-[1fr_280px_190px_auto]">
+      <Card className="mt-6 glass-panel border-border/40 overflow-hidden relative">
+        <CardContent className="p-4 sm:p-5">
+          <form className="grid gap-4 lg:grid-cols-[1fr_280px_200px_auto]">
             <div className="relative">
-              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground/60" />
               <Input
-                className="pl-9"
+                className="pl-10 h-10.5 rounded-xl border-border/50 bg-background/50 focus-visible:ring-primary/20"
                 defaultValue={searchTerm}
                 name="q"
                 placeholder="Search name, email, student ID, programme, or course"
               />
             </div>
             <select
-              className="h-9 rounded-lg border border-input bg-card/80 px-3 text-sm shadow-sm shadow-slate-950/5 outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/45"
+              className="h-10.5 rounded-xl border border-border/50 bg-background/50 px-3 text-sm shadow-sm outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/15 transition-all text-foreground"
               defaultValue={selectedCourseId}
               name="courseId"
             >
@@ -259,7 +255,7 @@ export default async function AdminStudentsPage({
               ))}
             </select>
             <select
-              className="h-9 rounded-lg border border-input bg-card/80 px-3 text-sm shadow-sm shadow-slate-950/5 outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/45"
+              className="h-10.5 rounded-xl border border-border/50 bg-background/50 px-3 text-sm shadow-sm outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/15 transition-all text-foreground"
               defaultValue={selectedStatus}
               name="status"
             >
@@ -270,12 +266,12 @@ export default async function AdminStudentsPage({
               <option value="disabled">Disabled</option>
             </select>
             <div className="flex gap-2">
-              <Button className="flex-1 lg:flex-none" type="submit">
+              <Button className="flex-1 lg:flex-none h-10.5 rounded-xl px-5 font-bold shadow-sm" type="submit">
                 <Search className="size-4" />
-                Filter
+                <span>Filter</span>
               </Button>
               {searchTerm || selectedStatus !== "all" || selectedCourseId !== "all" ? (
-                <Button asChild className="flex-1 lg:flex-none" variant="outline">
+                <Button asChild className="flex-1 lg:flex-none h-10.5 rounded-xl font-bold shadow-sm" variant="outline">
                   <Link href="/admin/students">Reset</Link>
                 </Button>
               ) : null}
@@ -284,149 +280,157 @@ export default async function AdminStudentsPage({
         </CardContent>
       </Card>
 
-      <Card className="mt-5">
-        <CardHeader>
-          <CardTitle>Student account register</CardTitle>
+      <Card className="mt-6 glass-panel border-border/40 overflow-hidden relative">
+        <CardHeader className="border-b border-border/30 bg-slate-950/[0.01] dark:bg-white/[0.01] pb-4">
+          <CardTitle className="text-base font-bold text-foreground">Student Account Register</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-5 pt-5 px-0">
           {notice ? (
-            <p
-              className={`rounded-lg border px-3 py-2 text-sm ${
-                query.error
-                  ? "border-destructive/30 bg-destructive/10 text-destructive"
-                  : "border-primary/20 bg-primary/10 text-primary"
-              }`}
-            >
-              {notice}
-            </p>
+            <div className="mx-6">
+              <p
+                className={`rounded-xl border px-4 py-3 text-xs font-bold leading-relaxed ${
+                  query.error
+                    ? "border-destructive/30 bg-destructive/10 text-destructive"
+                    : "border-primary/20 bg-primary/10 text-primary"
+                }`}
+              >
+                {notice}
+              </p>
+            </div>
           ) : null}
 
-          <form
-            className="flex flex-col gap-2 rounded-lg border border-destructive/20 bg-destructive/5 p-3 sm:flex-row sm:items-center sm:justify-between"
-            id="admin-student-bulk-form"
-          >
-            <div className="text-sm text-muted-foreground">
-              Select student accounts to delete in bulk. This removes their accounts,
-              profiles, enrolments, attendance records, activation tokens, and passkeys.
-            </div>
-            <ConfirmSubmitButton
-              className="sm:w-auto"
-              formAction={bulkDeleteStudentAccountsAction}
-              message="Delete all selected student accounts? This removes their profiles, course enrolments, attendance records, activation tokens, and passkeys."
+          <div className="mx-6">
+            <form
+              className="flex flex-col gap-3.5 rounded-xl border border-rose-500/25 bg-rose-500/5 p-4 sm:flex-row sm:items-center sm:justify-between"
+              id="admin-student-bulk-form"
             >
-              <Trash2 className="size-4" />
-              Delete selected
-            </ConfirmSubmitButton>
-          </form>
+              <div className="text-xs text-muted-foreground leading-relaxed font-semibold max-w-xl">
+                Delete selected student accounts. This completely removes their profiles, course assignments, check-in records, geofence tokens, and security keys.
+              </div>
+              <ConfirmSubmitButton
+                className="sm:w-auto h-9.5 rounded-xl font-bold shadow-sm text-xs"
+                formAction={bulkDeleteStudentAccountsAction}
+                message="Delete all selected student accounts? This removes their profiles, course enrolments, attendance records, activation tokens, and passkeys."
+              >
+                <Trash2 className="size-4" />
+                <span>Delete Selected</span>
+              </ConfirmSubmitButton>
+            </form>
+          </div>
 
-          <Table className="min-w-[76rem]">
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-10">
-                  <BulkSelectionToggle />
-                </TableHead>
-                <TableHead>Student</TableHead>
-                <TableHead>Account</TableHead>
-                <TableHead>Course assignments</TableHead>
-                <TableHead>Programme</TableHead>
-                <TableHead>Level</TableHead>
-                <TableHead>Group</TableHead>
-                <TableHead>Created</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.map((student) => (
-                <TableRow key={student.studentId}>
-                  <TableCell>
-                    <input
-                      aria-label={`Select ${student.studentName}`}
-                      className="size-4 rounded border-border text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                      data-bulk-row
-                      form="admin-student-bulk-form"
-                      name="studentId"
-                      type="checkbox"
-                      value={student.studentId}
-                    />
-                  </TableCell>
-                  <TableCell className="font-medium">
-                    {student.studentName}
-                    <span className="block text-xs text-muted-foreground">
-                      {student.studentIdNumber} / {student.studentEmail}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={accountStatusVariant(student.accountStatus)}>
-                      {student.accountStatus}
-                    </Badge>
-                    <span className="block text-xs text-muted-foreground">
-                      {student.activatedAt ? "Activated" : "Not activated"}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    {student.enrolments.length > 0 ? (
-                      <div className="max-w-[22rem] space-y-1">
-                        {student.enrolments.slice(0, 2).map((enrolment) => (
-                          <div key={enrolment.enrolmentId}>
-                            <span className="font-medium">{enrolment.courseCode}</span>
-                            <span className="text-xs text-muted-foreground">
-                              {" "}
-                              / {enrolment.status} / {enrolment.classGroup}
-                            </span>
-                          </div>
-                        ))}
-                        {student.enrolments.length > 2 ? (
-                          <p className="text-xs text-muted-foreground">
-                            +{student.enrolments.length - 2} more assignment(s)
-                          </p>
-                        ) : null}
+          <div className="overflow-x-auto">
+            <Table className="min-w-[76rem]">
+              <TableHeader className="bg-slate-950/[0.02] dark:bg-white/[0.01]">
+                <TableRow className="hover:bg-transparent border-b border-border/30">
+                  <TableHead className="w-12 px-6">
+                    <BulkSelectionToggle />
+                  </TableHead>
+                  <TableHead className="px-4 py-3 font-semibold text-muted-foreground text-xs">Student</TableHead>
+                  <TableHead className="px-4 py-3 font-semibold text-muted-foreground text-xs">Account</TableHead>
+                  <TableHead className="px-4 py-3 font-semibold text-muted-foreground text-xs">Course Assignments</TableHead>
+                  <TableHead className="px-4 py-3 font-semibold text-muted-foreground text-xs">Programme</TableHead>
+                  <TableHead className="px-4 py-3 font-semibold text-muted-foreground text-xs">Level</TableHead>
+                  <TableHead className="px-4 py-3 font-semibold text-muted-foreground text-xs">Group</TableHead>
+                  <TableHead className="px-4 py-3 font-semibold text-muted-foreground text-xs">Created</TableHead>
+                  <TableHead className="px-6 py-3 text-right font-semibold text-muted-foreground text-xs">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {rows.map((student) => (
+                  <TableRow key={student.studentId} className="hover:bg-muted/30 border-b border-border/20 transition-colors">
+                    <TableCell className="px-6">
+                      <input
+                        aria-label={`Select ${student.studentName}`}
+                        className="size-4 rounded border-border/60 text-primary bg-background/50 accent-primary focus:ring-primary/25 focus-visible:outline-none"
+                        data-bulk-row
+                        form="admin-student-bulk-form"
+                        name="studentId"
+                        type="checkbox"
+                        value={student.studentId}
+                      />
+                    </TableCell>
+                    <TableCell className="px-4 py-4.5">
+                      <p className="text-sm font-extrabold text-foreground leading-snug">{student.studentName}</p>
+                      <p className="text-[0.7rem] text-muted-foreground font-semibold mt-1">
+                        {student.studentIdNumber} <span className="text-muted-foreground/35 mx-1">/</span> {student.studentEmail}
+                      </p>
+                    </TableCell>
+                    <TableCell className="px-4 py-4.5">
+                      <StatusBadge status={student.accountStatus} />
+                      <span className="block text-[0.68rem] text-muted-foreground font-semibold mt-1.5">
+                        {student.activatedAt ? "Activated" : "Not Activated"}
+                      </span>
+                    </TableCell>
+                    <TableCell className="px-4 py-4.5">
+                      {student.enrolments.length > 0 ? (
+                        <div className="max-w-[22rem] space-y-1.5">
+                          {student.enrolments.slice(0, 2).map((enrolment) => (
+                            <div key={enrolment.enrolmentId} className="text-xs">
+                              <span className="font-bold text-foreground">{enrolment.courseCode}</span>
+                              <span className="text-muted-foreground font-medium">
+                                {" "}
+                                / {enrolment.status} / {enrolment.classGroup}
+                              </span>
+                            </div>
+                          ))}
+                          {student.enrolments.length > 2 ? (
+                            <p className="text-[0.68rem] text-primary font-bold">
+                              +{student.enrolments.length - 2} more course assignments
+                            </p>
+                          ) : null}
+                        </div>
+                      ) : (
+                        <Badge variant="outline" className="text-[0.65rem] font-bold text-muted-foreground bg-muted/20 border-border/50">Unassigned</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell className="px-4 py-4.5 text-xs font-bold text-foreground/80">{student.programme ?? "-"}</TableCell>
+                    <TableCell className="px-4 py-4.5 text-xs font-bold text-foreground/80">{student.level ?? "-"}</TableCell>
+                    <TableCell className="px-4 py-4.5 text-xs font-bold text-foreground/80">{student.classGroup ?? "-"}</TableCell>
+                    <TableCell className="px-4 py-4.5 text-xs font-semibold text-muted-foreground">
+                      {student.createdAt.toLocaleDateString("en-GB", {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                      })}
+                    </TableCell>
+                    <TableCell className="px-6 py-4.5">
+                      <div className="flex justify-end gap-2">
+                        <Button asChild size="sm" variant="outline" className="h-8.5 rounded-lg text-xs font-bold shadow-sm">
+                          <Link href={`/admin/students/${student.studentId}/edit`} className="flex items-center gap-1">
+                            <Pencil className="size-3.5" />
+                            <span>Edit</span>
+                          </Link>
+                        </Button>
+                        <form action={deleteStudentAccountAction}>
+                          <input name="studentId" type="hidden" value={student.studentId} />
+                          <ConfirmSubmitButton
+                            className="w-auto h-8.5 rounded-lg text-xs font-bold shadow-sm"
+                            message={`Delete ${student.studentName}'s student account? This removes their profile, course enrolments, attendance records, activation tokens, and passkeys.`}
+                            size="sm"
+                          >
+                            <Trash2 className="size-3.5" />
+                            <span>Delete</span>
+                          </ConfirmSubmitButton>
+                        </form>
                       </div>
-                    ) : (
-                      <Badge variant="outline">Unassigned</Badge>
-                    )}
-                  </TableCell>
-                  <TableCell>{student.programme ?? "-"}</TableCell>
-                  <TableCell>{student.level ?? "-"}</TableCell>
-                  <TableCell>{student.classGroup ?? "-"}</TableCell>
-                  <TableCell>
-                    {student.createdAt.toLocaleDateString("en-GB", {
-                      day: "2-digit",
-                      month: "short",
-                      year: "numeric",
-                    })}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex justify-end gap-2">
-                      <Button asChild size="sm" variant="outline">
-                        <Link href={`/admin/students/${student.studentId}/edit`}>
-                          <Pencil className="size-4" />
-                          Edit
-                        </Link>
-                      </Button>
-                      <form action={deleteStudentAccountAction}>
-                        <input name="studentId" type="hidden" value={student.studentId} />
-                        <ConfirmSubmitButton
-                          className="w-auto"
-                          message={`Delete ${student.studentName}'s student account? This removes their profile, course enrolments, attendance records, activation tokens, and passkeys.`}
-                          size="sm"
-                        >
-                          <Trash2 className="size-4" />
-                          Delete
-                        </ConfirmSubmitButton>
-                      </form>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {rows.length === 0 ? (
-                <TableRow>
-                  <TableCell className="h-28 text-center text-muted-foreground" colSpan={9}>
-                    No student accounts match the current filters.
-                  </TableCell>
-                </TableRow>
-              ) : null}
-            </TableBody>
-          </Table>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {rows.length === 0 ? (
+                  <TableRow>
+                    <TableCell className="h-44 text-center text-muted-foreground text-xs" colSpan={9}>
+                      <div className="flex flex-col items-center justify-center gap-3 py-6">
+                        <span className="flex size-12 items-center justify-center rounded-2xl bg-muted/60 border border-border/40 text-muted-foreground/35 animate-pulse">
+                          <Search className="size-6" />
+                        </span>
+                        <p className="font-semibold text-muted-foreground/60 text-sm">No student accounts found matching these filters.</p>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : null}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
     </>

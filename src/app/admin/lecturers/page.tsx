@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { Pencil, Plus, UserRound } from "lucide-react";
 
 import { PageHeader } from "@/components/page-header";
+import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -36,73 +37,83 @@ export default async function AdminLecturersPage() {
   return (
     <>
       <PageHeader
-        title="Lecturers"
-        description="Teacher accounts created and managed by the administrator."
+        title="Lecturer Accounts"
+        description="Provision, configure, and monitor verified instructor workspaces and staff assignments."
         actions={
-          <Button asChild>
-            <Link href="/admin/lecturers/new">
-              <Plus className="size-4" />
-              New lecturer
+          <Button asChild className="rounded-xl shadow-sm">
+            <Link href="/admin/lecturers/new" className="flex items-center gap-1.5">
+              <Plus className="size-4.5" />
+              <span>Register Lecturer</span>
             </Link>
           </Button>
         }
       />
-      <Card>
-        <CardContent className="pt-6">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Staff ID</TableHead>
-                <TableHead>Department</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Action</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {lecturers.map((lecturer) => (
-                <TableRow key={lecturer.id}>
-                  <TableCell className="font-medium">
-                    <div className="flex items-center gap-3">
-                      <span className="flex size-10 items-center justify-center rounded-lg bg-muted">
-                        {lecturer.avatarUrl ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            alt=""
-                            className="size-10 rounded-lg object-cover"
-                            src={lecturer.avatarUrl}
-                          />
-                        ) : (
-                          <UserRound className="size-4 text-muted-foreground" />
-                        )}
-                      </span>
-                      {lecturer.name}
-                    </div>
-                  </TableCell>
-                  <TableCell>{lecturer.email}</TableCell>
-                  <TableCell>{lecturer.staffId || "-"}</TableCell>
-                  <TableCell>{lecturer.department || "-"}</TableCell>
-                  <TableCell>{lecturer.status}</TableCell>
-                  <TableCell className="text-right">
-                    <Button asChild size="sm" variant="outline">
-                      <Link href={`/admin/lecturers/${lecturer.id}/edit`}>
-                        <Pencil className="size-4" />
-                        Edit
-                      </Link>
-                    </Button>
-                  </TableCell>
+      <Card className="glass-panel glass-panel-hover overflow-hidden relative border-border/40">
+        <div className="absolute inset-x-0 top-0 h-1 bg-[linear-gradient(90deg,var(--primary),oklch(0.52_0.14_200))]" />
+        <CardContent className="pt-6 px-0">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader className="bg-slate-950/[0.02] dark:bg-white/[0.01]">
+                <TableRow className="hover:bg-transparent border-b border-border/30">
+                  <TableHead className="px-6 py-3 font-semibold text-muted-foreground text-xs">Lecturer Name</TableHead>
+                  <TableHead className="px-4 py-3 font-semibold text-muted-foreground text-xs">Email Address</TableHead>
+                  <TableHead className="px-4 py-3 font-semibold text-muted-foreground text-xs">Staff ID</TableHead>
+                  <TableHead className="px-4 py-3 font-semibold text-muted-foreground text-xs">Department</TableHead>
+                  <TableHead className="px-4 py-3 font-semibold text-muted-foreground text-xs">Status</TableHead>
+                  <TableHead className="px-6 py-3 text-right font-semibold text-muted-foreground text-xs">Actions</TableHead>
                 </TableRow>
-              ))}
-              {lecturers.length === 0 ? (
-                <TableRow>
-                  <TableCell className="h-24 text-center text-muted-foreground" colSpan={6}>
-                    No lecturer accounts have been created yet.
-                  </TableCell>
-                </TableRow>
-              ) : null}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {lecturers.map((lecturer) => (
+                  <TableRow key={lecturer.id} className="hover:bg-muted/30 border-b border-border/20 transition-colors">
+                    <TableCell className="px-6 py-4.5 font-bold text-foreground">
+                      <div className="flex items-center gap-3">
+                        <span className="flex size-10 items-center justify-center rounded-xl bg-muted/60 border border-border/40 overflow-hidden shadow-inner">
+                          {lecturer.avatarUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              alt=""
+                              className="size-10 rounded-xl object-cover"
+                              src={lecturer.avatarUrl}
+                            />
+                          ) : (
+                            <UserRound className="size-4.5 text-muted-foreground/80" />
+                          )}
+                        </span>
+                        <span className="text-sm font-extrabold text-foreground">{lecturer.name}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="px-4 py-4.5 text-xs font-semibold text-muted-foreground">{lecturer.email}</TableCell>
+                    <TableCell className="px-4 py-4.5 text-xs font-bold text-foreground/80">{lecturer.staffId || "-"}</TableCell>
+                    <TableCell className="px-4 py-4.5 text-xs font-bold text-foreground/80">{lecturer.department || "-"}</TableCell>
+                    <TableCell className="px-4 py-4.5">
+                      <StatusBadge status={lecturer.status} />
+                    </TableCell>
+                    <TableCell className="px-6 py-4.5 text-right">
+                      <Button asChild size="sm" variant="outline" className="h-8.5 rounded-lg text-xs font-bold shadow-sm">
+                        <Link href={`/admin/lecturers/${lecturer.id}/edit`} className="flex items-center gap-1.5">
+                          <Pencil className="size-3.5" />
+                          <span>Edit</span>
+                        </Link>
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {lecturers.length === 0 ? (
+                  <TableRow>
+                    <TableCell className="h-44 text-center text-muted-foreground text-xs" colSpan={6}>
+                      <div className="flex flex-col items-center justify-center gap-3 py-6">
+                        <span className="flex size-12 items-center justify-center rounded-2xl bg-muted/60 border border-border/40 text-muted-foreground/35 animate-pulse">
+                          <UserRound className="size-6" />
+                        </span>
+                        <p className="font-semibold text-muted-foreground/60 text-sm">No lecturer accounts registered.</p>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : null}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
     </>

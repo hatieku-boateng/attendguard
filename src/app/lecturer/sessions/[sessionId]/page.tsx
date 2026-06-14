@@ -13,7 +13,7 @@ import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { PageHeader } from "@/components/page-header";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { StatCard } from "@/components/stat-card";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -229,7 +229,7 @@ export default async function LecturerSessionDetailPage({
                     {record.name} ({record.studentIdNumber})
                   </TableCell>
                   <TableCell>
-                    <Badge variant="secondary">{record.status}</Badge>
+                    <StatusBadge status={record.status} />
                   </TableCell>
                   <TableCell>{record.checkInAt.toLocaleString()}</TableCell>
                   <TableCell>{record.distance ?? "-"}m</TableCell>

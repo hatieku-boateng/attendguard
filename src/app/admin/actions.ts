@@ -76,7 +76,7 @@ async function getCourseSessionIds(db: AdminDb, courseId: string) {
     .from(attendanceSessions)
     .where(eq(attendanceSessions.courseId, courseId));
 
-  return sessions.map((session) => session.id);
+  return sessions.map((session: { id: string }) => session.id);
 }
 
 async function countCourseAttendanceRecords(

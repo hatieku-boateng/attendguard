@@ -62,6 +62,7 @@ export default async function EditCatalogCoursePage({
               <div className="space-y-2">
                 <Label htmlFor="courseCode">Course code</Label>
                 <Input
+                  className="uppercase-input"
                   defaultValue={course.courseCode}
                   id="courseCode"
                   name="courseCode"

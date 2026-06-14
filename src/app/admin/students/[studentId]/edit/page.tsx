@@ -151,6 +151,7 @@ export default async function EditStudentAccountPage({
               <div className="space-y-2">
                 <Label htmlFor="studentIdNumber">Student ID</Label>
                 <Input
+                  className="uppercase-input"
                   defaultValue={target.studentIdNumber}
                   id="studentIdNumber"
                   name="studentIdNumber"

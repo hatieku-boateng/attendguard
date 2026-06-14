@@ -125,41 +125,41 @@ export default async function AdminCatalogPage({
       <Card className="glass-panel glass-panel-hover overflow-hidden relative border-border/40">
         <div className="absolute inset-x-0 top-0 h-1 bg-[linear-gradient(90deg,var(--primary),oklch(0.52_0.14_200))]" />
         <CardContent className="space-y-5 pt-6 px-0">
-          <form className="mx-5 grid gap-3 lg:grid-cols-[1fr_220px_220px_180px_150px_auto]">
-            <div className="relative">
+          <form className="mx-4 grid max-w-[calc(100%-2rem)] gap-3 sm:mx-5 sm:max-w-[calc(100%-2.5rem)] lg:grid-cols-[minmax(0,1fr)_220px_220px_180px_150px_auto]">
+            <div className="relative min-w-0">
               <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                className="pl-9"
+                className="w-full min-w-0 pl-9"
                 defaultValue={query.q ?? ""}
                 name="q"
                 placeholder="Search course, programme, faculty, department"
               />
             </div>
-            <select className="h-9 rounded-lg border bg-card px-3 text-sm" defaultValue={query.facultyId ?? "all"} name="facultyId">
+            <select className="h-9 w-full min-w-0 rounded-lg border bg-card px-3 text-sm" defaultValue={query.facultyId ?? "all"} name="facultyId">
               <option value="all">All faculties</option>
               {facultyRows.map((faculty) => (
                 <option key={faculty.id} value={faculty.id}>{faculty.name}</option>
               ))}
             </select>
-            <select className="h-9 rounded-lg border bg-card px-3 text-sm" defaultValue={query.departmentId ?? "all"} name="departmentId">
+            <select className="h-9 w-full min-w-0 rounded-lg border bg-card px-3 text-sm" defaultValue={query.departmentId ?? "all"} name="departmentId">
               <option value="all">All departments</option>
               {departmentRows.map((department) => (
                 <option key={department.id} value={department.id}>{department.name}</option>
               ))}
             </select>
-            <select className="h-9 rounded-lg border bg-card px-3 text-sm" defaultValue={query.academicYearId ?? "all"} name="academicYearId">
+            <select className="h-9 w-full min-w-0 rounded-lg border bg-card px-3 text-sm" defaultValue={query.academicYearId ?? "all"} name="academicYearId">
               <option value="all">All years</option>
               {academicYearRows.map((year) => (
                 <option key={year.id} value={year.id}>{year.displayName}</option>
               ))}
             </select>
-            <select className="h-9 rounded-lg border bg-card px-3 text-sm" defaultValue={query.status ?? "all"} name="status">
+            <select className="h-9 w-full min-w-0 rounded-lg border bg-card px-3 text-sm" defaultValue={query.status ?? "all"} name="status">
               <option value="all">All statuses</option>
               <option value="active">Active</option>
               <option value="draft">Draft</option>
               <option value="archived">Archived</option>
             </select>
-            <Button type="submit">Filter</Button>
+            <Button className="w-full lg:w-auto" type="submit">Filter</Button>
           </form>
           {/* Desktop Table */}
           <div className="hidden md:block overflow-x-auto">

@@ -25,7 +25,7 @@ export function BrandMark({
           className="size-full object-contain"
         />
       </span>
-      <span className="grid gap-0.5">
+      <span data-brand-text className="hidden gap-0.5 sm:grid">
         <span className="text-[0.95rem] font-extrabold leading-none tracking-tight text-current transition-all duration-300 group-hover:translate-x-0.5">
           Pentecost University
         </span>

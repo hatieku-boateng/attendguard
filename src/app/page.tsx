@@ -52,15 +52,15 @@ export default function Home() {
       </div>
 
       {/* Navigation Header */}
-      <header className="mx-auto flex w-full max-w-[85rem] items-center justify-between px-6 py-6 sm:px-8 z-30 relative">
+      <header className="mx-auto flex w-full max-w-[85rem] items-center justify-between px-4 py-5 sm:px-8 sm:py-6 z-30 relative">
         <BrandMark />
-        <nav className="flex items-center gap-4">
+        <nav className="flex items-center gap-2 sm:gap-4">
           <ThemeToggle />
-          <div className="flex items-center gap-2 rounded-full border border-white/60 bg-white/70 p-1.5 shadow-md shadow-slate-950/[0.02] backdrop-blur-xl dark:bg-slate-950/40 dark:border-white/[0.08] transition-colors">
-            <Button asChild variant="ghost" className="rounded-full px-5 text-sm font-semibold h-8.5 hover:bg-muted dark:hover:bg-white/[0.06]">
+          <div className="flex items-center gap-1 rounded-full border border-white/60 bg-white/70 p-1 shadow-md shadow-slate-950/[0.02] backdrop-blur-xl dark:bg-slate-950/40 dark:border-white/[0.08] transition-colors sm:gap-2 sm:p-1.5">
+            <Button asChild variant="ghost" className="hidden rounded-full px-5 text-sm font-semibold h-8.5 hover:bg-muted dark:hover:bg-white/[0.06] sm:inline-flex">
               <Link href="/activate-account">Activate Student</Link>
             </Button>
-            <Button asChild className="rounded-full px-6 text-sm font-bold shadow-sm h-8.5 bg-primary text-primary-foreground hover:bg-primary/95 transition-all">
+            <Button asChild className="rounded-full px-4 text-sm font-bold shadow-sm h-8.5 bg-primary text-primary-foreground hover:bg-primary/95 transition-all sm:px-6">
               <Link href="/login">Sign In</Link>
             </Button>
           </div>

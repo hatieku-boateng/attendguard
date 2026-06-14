@@ -86,7 +86,7 @@ export function AppShell({
       >
         {/* Sidebar Header */}
         <div className="flex h-20 items-center justify-between px-6 border-b border-border/40">
-          <BrandMark href="/" />
+          <BrandMark href="/" className="[&_[data-brand-text]]:grid" />
           <Button
             variant="ghost"
             size="icon"
@@ -176,8 +176,8 @@ export function AppShell({
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 lg:h-screen lg:overflow-hidden bg-slate-50/20 dark:bg-zinc-950/10">
         {/* Sticky Dashboard Navbar */}
-        <header className="sticky top-0 z-40 h-20 border-b border-border/40 bg-background/70 backdrop-blur-xl flex items-center justify-between px-6 sm:px-8">
-          <div className="flex items-center gap-4">
+        <header className="sticky top-0 z-40 h-20 border-b border-border/40 bg-background/70 backdrop-blur-xl flex items-center justify-between px-4 sm:px-8">
+          <div className="flex min-w-0 items-center gap-3 sm:gap-4">
             {/* Mobile Sidebar Trigger */}
             <Button
               variant="ghost"
@@ -197,8 +197,8 @@ export function AppShell({
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/5 px-3 py-1 text-[0.68rem] font-bold text-emerald-600 dark:text-emerald-400 shadow-sm shadow-emerald-500/[0.02]">
+          <div className="flex shrink-0 items-center gap-2 sm:gap-4">
+            <span className="hidden items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/5 px-3 py-1 text-[0.68rem] font-bold text-emerald-600 dark:text-emerald-400 shadow-sm shadow-emerald-500/[0.02] sm:inline-flex">
               <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
               Secure Session
             </span>
@@ -207,7 +207,7 @@ export function AppShell({
         </header>
 
         {/* Scrollable Panel */}
-        <main className="flex-1 overflow-y-auto px-6 py-8 sm:px-8 lg:py-10 custom-scrollbar">
+        <main className="flex-1 overflow-y-auto px-4 py-6 sm:px-8 sm:py-8 lg:py-10 custom-scrollbar">
           {children}
         </main>
       </div>

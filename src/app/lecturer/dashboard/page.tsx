@@ -92,50 +92,54 @@ export default async function LecturerDashboardPage() {
     .where(eq(courses.lecturerId, lecturerId));
   const courseIds = lecturerCourses.map((course) => course.id);
 
-  const [studentCount] = courseIds.length
-    ? await db
-        .select({ value: count() })
-        .from(enrolments)
-        .where(
-          and(
-            inArray(enrolments.courseId, courseIds),
-            eq(enrolments.status, "active"),
-          ),
-        )
-    : [{ value: 0 }];
-
-  const [openSessionCount] = await db
-    .select({ value: count() })
-    .from(attendanceSessions)
-    .where(
-      and(
-        eq(attendanceSessions.lecturerId, lecturerId),
-        eq(attendanceSessions.status, "open"),
+  const [
+    [studentCount],
+    [openSessionCount],
+    [reviewCount],
+    [recordCount]
+  ] = await Promise.all([
+    courseIds.length
+      ? db
+          .select({ value: count() })
+          .from(enrolments)
+          .where(
+            and(
+              inArray(enrolments.courseId, courseIds),
+              eq(enrolments.status, "active"),
+            ),
+          )
+      : Promise.resolve([{ value: 0 }]),
+    db
+      .select({ value: count() })
+      .from(attendanceSessions)
+      .where(
+        and(
+          eq(attendanceSessions.lecturerId, lecturerId),
+          eq(attendanceSessions.status, "open"),
+        ),
       ),
-    );
-
-  const [reviewCount] = await db
-    .select({ value: count() })
-    .from(attendanceAttempts)
-    .innerJoin(
-      attendanceSessions,
-      eq(attendanceAttempts.sessionId, attendanceSessions.id),
-    )
-    .where(
-      and(
-        eq(attendanceSessions.lecturerId, lecturerId),
-        eq(attendanceAttempts.reviewStatus, "pending"),
+    db
+      .select({ value: count() })
+      .from(attendanceAttempts)
+      .innerJoin(
+        attendanceSessions,
+        eq(attendanceAttempts.sessionId, attendanceSessions.id),
+      )
+      .where(
+        and(
+          eq(attendanceSessions.lecturerId, lecturerId),
+          eq(attendanceAttempts.reviewStatus, "pending"),
+        ),
       ),
-    );
-
-  const [recordCount] = await db
-    .select({ value: count() })
-    .from(attendanceRecords)
-    .innerJoin(
-      attendanceSessions,
-      eq(attendanceRecords.sessionId, attendanceSessions.id),
-    )
-    .where(eq(attendanceSessions.lecturerId, lecturerId));
+    db
+      .select({ value: count() })
+      .from(attendanceRecords)
+      .innerJoin(
+        attendanceSessions,
+        eq(attendanceRecords.sessionId, attendanceSessions.id),
+      )
+      .where(eq(attendanceSessions.lecturerId, lecturerId)),
+  ]);
 
   const attendanceRows = await db
     .select({

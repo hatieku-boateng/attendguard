@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/page-header";
 import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { PasswordInput } from "@/components/password-input";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
@@ -243,7 +244,7 @@ export default async function AdminLecturersPage({
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="password" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Temporary password</Label>
-            <Input id="password" name="password" required type="password" placeholder="••••••••" />
+            <PasswordInput id="password" name="password" required placeholder="••••••••" />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="staffId" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Staff ID</Label>

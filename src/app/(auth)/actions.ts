@@ -37,11 +37,20 @@ function getDashboardPath(role: UserRole) {
   return role === "student" ? "/student/dashboard" : "/lecturer/dashboard";
 }
 
+function cleanRequestedRole(value: FormDataEntryValue | null) {
+  const role = cleanString(value).toLowerCase();
+
+  return ["administrator", "lecturer", "student"].includes(role)
+    ? (role as UserRole)
+    : null;
+}
+
 export async function loginAction(formData: FormData) {
   const email = cleanString(formData.get("email")).toLowerCase();
   const password = cleanString(formData.get("password"));
+  const requestedRole = cleanRequestedRole(formData.get("role"));
 
-  if (!email || !password) {
+  if (!email || !password || !requestedRole) {
     redirect("/login?error=missing");
   }
 
@@ -102,6 +111,20 @@ export async function loginAction(formData: FormData) {
       metadata: { reason: "inactive_account" },
     });
     redirect("/login?error=inactive");
+  }
+
+  if (user.role !== requestedRole) {
+    await recordSecurityEvent({
+      eventType: "login_failed",
+      identifier: emailIdentifier,
+      context: securityContext,
+      metadata: {
+        reason: "role_mismatch",
+        requestedRole,
+        actualRole: user.role,
+      },
+    });
+    redirect("/login?error=role-mismatch");
   }
 
   await recordSecurityEvent({

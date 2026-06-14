@@ -67,6 +67,12 @@ export function AppShell({
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
 
+  const dashboardPath = user.role === "administrator"
+    ? "/admin/dashboard"
+    : user.role === "student"
+      ? "/student/dashboard"
+      : "/lecturer/dashboard";
+
   return (
     <div className="min-h-screen bg-background text-foreground flex lg:flex-row flex-col">
       {/* Mobile Drawer Overlay */}
@@ -86,7 +92,7 @@ export function AppShell({
       >
         {/* Sidebar Header */}
         <div className="flex h-20 items-center justify-between px-6 border-b border-border/40">
-          <BrandMark href="/" className="[&_[data-brand-text]]:grid" />
+          <BrandMark href={dashboardPath} className="[&_[data-brand-text]]:grid" />
           <Button
             variant="ghost"
             size="icon"

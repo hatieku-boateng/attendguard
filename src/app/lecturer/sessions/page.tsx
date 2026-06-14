@@ -221,54 +221,101 @@ export default async function LecturerSessionsPage({
       </Card>
       <Card>
         <CardContent className="pt-6">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Session</TableHead>
-                <TableHead>Course</TableHead>
-                <TableHead>Opens</TableHead>
-                <TableHead>Final close</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.map((session) => (
-                <TableRow key={session.id}>
-                  <TableCell className="font-medium">
-                    <Link href={`/lecturer/courses/${session.courseId}/sessions/${session.id}`}>
+          {/* Desktop Table */}
+          <div className="hidden md:block overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Session</TableHead>
+                  <TableHead>Course</TableHead>
+                  <TableHead>Opens</TableHead>
+                  <TableHead>Final close</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {rows.map((session) => (
+                  <TableRow key={session.id}>
+                    <TableCell className="font-medium">
+                      <Link href={`/lecturer/courses/${session.courseId}/sessions/${session.id}`}>
+                        {session.title}
+                      </Link>
+                    </TableCell>
+                    <TableCell>
+                      {session.courseCode}: {session.courseTitle}
+                    </TableCell>
+                    <TableCell>{session.opensAt.toLocaleString()}</TableCell>
+                    <TableCell>{session.finalClosesAt.toLocaleString()}</TableCell>
+                    <TableCell>
+                      <StatusBadge status={session.status} />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button asChild size="sm" variant="outline">
+                        <Link
+                          href={`/lecturer/courses/${session.courseId}/sessions/${session.id}/edit`}
+                        >
+                          <Pencil className="size-4" />
+                          Edit
+                        </Link>
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {rows.length === 0 ? (
+                  <TableRow>
+                    <TableCell className="h-24 text-center text-muted-foreground" colSpan={6}>
+                      No attendance sessions have been created yet.
+                    </TableCell>
+                  </TableRow>
+                ) : null}
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* Mobile Cards */}
+          <div className="md:hidden divide-y divide-border/20">
+            {rows.map((session) => (
+              <div key={session.id} className="py-4.5 flex flex-col gap-3.5">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="min-w-0 flex-1">
+                    <Link href={`/lecturer/courses/${session.courseId}/sessions/${session.id}`} className="text-sm font-extrabold text-primary hover:underline leading-snug">
                       {session.title}
                     </Link>
-                  </TableCell>
-                  <TableCell>
-                    {session.courseCode}: {session.courseTitle}
-                  </TableCell>
-                  <TableCell>{session.opensAt.toLocaleString()}</TableCell>
-                  <TableCell>{session.finalClosesAt.toLocaleString()}</TableCell>
-                  <TableCell>
-                    <StatusBadge status={session.status} />
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button asChild size="sm" variant="outline">
-                      <Link
-                        href={`/lecturer/courses/${session.courseId}/sessions/${session.id}/edit`}
-                      >
-                        <Pencil className="size-4" />
-                        Edit
-                      </Link>
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {rows.length === 0 ? (
-                <TableRow>
-                  <TableCell className="h-24 text-center text-muted-foreground" colSpan={6}>
-                    No attendance sessions have been created yet.
-                  </TableCell>
-                </TableRow>
-              ) : null}
-            </TableBody>
-          </Table>
+                    <p className="text-[10px] text-muted-foreground font-semibold mt-0.5 leading-relaxed">
+                      {session.courseCode}: {session.courseTitle}
+                    </p>
+                  </div>
+                  <StatusBadge status={session.status} />
+                </div>
+
+                <div className="grid grid-cols-2 gap-2.5 text-xs bg-slate-950/[0.015] dark:bg-white/[0.015] p-3 rounded-xl border border-border/25">
+                  <div>
+                    <span className="text-[9px] text-muted-foreground/50 block font-black uppercase tracking-wider">Opens</span>
+                    <span className="font-bold text-foreground/80 mt-0.5 block">{session.opensAt.toLocaleString()}</span>
+                  </div>
+                  <div>
+                    <span className="text-[9px] text-muted-foreground/50 block font-black uppercase tracking-wider">Final Close</span>
+                    <span className="font-bold text-foreground/80 mt-0.5 block">{session.finalClosesAt.toLocaleString()}</span>
+                  </div>
+                </div>
+
+                <div className="flex justify-end pt-1">
+                  <Button asChild size="sm" variant="outline" className="h-8.5 rounded-lg text-xs font-bold shadow-sm w-full">
+                    <Link href={`/lecturer/courses/${session.courseId}/sessions/${session.id}/edit`} className="flex items-center justify-center gap-1.5">
+                      <Pencil className="size-3.5" />
+                      <span>Edit Session</span>
+                    </Link>
+                  </Button>
+                </div>
+              </div>
+            ))}
+            {rows.length === 0 ? (
+              <div className="flex flex-col items-center justify-center gap-3 py-12 px-6">
+                <p className="text-center text-muted-foreground text-sm font-semibold">No attendance sessions found.</p>
+              </div>
+            ) : null}
+          </div>
         </CardContent>
       </Card>
     </>

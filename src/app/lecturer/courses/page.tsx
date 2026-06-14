@@ -4,6 +4,7 @@ import { BookOpen } from "lucide-react";
 
 import { PageHeader } from "@/components/page-header";
 import { StatusBadge } from "@/components/status-badge";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -50,7 +51,8 @@ export default async function LecturerCoursesPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="pt-4 px-0">
-          <div className="overflow-x-auto">
+          {/* Desktop Table */}
+          <div className="hidden md:block overflow-x-auto">
             <Table>
               <TableHeader className="bg-slate-950/[0.02] dark:bg-white/[0.01]">
                 <TableRow className="hover:bg-transparent border-b border-border/30">
@@ -93,6 +95,54 @@ export default async function LecturerCoursesPage() {
                 ) : null}
               </TableBody>
             </Table>
+          </div>
+
+          {/* Mobile Cards */}
+          <div className="md:hidden divide-y divide-border/20">
+            {rows.map((course) => (
+              <div key={course.id} className="p-5 flex flex-col gap-3.5">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="min-w-0 flex-1">
+                    <Link href={`/lecturer/courses/${course.id}`} className="text-sm font-extrabold text-primary hover:underline leading-snug">
+                      {course.courseCode}
+                    </Link>
+                    <h3 className="text-xs text-muted-foreground font-semibold mt-1 leading-relaxed">{course.courseTitle}</h3>
+                  </div>
+                  <StatusBadge status={course.status} />
+                </div>
+                
+                <div className="grid grid-cols-3 gap-2.5 text-xs bg-slate-950/[0.015] dark:bg-white/[0.015] p-3 rounded-xl border border-border/25">
+                  <div>
+                    <span className="text-[9px] text-muted-foreground/50 block font-black uppercase tracking-wider">Semester</span>
+                    <span className="font-bold text-foreground/80 mt-0.5 block truncate">{course.semester}</span>
+                  </div>
+                  <div>
+                    <span className="text-[9px] text-muted-foreground/50 block font-black uppercase tracking-wider">Year</span>
+                    <span className="font-bold text-foreground/80 mt-0.5 block truncate">{course.academicYear}</span>
+                  </div>
+                  <div>
+                    <span className="text-[9px] text-muted-foreground/50 block font-black uppercase tracking-wider">Group</span>
+                    <span className="font-bold text-foreground/80 mt-0.5 block truncate">{course.classGroup}</span>
+                  </div>
+                </div>
+
+                <div className="flex justify-end pt-1">
+                  <Button asChild size="sm" variant="outline" className="h-8.5 rounded-lg text-xs font-bold shadow-sm w-full">
+                    <Link href={`/lecturer/courses/${course.id}`} className="flex items-center justify-center gap-1.5">
+                      <span>View Course Dashboard</span>
+                    </Link>
+                  </Button>
+                </div>
+              </div>
+            ))}
+            {rows.length === 0 ? (
+              <div className="flex flex-col items-center justify-center gap-3 py-12 px-6">
+                <span className="flex size-12 items-center justify-center rounded-2xl bg-muted/60 border border-border/40 text-muted-foreground/35">
+                  <BookOpen className="size-6" />
+                </span>
+                <p className="font-semibold text-muted-foreground/60 text-sm">No courses have been assigned to you yet.</p>
+              </div>
+            ) : null}
           </div>
         </CardContent>
       </Card>

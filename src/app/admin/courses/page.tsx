@@ -54,7 +54,8 @@ export default async function AdminCoursesPage() {
       <Card className="glass-panel glass-panel-hover overflow-hidden relative border-border/40">
         <div className="absolute inset-x-0 top-0 h-1 bg-[linear-gradient(90deg,var(--primary),oklch(0.52_0.14_200))]" />
         <CardContent className="pt-6 px-0">
-          <div className="overflow-x-auto">
+          {/* Desktop Table */}
+          <div className="hidden md:block overflow-x-auto">
             <Table>
               <TableHeader className="bg-slate-950/[0.02] dark:bg-white/[0.01]">
                 <TableRow className="hover:bg-transparent border-b border-border/30">
@@ -109,6 +110,60 @@ export default async function AdminCoursesPage() {
                 ) : null}
               </TableBody>
             </Table>
+          </div>
+
+          {/* Mobile Cards */}
+          <div className="md:hidden divide-y divide-border/20">
+            {rows.map((course) => (
+              <div key={course.id} className="p-5 flex flex-col gap-3.5">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="min-w-0 flex-1">
+                    <span className="text-sm font-extrabold text-foreground leading-snug">{course.courseCode}</span>
+                    <h3 className="text-xs text-muted-foreground font-semibold mt-1 leading-relaxed">{course.courseTitle}</h3>
+                  </div>
+                  <StatusBadge status={course.status} />
+                </div>
+                
+                <div className="bg-slate-950/[0.015] dark:bg-white/[0.015] p-3 rounded-xl border border-border/25 text-xs space-y-2.5">
+                  <div>
+                    <span className="text-[9px] text-muted-foreground/50 block font-black uppercase tracking-wider">Assigned Lecturer</span>
+                    <span className="font-extrabold text-foreground/80 mt-0.5 block">{course.lecturerName}</span>
+                    <span className="text-[10px] text-muted-foreground/70 block mt-0.5">{course.lecturerEmail}</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 pt-2 border-t border-border/15">
+                    <div>
+                      <span className="text-[9px] text-muted-foreground/50 block font-black uppercase tracking-wider">Semester</span>
+                      <span className="font-bold text-foreground/80 mt-0.5 block">{course.semester}</span>
+                    </div>
+                    <div>
+                      <span className="text-[9px] text-muted-foreground/50 block font-black uppercase tracking-wider">Year</span>
+                      <span className="font-bold text-foreground/80 mt-0.5 block truncate">{course.academicYear}</span>
+                    </div>
+                    <div>
+                      <span className="text-[9px] text-muted-foreground/50 block font-black uppercase tracking-wider">Group</span>
+                      <span className="font-bold text-foreground/80 mt-0.5 block">{course.classGroup}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-end pt-1.5">
+                  <Button asChild size="sm" variant="outline" className="h-8.5 rounded-lg text-xs font-bold shadow-sm w-full">
+                    <Link href={`/admin/courses/${course.id}/edit`} className="flex items-center justify-center gap-1.5">
+                      <Pencil className="size-3.5" />
+                      <span>Manage Offering</span>
+                    </Link>
+                  </Button>
+                </div>
+              </div>
+            ))}
+            {rows.length === 0 ? (
+              <div className="flex flex-col items-center justify-center gap-3 py-12 px-6">
+                <span className="flex size-12 items-center justify-center rounded-2xl bg-muted/60 border border-border/40 text-muted-foreground/35">
+                  <Plus className="size-6" />
+                </span>
+                <p className="font-semibold text-muted-foreground/60 text-sm">No course offerings assigned yet.</p>
+              </div>
+            ) : null}
           </div>
         </CardContent>
       </Card>

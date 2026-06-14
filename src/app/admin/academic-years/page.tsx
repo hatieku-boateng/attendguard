@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { desc, eq } from "drizzle-orm";
-import { Pencil, Plus } from "lucide-react";
+import { Pencil, Plus, Calendar } from "lucide-react";
 
 import { PageHeader } from "@/components/page-header";
 import { StatusBadge } from "@/components/status-badge";
@@ -60,26 +60,31 @@ export default async function AcademicYearsPage({
       
       <div className="grid gap-4 md:grid-cols-2">
         {rows.map((year) => (
-          <Card key={year.id}>
+          <Card key={year.id} className={`glass-panel glass-panel-hover border-border/40 overflow-hidden relative shadow-sm hover:shadow-md transition-all duration-300 group hover:-translate-y-0.5 ${year.isCurrent ? "border-l-4 border-l-primary" : ""}`}>
             <CardContent className="flex items-center justify-between gap-4 pt-6">
-              <div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <h2 className="text-lg font-semibold">{year.displayName}</h2>
-                  <StatusBadge status={year.status} />
-                  {year.isCurrent ? (
-                    <span className="rounded-lg border border-primary/20 bg-primary/10 px-2 py-1 text-xs font-semibold text-primary">
-                      Current
-                    </span>
-                  ) : null}
+              <div className="flex items-center gap-3.5">
+                <span className="flex size-11 items-center justify-center rounded-xl bg-primary/5 text-primary border border-primary/10 group-hover:bg-primary/10 transition-colors shrink-0">
+                  <Calendar className="size-5" />
+                </span>
+                <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h2 className="text-base font-extrabold text-foreground group-hover:text-primary transition-colors">{year.displayName}</h2>
+                    <StatusBadge status={year.status} />
+                    {year.isCurrent ? (
+                      <span className="rounded-full border border-primary/20 bg-primary/10 px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-primary">
+                        Current
+                      </span>
+                    ) : null}
+                  </div>
+                  <p className="mt-1 text-xs font-semibold text-muted-foreground">
+                    Duration: {year.startYear} to {year.endYear}
+                  </p>
                 </div>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {year.startYear} to {year.endYear}
-                </p>
               </div>
-              <Button asChild size="sm" variant="outline">
-                <Link href={`/admin/academic-years?modal=edit&id=${year.id}`}>
+              <Button asChild size="sm" variant="outline" className="h-8.5 rounded-lg text-xs font-bold shadow-sm shrink-0">
+                <Link href={`/admin/academic-years?modal=edit&id=${year.id}`} className="flex items-center gap-1.5">
                   <Pencil className="size-3.5" />
-                  Edit
+                  <span>Edit</span>
                 </Link>
               </Button>
             </CardContent>

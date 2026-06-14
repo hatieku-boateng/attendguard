@@ -106,87 +106,88 @@ export default async function CourseStudentsPage({
         }
       />
       <div className="mb-6 grid gap-6 xl:grid-cols-2">
-        <Card id="manual-student">
-          <CardHeader>
-            <CardTitle>Add student manually</CardTitle>
-            <CardDescription>
+        <Card id="manual-student" className="glass-panel glass-panel-hover overflow-hidden relative border-border/40">
+          <div className="absolute inset-x-0 top-0 h-1 bg-[linear-gradient(90deg,var(--primary),oklch(0.52_0.14_200))]" />
+          <CardHeader className="border-b border-border/30 bg-slate-950/[0.01] dark:bg-white/[0.01] pb-4">
+            <CardTitle className="text-base font-bold text-foreground">Add student manually</CardTitle>
+            <CardDescription className="text-xs text-muted-foreground mt-1">
               Enrol one student and email a secure activation link. Programme,
               level, and class group default to this course when left blank.
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
             {report.manualError ? (
-              <p className="mb-4 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              <p className="mb-4 rounded-xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-xs font-semibold text-destructive leading-relaxed">
                 {report.manualError === "conflict"
                   ? "A matching student could not be enrolled. Check the email and student ID."
                   : "Enter the student's name, ID, and valid email address."}
               </p>
             ) : null}
             {report.manualAdded ? (
-              <p className="mb-4 rounded-md border bg-muted px-3 py-2 text-sm text-muted-foreground">
+              <p className="mb-4 rounded-xl border border-primary/20 bg-primary/10 px-4 py-3 text-xs font-semibold text-primary leading-relaxed">
                 Student added. Activation emails sent {report.sent ?? 0}; pending email setup{" "}
                 {report.pendingEmail ?? 0}.
               </p>
             ) : null}
             <form action={addStudentManuallyAction} className="grid gap-4 sm:grid-cols-2">
               <input name="courseId" type="hidden" value={course.id} />
-              <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="name">Student name</Label>
-                <Input id="name" name="name" required />
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label htmlFor="name" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Student name</Label>
+                <Input id="name" name="name" required placeholder="e.g. John Doe" />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="studentIdNumber">Student ID</Label>
-                <Input className="uppercase-input" id="studentIdNumber" name="studentIdNumber" required />
+              <div className="space-y-1.5">
+                <Label htmlFor="studentIdNumber" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Student ID</Label>
+                <Input className="uppercase-input" id="studentIdNumber" name="studentIdNumber" required placeholder="e.g. PS/CS/12/0001" />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Email address</Label>
-                <Input id="email" name="email" required type="email" />
+              <div className="space-y-1.5">
+                <Label htmlFor="email" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Email address</Label>
+                <Input id="email" name="email" required type="email" placeholder="student@university.edu" />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="programme">Programme</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="programme" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Programme</Label>
                 <Input
                   defaultValue={course.programme ?? ""}
                   id="programme"
                   name="programme"
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="level">Level</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="level" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Level</Label>
                 <Input defaultValue={course.level ?? ""} id="level" name="level" />
               </div>
-              <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="classGroup">Class group</Label>
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label htmlFor="classGroup" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Class group</Label>
                 <Input
                   defaultValue={course.classGroup}
                   id="classGroup"
                   name="classGroup"
                 />
               </div>
-              <div className="sm:col-span-2">
-                <PendingSubmitButton className="w-full" pendingLabel="Adding student...">
+              <div className="sm:col-span-2 pt-2">
+                <PendingSubmitButton className="w-full py-5 rounded-xl font-bold shadow-md shadow-primary/20 hover:shadow-lg text-sm" pendingLabel="Adding student...">
                   Add student and send activation
                 </PendingSubmitButton>
               </div>
             </form>
           </CardContent>
         </Card>
-        <Card id="import-students">
-          <CardHeader>
-            <CardTitle>CSV import</CardTitle>
-            <CardDescription>
+        <Card id="import-students" className="glass-panel glass-panel-hover overflow-hidden relative border-border/40">
+          <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-cyan-500 to-indigo-500" />
+          <CardHeader className="border-b border-border/30 bg-slate-950/[0.01] dark:bg-white/[0.01] pb-4">
+            <CardTitle className="text-base font-bold text-foreground">CSV import</CardTitle>
+            <CardDescription className="text-xs text-muted-foreground mt-1">
               Upload a CSV with the required columns: student name, student ID, and
-              valid email address. Programme, level, and class group are optional
-              and default to this course when omitted.
+              valid email address. Programme, level, and class group are optional.
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
             {report.importError === "headings" ? (
-              <p className="mb-4 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              <p className="mb-4 rounded-xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-xs font-semibold text-destructive leading-relaxed">
                 The CSV headings are missing required columns.
               </p>
             ) : null}
             {report.imported ? (
-              <p className="mb-4 rounded-md border bg-muted px-3 py-2 text-sm text-muted-foreground">
+              <p className="mb-4 rounded-xl border border-primary/20 bg-primary/10 px-4 py-3 text-xs font-semibold text-primary leading-relaxed">
                 Imported {report.imported} row(s), skipped {report.skipped ?? 0},
                 errors {report.errors ?? 0}. Activation emails sent{" "}
                 {report.sent ?? 0}; pending email setup {report.pendingEmail ?? 0}.
@@ -194,77 +195,83 @@ export default async function CourseStudentsPage({
             ) : null}
             <form action={importStudentsAction} className="grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
               <input name="courseId" type="hidden" value={course.id} />
-              <div className="space-y-2">
-                <Label htmlFor="studentFile">Student CSV file</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="studentFile" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Student CSV file</Label>
                 <Input
                   accept=".csv,text/csv"
                   id="studentFile"
                   name="studentFile"
                   required
                   type="file"
+                  className="h-10 text-xs bg-background/50 border-border/50 rounded-xl"
                 />
               </div>
-              <PendingSubmitButton pendingLabel="Importing...">Import</PendingSubmitButton>
+              <PendingSubmitButton pendingLabel="Importing..." className="h-10 rounded-xl font-bold shadow-md shadow-primary/20 text-xs px-5">Import</PendingSubmitButton>
             </form>
           </CardContent>
         </Card>
       </div>
-      <Card>
-        <CardHeader>
-          <CardTitle>Class list</CardTitle>
-          <CardDescription>
+      <Card className="glass-panel border-border/40 overflow-hidden relative">
+        <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500" />
+        <CardHeader className="border-b border-border/30 bg-slate-950/[0.01] dark:bg-white/[0.01] pb-4">
+          <CardTitle className="text-base font-bold text-foreground">Class list</CardTitle>
+          <CardDescription className="text-xs text-muted-foreground mt-1">
             {students.filter((student) => student.status === "active").length} active of{" "}
             {students.length} student record(s)
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-0 px-0">
           {report.removed ? (
-            <p className="mb-4 rounded-md border bg-muted px-3 py-2 text-sm text-muted-foreground">
-              Student removed from this course.{" "}
-              {report.removed === "withdrawn"
-                ? "Attendance history was preserved and the enrolment was marked withdrawn."
-                : "No attendance history existed, so the enrolment was deleted."}
-            </p>
+            <div className="mx-6 mt-5">
+              <p className="rounded-xl border border-primary/20 bg-primary/10 px-4 py-3 text-xs font-semibold text-primary leading-relaxed">
+                Student removed from this course.{" "}
+                {report.removed === "withdrawn"
+                  ? "Attendance history was preserved and the enrolment was marked withdrawn."
+                  : "No attendance history existed, so the enrolment was deleted."}
+              </p>
+            </div>
           ) : null}
           {report.activation ? (
-            <p className="mb-4 rounded-md border bg-muted px-3 py-2 text-sm text-muted-foreground">
-              {report.activation === "resent"
-                ? "Activation link resent successfully."
-                : report.activation === "already-active"
-                  ? "That student account is already active."
-                  : "Activation link could not be emailed. Check email configuration."}
-            </p>
+            <div className="mx-6 mt-5">
+              <p className="rounded-xl border border-primary/20 bg-primary/10 px-4 py-3 text-xs font-semibold text-primary leading-relaxed">
+                {report.activation === "resent"
+                  ? "Activation link resent successfully."
+                  : report.activation === "already-active"
+                    ? "That student account is already active."
+                    : "Activation link could not be emailed. Check email configuration."}
+              </p>
+            </div>
           ) : null}
           {/* Desktop Table */}
           <div className="hidden md:block overflow-x-auto">
             <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Student ID</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Programme</TableHead>
-                  <TableHead>Level</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Account</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+              <TableHeader className="bg-slate-950/[0.02] dark:bg-white/[0.01]">
+                <TableRow className="hover:bg-transparent border-b border-border/30">
+                  <TableHead className="px-6 py-3 font-semibold text-muted-foreground text-xs">Name</TableHead>
+                  <TableHead className="px-4 py-3 font-semibold text-muted-foreground text-xs">Student ID</TableHead>
+                  <TableHead className="px-4 py-3 font-semibold text-muted-foreground text-xs">Email</TableHead>
+                  <TableHead className="px-4 py-3 font-semibold text-muted-foreground text-xs">Programme</TableHead>
+                  <TableHead className="px-4 py-3 font-semibold text-muted-foreground text-xs">Level</TableHead>
+                  <TableHead className="px-4 py-3 font-semibold text-muted-foreground text-xs">Status</TableHead>
+                  <TableHead className="px-4 py-3 font-semibold text-muted-foreground text-xs">Account</TableHead>
+                  <TableHead className="px-6 py-3 text-right font-semibold text-muted-foreground text-xs">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {students.map((student) => (
-                  <TableRow key={student.enrolmentId}>
-                    <TableCell className="font-medium">{student.name}</TableCell>
-                    <TableCell>{student.studentIdNumber}</TableCell>
-                    <TableCell>{student.email}</TableCell>
-                    <TableCell>{student.programme || "-"}</TableCell>
-                    <TableCell>{student.level || "-"}</TableCell>
-                    <TableCell>
+                  <TableRow key={student.enrolmentId} className="hover:bg-muted/30 border-b border-border/20 transition-colors">
+                    <TableCell className="px-6 py-4.5 font-extrabold text-foreground text-sm">{student.name}</TableCell>
+                    <TableCell className="px-4 py-4.5 text-xs font-bold text-foreground/80">{student.studentIdNumber}</TableCell>
+                    <TableCell className="px-4 py-4.5 text-xs font-semibold text-muted-foreground">{student.email}</TableCell>
+                    <TableCell className="px-4 py-4.5 text-xs font-bold text-foreground/85">{student.programme || "-"}</TableCell>
+                    <TableCell className="px-4 py-4.5 text-xs font-bold text-foreground/85">{student.level || "-"}</TableCell>
+                    <TableCell className="px-4 py-4.5">
                       <StatusBadge status={student.status} />
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="px-4 py-4.5">
                       <StatusBadge status={student.activatedAt ? "active" : student.accountStatus} />
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="px-6 py-4.5 text-right">
                       {student.status === "active" ? (
                         <div className="flex flex-wrap justify-end gap-2">
                           {student.accountStatus !== "active" ? (
@@ -275,6 +282,7 @@ export default async function CourseStudentsPage({
                                 pendingLabel="Sending..."
                                 size="sm"
                                 variant="outline"
+                                className="h-8.5 rounded-lg text-xs font-bold shadow-sm"
                               >
                                 Resend activation
                               </PendingSubmitButton>
@@ -288,7 +296,7 @@ export default async function CourseStudentsPage({
                               value={student.enrolmentId}
                             />
                             <ConfirmSubmitButton
-                              className="w-auto"
+                              className="w-auto h-8.5 rounded-lg text-xs font-bold shadow-sm"
                               message={`Remove ${student.name} from this course? Existing attendance history will be preserved.`}
                               size="sm"
                               variant="outline"
@@ -298,14 +306,14 @@ export default async function CourseStudentsPage({
                           </form>
                         </div>
                       ) : (
-                        <span className="text-sm text-muted-foreground">No active access</span>
+                        <span className="text-xs text-muted-foreground font-semibold">No active access</span>
                       )}
                     </TableCell>
                   </TableRow>
                 ))}
                 {students.length === 0 ? (
                   <TableRow>
-                    <TableCell className="h-24 text-center text-muted-foreground" colSpan={8}>
+                    <TableCell className="h-24 text-center text-muted-foreground text-xs font-semibold" colSpan={8}>
                       No students have been enrolled yet.
                     </TableCell>
                   </TableRow>
@@ -317,7 +325,7 @@ export default async function CourseStudentsPage({
           {/* Mobile Cards */}
           <div className="md:hidden divide-y divide-border/20">
             {students.map((student) => (
-              <div key={student.enrolmentId} className="py-4.5 flex flex-col gap-3.5">
+              <div key={student.enrolmentId} className="p-5 flex flex-col gap-3.5">
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0 flex-1">
                     <span className="text-sm font-extrabold text-foreground leading-snug">{student.name}</span>
@@ -358,7 +366,7 @@ export default async function CourseStudentsPage({
                           pendingLabel="Sending..."
                           size="sm"
                           variant="outline"
-                          className="w-full text-xs font-bold"
+                          className="w-full h-8.5 rounded-lg text-xs font-bold"
                         >
                           Resend activation
                         </PendingSubmitButton>
@@ -372,7 +380,7 @@ export default async function CourseStudentsPage({
                         value={student.enrolmentId}
                       />
                       <ConfirmSubmitButton
-                        className="w-full h-8.5 text-xs font-bold"
+                        className="w-full h-8.5 rounded-lg text-xs font-bold"
                         message={`Remove ${student.name} from this course? Existing attendance history will be preserved.`}
                         size="sm"
                         variant="outline"

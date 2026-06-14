@@ -26,6 +26,7 @@ import {
   updateLecturerAction,
   deleteLecturerAction,
 } from "@/app/admin/actions";
+import { ImageUploadPreview } from "@/components/image-upload-preview";
 
 export default async function AdminLecturersPage({
   searchParams,
@@ -253,11 +254,8 @@ export default async function AdminLecturersPage({
             <Input id="department" name="department" placeholder="Computer Science" />
           </div>
           <div className="space-y-1.5 sm:col-span-2">
-            <div className="flex justify-between items-center">
-              <Label htmlFor="avatar" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Profile picture</Label>
-              <span className="text-[0.68rem] text-muted-foreground/60 font-medium">JPG/PNG/GIF up to 750KB</span>
-            </div>
-            <Input accept="image/*" id="avatar" name="avatar" type="file" className="file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 cursor-pointer pt-1.5" />
+            <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Profile picture</Label>
+            <ImageUploadPreview id="avatar" name="avatar" />
           </div>
           <div className="sm:col-span-2 pt-2">
             <Button className="w-full py-5 rounded-xl font-bold shadow-md shadow-primary/20 hover:shadow-lg text-sm" type="submit">
@@ -287,23 +285,9 @@ export default async function AdminLecturersPage({
                   {errorMessages[params.error]}
                 </p>
               ) : null}
-              <div className="flex items-center gap-4 sm:col-span-2">
-                <span className="flex size-16 items-center justify-center rounded-lg bg-muted shrink-0">
-                  {editLecturer.avatarUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      alt=""
-                      className="size-16 rounded-lg object-cover"
-                      src={editLecturer.avatarUrl}
-                    />
-                  ) : (
-                    <UserRound className="size-6 text-muted-foreground" />
-                  )}
-                </span>
-                <div className="space-y-1 text-sm text-muted-foreground min-w-0">
-                  <p className="font-semibold text-foreground truncate">{editLecturer.name}</p>
-                  <p className="truncate">{editLecturer.email}</p>
-                </div>
+              <div className="sm:col-span-2 space-y-1 text-sm text-muted-foreground">
+                <p className="font-semibold text-foreground truncate">{editLecturer.name}</p>
+                <p className="truncate">{editLecturer.email}</p>
               </div>
               <div className="space-y-1.5 sm:col-span-2">
                 <Label htmlFor="name">Full name</Label>
@@ -332,8 +316,8 @@ export default async function AdminLecturersPage({
                 />
               </div>
               <div className="space-y-1.5 sm:col-span-2">
-                <Label htmlFor="avatar">Replace picture</Label>
-                <Input accept="image/*" id="avatar" name="avatar" type="file" />
+                <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Profile picture</Label>
+                <ImageUploadPreview id="avatar" name="avatar" defaultImage={editLecturer.avatarUrl} />
               </div>
               <div className="sm:col-span-2 pt-2">
                 <Button className="w-full" type="submit">

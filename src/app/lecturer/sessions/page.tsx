@@ -204,7 +204,8 @@ export default async function LecturerSessionsPage({
           </Button>
         }
       />
-      <Card className="mb-6">
+      <Card className="glass-panel glass-panel-hover overflow-hidden relative border-border/40 mb-6">
+        <div className="absolute inset-x-0 top-0 h-1 bg-[linear-gradient(90deg,var(--primary),oklch(0.52_0.14_200))]" />
         <CardContent className="pt-6">
           <form className="grid gap-4 lg:grid-cols-[1.4fr_1fr_1fr_1fr_1fr_auto] lg:items-end">
             <div className="space-y-2">
@@ -284,44 +285,45 @@ export default async function LecturerSessionsPage({
           </form>
         </CardContent>
       </Card>
-      <Card>
-        <CardContent className="pt-6">
+      <Card className="glass-panel border-border/40 overflow-hidden relative">
+        <CardContent className="pt-0 px-0">
           {/* Desktop Table */}
           <div className="hidden md:block overflow-x-auto">
             <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Session</TableHead>
-                  <TableHead>Course</TableHead>
-                  <TableHead>Opens</TableHead>
-                  <TableHead>Final close</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+              <TableHeader className="bg-slate-950/[0.02] dark:bg-white/[0.01]">
+                <TableRow className="hover:bg-transparent border-b border-border/30">
+                  <TableHead className="px-6 py-3 font-semibold text-muted-foreground text-xs">Session</TableHead>
+                  <TableHead className="px-4 py-3 font-semibold text-muted-foreground text-xs">Course</TableHead>
+                  <TableHead className="px-4 py-3 font-semibold text-muted-foreground text-xs">Opens</TableHead>
+                  <TableHead className="px-4 py-3 font-semibold text-muted-foreground text-xs">Final close</TableHead>
+                  <TableHead className="px-4 py-3 font-semibold text-muted-foreground text-xs">Status</TableHead>
+                  <TableHead className="px-6 py-3 text-right font-semibold text-muted-foreground text-xs">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {rows.map((session) => (
-                  <TableRow key={session.id}>
-                    <TableCell className="font-medium">
-                      <Link href={`/lecturer/courses/${session.courseId}/sessions/${session.id}`}>
+                  <TableRow key={session.id} className="hover:bg-muted/30 border-b border-border/20 transition-colors">
+                    <TableCell className="px-6 py-4.5">
+                      <Link href={`/lecturer/courses/${session.courseId}/sessions/${session.id}`} className="font-extrabold text-foreground text-sm hover:underline">
                         {session.title}
                       </Link>
                     </TableCell>
-                    <TableCell>
-                      {session.courseCode}: {session.courseTitle}
+                    <TableCell className="px-4 py-4.5 text-xs font-bold text-foreground/80">
+                      <span className="font-extrabold text-foreground">{session.courseCode}</span>: {session.courseTitle}
                     </TableCell>
-                    <TableCell>{session.opensAt.toLocaleString()}</TableCell>
-                    <TableCell>{session.finalClosesAt.toLocaleString()}</TableCell>
-                    <TableCell>
+                    <TableCell className="px-4 py-4.5 text-xs font-semibold text-muted-foreground">{session.opensAt.toLocaleString()}</TableCell>
+                    <TableCell className="px-4 py-4.5 text-xs font-semibold text-muted-foreground">{session.finalClosesAt.toLocaleString()}</TableCell>
+                    <TableCell className="px-4 py-4.5">
                       <StatusBadge status={session.status} />
                     </TableCell>
-                    <TableCell className="text-right">
-                      <Button asChild size="sm" variant="outline">
+                    <TableCell className="px-6 py-4.5 text-right">
+                      <Button asChild size="sm" variant="outline" className="h-8.5 rounded-lg text-xs font-bold shadow-sm">
                         <Link
                           href={`/lecturer/sessions?modal=edit&id=${session.id}`}
+                          className="flex items-center gap-1.5"
                         >
-                          <Pencil className="size-4" />
-                          Edit
+                          <Pencil className="size-3.5" />
+                          <span>Edit</span>
                         </Link>
                       </Button>
                     </TableCell>
@@ -329,7 +331,7 @@ export default async function LecturerSessionsPage({
                 ))}
                 {rows.length === 0 ? (
                   <TableRow>
-                    <TableCell className="h-24 text-center text-muted-foreground" colSpan={6}>
+                    <TableCell className="h-24 text-center text-muted-foreground text-xs font-semibold" colSpan={6}>
                       No attendance sessions have been created yet.
                     </TableCell>
                   </TableRow>
@@ -341,7 +343,7 @@ export default async function LecturerSessionsPage({
           {/* Mobile Cards */}
           <div className="md:hidden divide-y divide-border/20">
             {rows.map((session) => (
-              <div key={session.id} className="py-4.5 flex flex-col gap-3.5">
+              <div key={session.id} className="p-5 flex flex-col gap-3.5">
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0 flex-1">
                     <Link href={`/lecturer/courses/${session.courseId}/sessions/${session.id}`} className="text-sm font-extrabold text-primary hover:underline leading-snug">

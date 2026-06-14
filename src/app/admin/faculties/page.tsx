@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { asc, eq } from "drizzle-orm";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { Pencil, Plus, Trash2, School } from "lucide-react";
 
 import { PageHeader } from "@/components/page-header";
 import { StatusBadge } from "@/components/status-badge";
@@ -76,47 +76,53 @@ export default async function AdminFacultiesPage({
           );
 
           return (
-            <Card key={faculty.id}>
+            <Card key={faculty.id} className="glass-panel glass-panel-hover border-border/40 overflow-hidden relative shadow-sm hover:shadow-md transition-all duration-300 group hover:-translate-y-0.5">
+              <div className="absolute inset-x-0 top-0 h-0.5 bg-primary/20 group-hover:bg-primary/50 transition-colors" />
               <CardContent className="flex flex-col gap-4 pt-6 md:flex-row md:items-start md:justify-between">
-                <div className="space-y-3">
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h2 className="text-lg font-semibold">{faculty.name}</h2>
-                      <StatusBadge status={faculty.status} />
+                <div className="flex items-start gap-4">
+                  <span className="flex size-11 items-center justify-center rounded-xl bg-primary/5 text-primary border border-primary/10 group-hover:bg-primary/10 transition-colors shrink-0">
+                    <School className="size-5" />
+                  </span>
+                  <div className="space-y-3 min-w-0">
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h2 className="text-base font-extrabold text-foreground group-hover:text-primary transition-colors leading-snug">{faculty.name}</h2>
+                        <StatusBadge status={faculty.status} />
+                      </div>
+                      <p className="text-xs font-bold text-muted-foreground mt-0.5 uppercase tracking-wider">{faculty.code}</p>
+                      {faculty.description ? (
+                        <p className="mt-2 max-w-3xl text-xs font-semibold text-muted-foreground/80 leading-relaxed">
+                          {faculty.description}
+                        </p>
+                      ) : null}
                     </div>
-                    <p className="text-sm text-muted-foreground">{faculty.code}</p>
-                    {faculty.description ? (
-                      <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
-                        {faculty.description}
+                    <div className="space-y-1.5">
+                      <p className="text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground/50">
+                        Linked Departments
                       </p>
-                    ) : null}
-                  </div>
-                  <div className="space-y-2">
-                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                      Departments
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {facultyDepartments.length > 0 ? (
-                        facultyDepartments.map((department) => (
-                          <span
-                            className="rounded-lg border bg-muted/45 px-2.5 py-1 text-xs font-medium"
-                            key={department.id}
-                          >
-                            {department.name}
+                      <div className="flex flex-wrap gap-1.5">
+                        {facultyDepartments.length > 0 ? (
+                          facultyDepartments.map((department) => (
+                            <span
+                              className="rounded-lg border border-border/40 bg-muted/40 px-2.5 py-1 text-xs font-bold text-foreground/80"
+                              key={department.id}
+                            >
+                              {department.name}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-xs text-muted-foreground/50 font-semibold italic">
+                            No departments registered yet.
                           </span>
-                        ))
-                      ) : (
-                        <span className="text-sm text-muted-foreground">
-                          No departments yet.
-                        </span>
-                      )}
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
-                <Button asChild size="sm" variant="outline">
-                  <Link href={`/admin/faculties?modal=edit&id=${faculty.id}`}>
+                <Button asChild size="sm" variant="outline" className="h-8.5 rounded-lg text-xs font-bold shadow-sm shrink-0">
+                  <Link href={`/admin/faculties?modal=edit&id=${faculty.id}`} className="flex items-center gap-1.5">
                     <Pencil className="size-3.5" />
-                    Edit
+                    <span>Edit</span>
                   </Link>
                 </Button>
               </CardContent>

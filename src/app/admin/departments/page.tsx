@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { asc, eq } from "drizzle-orm";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { Pencil, Plus, Trash2, BookOpen } from "lucide-react";
 
 import { PageHeader } from "@/components/page-header";
 import { StatusBadge } from "@/components/status-badge";
@@ -74,26 +74,32 @@ export default async function AdminDepartmentsPage({
       />
       <div className="grid gap-4 md:grid-cols-2">
         {rows.map((department) => (
-          <Card key={department.id}>
+          <Card key={department.id} className="glass-panel glass-panel-hover border-border/40 overflow-hidden relative shadow-sm hover:shadow-md transition-all duration-300 group hover:-translate-y-0.5">
+            <div className="absolute inset-x-0 top-0 h-0.5 bg-primary/20 group-hover:bg-primary/50 transition-colors" />
             <CardContent className="flex items-start justify-between gap-4 pt-6">
-              <div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <h2 className="font-semibold">{department.name}</h2>
-                  <StatusBadge status={department.status} />
-                </div>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {department.code} / {department.facultyName}
-                </p>
-                {department.description ? (
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    {department.description}
+              <div className="flex items-start gap-4">
+                <span className="flex size-11 items-center justify-center rounded-xl bg-primary/5 text-primary border border-primary/10 group-hover:bg-primary/10 transition-colors shrink-0">
+                  <BookOpen className="size-5" />
+                </span>
+                <div className="space-y-1 min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h2 className="text-base font-extrabold text-foreground group-hover:text-primary transition-colors leading-snug">{department.name}</h2>
+                    <StatusBadge status={department.status} />
+                  </div>
+                  <p className="text-xs font-bold text-muted-foreground mt-0.5 uppercase tracking-wider">
+                    {department.code} &bull; {department.facultyName}
                   </p>
-                ) : null}
+                  {department.description ? (
+                    <p className="mt-2 max-w-3xl text-xs font-semibold text-muted-foreground/80 leading-relaxed">
+                      {department.description}
+                    </p>
+                  ) : null}
+                </div>
               </div>
-              <Button asChild size="sm" variant="outline">
-                <Link href={`/admin/departments?modal=edit&id=${department.id}`}>
+              <Button asChild size="sm" variant="outline" className="h-8.5 rounded-lg text-xs font-bold shadow-sm shrink-0">
+                <Link href={`/admin/departments?modal=edit&id=${department.id}`} className="flex items-center gap-1.5">
                   <Pencil className="size-3.5" />
-                  Edit
+                  <span>Edit</span>
                 </Link>
               </Button>
             </CardContent>

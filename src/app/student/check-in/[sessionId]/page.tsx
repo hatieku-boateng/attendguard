@@ -73,17 +73,18 @@ export default async function CheckInPage({
         title="Check in"
         description={`${session.courseCode}: ${session.courseTitle} / ${session.title}`}
       />
-      <Card className="max-w-2xl">
-        <CardHeader>
-          <CardTitle>Attendance submission</CardTitle>
-          <CardDescription>
+      <Card className="max-w-2xl glass-panel glass-panel-hover overflow-hidden relative border-border/40">
+        <div className="absolute inset-x-0 top-0 h-1 bg-[linear-gradient(90deg,var(--primary),oklch(0.52_0.14_200))]" />
+        <CardHeader className="border-b border-border/30 bg-slate-950/[0.01] dark:bg-white/[0.01] pb-4">
+          <CardTitle className="text-base font-bold text-foreground">Attendance submission</CardTitle>
+          <CardDescription className="text-xs text-muted-foreground mt-1">
             Final close: {session.finalClosesAt.toLocaleString()}. Required GPS accuracy:{" "}
             {session.maxAcceptedAccuracyMeters}m.
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           {resultMessage ? (
-            <p className="mb-5 rounded-md border bg-muted px-3 py-2 text-sm text-muted-foreground">
+            <p className="mb-5 rounded-xl border border-primary/20 bg-primary/10 px-4 py-3 text-xs font-semibold text-primary leading-relaxed">
               {resultMessage}
             </p>
           ) : null}

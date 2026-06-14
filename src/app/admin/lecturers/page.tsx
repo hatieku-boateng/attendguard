@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { Pencil, Plus, UserRound } from "lucide-react";
 
 import { PageHeader } from "@/components/page-header";
+import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -83,7 +84,9 @@ export default async function AdminLecturersPage() {
                   <TableCell>{lecturer.email}</TableCell>
                   <TableCell>{lecturer.staffId || "-"}</TableCell>
                   <TableCell>{lecturer.department || "-"}</TableCell>
-                  <TableCell>{lecturer.status}</TableCell>
+                  <TableCell>
+                    <StatusBadge status={lecturer.status} />
+                  </TableCell>
                   <TableCell className="text-right">
                     <Button asChild size="sm" variant="outline">
                       <Link href={`/admin/lecturers/${lecturer.id}/edit`}>

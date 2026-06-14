@@ -8,6 +8,7 @@ import {
 import { PageHeader } from "@/components/page-header";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -88,16 +89,14 @@ function AttemptsTable({
               </p>
             </TableCell>
             <TableCell>
-              <Badge variant="secondary">{attempt.reason ?? attempt.result}</Badge>
+              <StatusBadge status={attempt.reason ?? attempt.result} />
             </TableCell>
             <TableCell className="text-sm text-muted-foreground">
               <p>Distance: {attempt.distance ?? "-"}m</p>
               <p>Accuracy: {attempt.accuracy ?? "-"}m</p>
             </TableCell>
             <TableCell>
-              <Badge variant={attempt.reviewStatus === "approved" ? "default" : "secondary"}>
-                {attempt.reviewStatus}
-              </Badge>
+              <StatusBadge status={attempt.reviewStatus} />
             </TableCell>
             <TableCell>{attempt.attemptedAt.toLocaleString()}</TableCell>
             {showActions ? (

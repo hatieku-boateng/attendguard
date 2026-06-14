@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ShieldCheck, BookOpen, GraduationCap } from "lucide-react";
 
 import { loginAction } from "@/app/(auth)/actions";
 import { AuthFrame } from "@/components/auth-frame";
@@ -12,6 +13,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 
 const errorMessages: Record<string, string> = {
   missing: "Enter both email and password.",
@@ -31,49 +33,82 @@ export default async function LoginPage({
 
   return (
     <AuthFrame
-      description="Move from paper registers to verified, auditable attendance records with account, passkey, time, and location checks."
+      description="Move from paper registers to verified, auditable attendance records with automated device activation, location validation, and session logs."
       eyebrow="Trusted workspace access"
-      title="Sign in to your attendance command center."
+      title="Sign in to your attendance console."
     >
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Sign in</CardTitle>
-          <CardDescription>
-            Access your admin, lecturer, or student attendance workspace.
+      <Card className="w-full max-w-md glass-panel rounded-3xl shadow-2xl relative overflow-hidden border-none text-left">
+        {/* Dynamic header highlight */}
+        <div className="absolute inset-x-0 top-0 h-1 bg-[linear-gradient(90deg,var(--primary),oklch(0.64_0.16_145))]" />
+
+        <CardHeader className="pt-8 pb-4">
+          <div className="flex flex-wrap gap-2 pb-2">
+            {[
+              { role: "Admin", icon: ShieldCheck, color: "text-amber-600 bg-amber-500/10 border-amber-500/20 dark:text-amber-400" },
+              { role: "Lecturer", icon: BookOpen, color: "text-primary bg-primary/10 border-primary/20" },
+              { role: "Student", icon: GraduationCap, color: "text-emerald-600 bg-emerald-500/10 border-emerald-500/20 dark:text-emerald-400" },
+            ].map((item) => {
+              const Icon = item.icon;
+              return (
+                <span
+                  key={item.role}
+                  className={cn(
+                    "inline-flex items-center gap-1 px-3 py-1 rounded-full border text-[9px] font-black uppercase tracking-wider",
+                    item.color
+                  )}
+                >
+                  <Icon className="size-3.5" />
+                  {item.role}
+                </span>
+              );
+            })}
+          </div>
+          <CardTitle className="text-2xl font-black tracking-tight text-foreground">Sign in</CardTitle>
+          <CardDescription className="text-xs font-semibold text-muted-foreground mt-1">
+            Access your administrator, lecturer, or student attendance workspace.
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="mb-5 grid gap-2 sm:grid-cols-3">
-            {["Admin", "Lecturer", "Student"].map((role) => (
-              <div
-                className="rounded-lg border bg-muted/40 px-3 py-2 text-center text-xs font-medium uppercase tracking-normal text-muted-foreground"
-                key={role}
-              >
-                {role}
-              </div>
-            ))}
-          </div>
-          <form action={loginAction} className="space-y-5">
+
+        <CardContent className="space-y-6 pb-8">
+          <form action={loginAction} className="space-y-4">
             {message ? (
-              <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              <p className="rounded-2xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-xs font-semibold text-destructive leading-relaxed">
                 {message}
               </p>
             ) : null}
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" name="email" type="email" required />
+            
+            <div className="space-y-1.5">
+              <Label htmlFor="email" className="text-xs font-extrabold tracking-tight text-muted-foreground uppercase tracking-widest leading-none">Email address</Label>
+              <Input 
+                id="email" 
+                name="email" 
+                type="email" 
+                required 
+                placeholder="name@example.com" 
+                className="rounded-2xl h-11 px-4 border-border/70 bg-background/50 shadow-sm"
+              />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input id="password" name="password" type="password" required />
+            
+            <div className="space-y-1.5">
+              <Label htmlFor="password" className="text-xs font-extrabold tracking-tight text-muted-foreground uppercase tracking-widest leading-none">Password</Label>
+              <Input 
+                id="password" 
+                name="password" 
+                type="password" 
+                required 
+                placeholder="••••••••" 
+                className="rounded-2xl h-11 px-4 border-border/70 bg-background/50 shadow-sm"
+              />
             </div>
-            <Button className="w-full" type="submit">
-              Sign in
+
+            <Button className="w-full h-11 rounded-2xl font-bold shadow-md hover:shadow-lg mt-2 text-sm bg-primary text-primary-foreground hover:bg-primary/95 transition-all" type="submit">
+              Sign in to workspace
             </Button>
           </form>
-          <p className="mt-6 text-center text-sm text-muted-foreground">
+          
+          <p className="text-center text-xs text-muted-foreground pt-2 font-semibold">
             Imported student?{" "}
-            <Link className="font-medium text-foreground underline" href="/activate-account">
+            <Link className="font-extrabold text-primary hover:underline" href="/activate-account">
               Activate account
             </Link>
           </p>

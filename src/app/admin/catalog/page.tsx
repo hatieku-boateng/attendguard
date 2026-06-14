@@ -3,7 +3,7 @@ import { desc } from "drizzle-orm";
 import { Pencil, Plus } from "lucide-react";
 
 import { PageHeader } from "@/components/page-header";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -64,7 +64,7 @@ export default async function AdminCatalogPage() {
                   <TableCell>{course.programme || "-"}</TableCell>
                   <TableCell>{course.level || "-"}</TableCell>
                   <TableCell>
-                    <Badge variant="secondary">{course.status}</Badge>
+                    <StatusBadge status={course.status} />
                   </TableCell>
                   <TableCell className="text-right">
                     <Button asChild size="sm" variant="outline">

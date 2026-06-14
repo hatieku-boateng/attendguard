@@ -10,6 +10,7 @@ import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { PageHeader } from "@/components/page-header";
 import { StatCard } from "@/components/stat-card";
 import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -130,7 +131,7 @@ export default async function CourseDetailPage({
           </p>
           <p>
             <span className="text-muted-foreground">Current status:</span>{" "}
-            <Badge variant="secondary">{course.status}</Badge>
+            <StatusBadge status={course.status} />
           </p>
           <form action={updateCourseStatusAction} className="flex gap-2 sm:col-span-2">
             <input name="courseId" type="hidden" value={course.id} />
@@ -172,7 +173,7 @@ export default async function CourseDetailPage({
                   <TableCell>{session.opensAt.toLocaleString()}</TableCell>
                   <TableCell>{session.finalClosesAt.toLocaleString()}</TableCell>
                   <TableCell>
-                    <Badge variant="secondary">{session.status}</Badge>
+                    <StatusBadge status={session.status} />
                   </TableCell>
                   <TableCell className="text-right">
                     <Button asChild size="sm" variant="outline">

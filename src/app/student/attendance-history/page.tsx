@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 
 import { PageHeader } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/status-badge";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
@@ -60,7 +61,7 @@ export default async function AttendanceHistoryPage() {
                   </TableCell>
                   <TableCell>{record.sessionTitle}</TableCell>
                   <TableCell>
-                    <Badge variant="secondary">{record.status}</Badge>
+                    <StatusBadge status={record.status} />
                   </TableCell>
                   <TableCell>{record.checkInAt.toLocaleString()}</TableCell>
                   <TableCell>{record.distance ?? "-"}m</TableCell>

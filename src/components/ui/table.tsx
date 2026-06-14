@@ -4,11 +4,12 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
+// Upgraded Table component with premium glass wrapping, rounded-xl borders, and shadows
 function Table({ className, ...props }: React.ComponentProps<"table">) {
   return (
     <div
       data-slot="table-container"
-      className="relative -mx-2 w-[calc(100%+1rem)] overflow-x-auto px-2 sm:mx-0 sm:w-full sm:rounded-lg sm:border sm:border-border/70 sm:bg-card/55 sm:px-0 sm:shadow-sm sm:shadow-slate-950/[0.035]"
+      className="relative -mx-2 w-[calc(100%+1rem)] overflow-x-auto px-2 sm:mx-0 sm:w-full sm:rounded-xl sm:border sm:border-white/60 sm:bg-white/50 sm:px-0 sm:shadow-md sm:shadow-slate-950/[0.03] backdrop-blur-md dark:sm:border-zinc-800/40 dark:sm:bg-zinc-950/40"
     >
       <table
         data-slot="table"
@@ -23,7 +24,7 @@ function TableHeader({ className, ...props }: React.ComponentProps<"thead">) {
   return (
     <thead
       data-slot="table-header"
-      className={cn("[&_tr]:border-b [&_tr]:bg-muted/65", className)}
+      className={cn("[&_tr]:border-b [&_tr]:bg-muted/40 dark:[&_tr]:bg-zinc-900/30", className)}
       {...props}
     />
   )
@@ -44,7 +45,7 @@ function TableFooter({ className, ...props }: React.ComponentProps<"tfoot">) {
     <tfoot
       data-slot="table-footer"
       className={cn(
-        "border-t bg-muted/50 font-medium [&>tr]:last:border-b-0",
+        "border-t bg-muted/30 font-medium [&>tr]:last:border-b-0",
         className
       )}
       {...props}
@@ -57,7 +58,7 @@ function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
     <tr
       data-slot="table-row"
       className={cn(
-        "border-b border-border/70 transition-colors hover:bg-muted/45 has-aria-expanded:bg-muted/50 data-[state=selected]:bg-muted",
+        "border-b border-border/40 transition-colors hover:bg-primary/5 dark:hover:bg-primary/10 has-aria-expanded:bg-muted/40 data-[state=selected]:bg-muted/65",
         className
       )}
       {...props}
@@ -70,7 +71,7 @@ function TableHead({ className, ...props }: React.ComponentProps<"th">) {
     <th
       data-slot="table-head"
       className={cn(
-        "h-11 px-4 text-left align-middle text-xs font-semibold uppercase tracking-[0.12em] whitespace-nowrap text-muted-foreground [&:has([role=checkbox])]:pr-0",
+        "h-11 px-4 text-left align-middle text-[0.7rem] font-bold uppercase tracking-[0.14em] whitespace-nowrap text-muted-foreground [&:has([role=checkbox])]:pr-0",
         className
       )}
       {...props}

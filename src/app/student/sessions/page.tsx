@@ -3,6 +3,7 @@ import { and, eq, inArray } from "drizzle-orm";
 
 import { PageHeader } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -105,9 +106,7 @@ export default async function StudentSessionsPage() {
                     <TableCell>{session.finalClosesAt.toLocaleString()}</TableCell>
                     <TableCell className="font-mono">{passkey ?? "Not issued"}</TableCell>
                     <TableCell>
-                      <Badge variant="secondary">
-                        {session.recordId ? "recorded" : session.status}
-                      </Badge>
+                      <StatusBadge status={session.recordId ? "present" : session.status} />
                     </TableCell>
                     <TableCell className="text-right">
                       <Button asChild size="sm" disabled={!passkey || Boolean(session.recordId)}>

@@ -52,25 +52,25 @@ function AnalyticsBar({
   tone?: "default" | "success" | "warning" | "danger";
 }) {
   const width = percent(value, total);
-  const color =
+  const gradientClass =
     tone === "success"
-      ? "bg-emerald-500"
+      ? "bg-[linear-gradient(90deg,oklch(0.64_0.16_145),oklch(0.50_0.15_180))] shadow-[0_0_8px_rgba(16,185,129,0.2)]"
       : tone === "warning"
-        ? "bg-amber-500"
+        ? "bg-[linear-gradient(90deg,oklch(0.78_0.14_85),oklch(0.62_0.12_65))] shadow-[0_0_8px_rgba(245,158,11,0.2)]"
         : tone === "danger"
-          ? "bg-rose-500"
-          : "bg-cyan-500";
+          ? "bg-[linear-gradient(90deg,oklch(0.60_0.15_25),oklch(0.50_0.17_20))] shadow-[0_0_8px_rgba(239,68,68,0.2)]"
+          : "bg-[linear-gradient(90deg,var(--primary),oklch(0.52_0.14_200))] shadow-[0_0_8px_rgba(6,182,212,0.2)]";
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center justify-between gap-3 text-sm">
-        <span className="font-medium capitalize">{label}</span>
-        <span className="font-mono text-muted-foreground">
-          {value} - {width}%
+      <div className="flex items-center justify-between gap-3 text-xs sm:text-sm">
+        <span className="font-semibold text-foreground/90 capitalize">{label}</span>
+        <span className="font-mono text-xs text-muted-foreground bg-muted/50 dark:bg-zinc-800/40 px-2 py-0.5 rounded-md border border-border/40">
+          {value} <span className="text-muted-foreground/50 mx-0.5">/</span> {width}%
         </span>
       </div>
-      <div className="h-2 overflow-hidden rounded-full bg-muted">
-        <div className={`h-full rounded-full ${color}`} style={{ width: `${width}%` }} />
+      <div className="h-2 overflow-hidden rounded-full bg-muted/70 dark:bg-zinc-800/60 border border-border/10">
+        <div className={`h-full rounded-full transition-all duration-500 ease-out ${gradientClass}`} style={{ width: `${width}%` }} />
       </div>
     </div>
   );

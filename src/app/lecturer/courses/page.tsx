@@ -2,7 +2,7 @@ import Link from "next/link";
 import { desc, eq } from "drizzle-orm";
 
 import { PageHeader } from "@/components/page-header";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/status-badge";
 import {
   Card,
   CardContent,
@@ -72,7 +72,7 @@ export default async function LecturerCoursesPage() {
                   <TableCell>{course.academicYear}</TableCell>
                   <TableCell>{course.classGroup}</TableCell>
                   <TableCell>
-                    <Badge variant="secondary">{course.status}</Badge>
+                    <StatusBadge status={course.status} />
                   </TableCell>
                 </TableRow>
               ))}

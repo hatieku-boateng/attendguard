@@ -184,11 +184,11 @@ export function AppShell({
               <Menu className="size-5 text-foreground" />
             </Button>
             {/* Page Title Context */}
-            <div className="hidden sm:block">
-              <h1 className="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-2">
-                <span className="text-muted-foreground/60">AttendGuard Suite</span>
-                <ChevronRight className="size-3 text-muted-foreground/40" />
-                <span className="text-primary">{user.role} Portal</span>
+            <div className="block">
+              <h1 className="text-[10px] sm:text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5 sm:gap-2">
+                <span className="text-muted-foreground/60 truncate max-w-[80px] sm:max-w-none">PU Attendance</span>
+                <ChevronRight className="size-2.5 sm:size-3 text-muted-foreground/40 shrink-0" />
+                <span className="text-primary truncate">{user.role} Portal</span>
               </h1>
             </div>
           </div>

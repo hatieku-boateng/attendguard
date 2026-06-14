@@ -318,7 +318,8 @@ export default async function AdminStudentsPage({
             </form>
           </div>
 
-          <div className="overflow-x-auto">
+          {/* Desktop Table */}
+          <div className="hidden md:block overflow-x-auto">
             <Table className="min-w-[76rem]">
               <TableHeader className="bg-slate-950/[0.02] dark:bg-white/[0.01]">
                 <TableRow className="hover:bg-transparent border-b border-border/30">
@@ -430,6 +431,116 @@ export default async function AdminStudentsPage({
                 ) : null}
               </TableBody>
             </Table>
+          </div>
+
+          {/* Mobile Cards */}
+          <div className="md:hidden divide-y divide-border/20">
+            {rows.map((student) => (
+              <div key={student.studentId} className="p-5 flex flex-col gap-3.5">
+                <div className="flex items-start gap-3">
+                  <div className="pt-1">
+                    <input
+                      aria-label={`Select ${student.studentName}`}
+                      className="size-4.5 rounded border-border/60 text-primary bg-background/50 accent-primary focus:ring-primary/25 focus-visible:outline-none"
+                      data-bulk-row
+                      form="admin-student-bulk-form"
+                      name="studentId"
+                      type="checkbox"
+                      value={student.studentId}
+                    />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-start justify-between gap-3 flex-wrap">
+                      <div className="min-w-0 flex-1">
+                        <span className="text-sm font-extrabold text-foreground leading-snug block truncate">{student.studentName}</span>
+                        <p className="text-[10px] text-muted-foreground font-semibold mt-0.5 truncate">
+                          {student.studentIdNumber} <span className="text-muted-foreground/35 mx-1">/</span> {student.studentEmail}
+                        </p>
+                      </div>
+                      <div className="flex flex-col items-end gap-1 shrink-0">
+                        <StatusBadge status={student.accountStatus} />
+                        <span className="text-[9px] text-muted-foreground font-bold">
+                          {student.activatedAt ? "Activated" : "Not Activated"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-slate-950/[0.015] dark:bg-white/[0.015] p-3 rounded-xl border border-border/25 text-xs space-y-3">
+                  <div>
+                    <span className="text-[9px] text-muted-foreground/50 block font-black uppercase tracking-wider mb-1">Course Assignments</span>
+                    {student.enrolments.length > 0 ? (
+                      <div className="space-y-1.5">
+                        {student.enrolments.map((enrolment) => (
+                          <div key={enrolment.enrolmentId} className="text-[11px] leading-relaxed">
+                            <span className="font-extrabold text-foreground">{enrolment.courseCode}</span>
+                            <span className="text-muted-foreground font-semibold">
+                              {" "}
+                              / {enrolment.status} / {enrolment.classGroup}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <Badge variant="outline" className="text-[9px] font-bold text-muted-foreground bg-muted/20 border-border/50">Unassigned</Badge>
+                    )}
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-2.5 pt-2.5 border-t border-border/15">
+                    <div>
+                      <span className="text-[9px] text-muted-foreground/50 block font-black uppercase tracking-wider">Programme</span>
+                      <span className="font-bold text-foreground/80 mt-0.5 block truncate">{student.programme || "-"}</span>
+                    </div>
+                    <div>
+                      <span className="text-[9px] text-muted-foreground/50 block font-black uppercase tracking-wider">Level & Group</span>
+                      <span className="font-bold text-foreground/80 mt-0.5 block truncate">
+                        {student.level || "-"} / {student.classGroup || "-"}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="pt-2 border-t border-border/15">
+                    <span className="text-[9px] text-muted-foreground/50 block font-black uppercase tracking-wider">Created On</span>
+                    <span className="font-bold text-foreground/80 mt-0.5 block">
+                      {student.createdAt.toLocaleDateString("en-GB", {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                      })}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 pt-1.5">
+                  <Button asChild size="sm" variant="outline" className="h-8.5 rounded-lg text-xs font-bold shadow-sm flex-1">
+                    <Link href={`/admin/students/${student.studentId}/edit`} className="flex items-center justify-center gap-1.5">
+                      <Pencil className="size-3.5" />
+                      <span>Edit Profile</span>
+                    </Link>
+                  </Button>
+                  <form action={deleteStudentAccountAction} className="flex-1">
+                    <input name="studentId" type="hidden" value={student.studentId} />
+                    <ConfirmSubmitButton
+                      className="w-full h-8.5 rounded-lg text-xs font-bold shadow-sm"
+                      message={`Delete ${student.studentName}'s student account? This removes their profile, course enrolments, attendance records, activation tokens, and passkeys.`}
+                      size="sm"
+                    >
+                      <Trash2 className="size-3.5" />
+                      <span>Delete</span>
+                    </ConfirmSubmitButton>
+                  </form>
+                </div>
+              </div>
+            ))}
+            {rows.length === 0 ? (
+              <div className="flex flex-col items-center justify-center gap-3 py-12 px-6">
+                <span className="flex size-12 items-center justify-center rounded-2xl bg-muted/60 border border-border/40 text-muted-foreground/35">
+                  <Search className="size-6" />
+                </span>
+                <p className="font-semibold text-muted-foreground/60 text-sm">No student accounts found.</p>
+              </div>
+            ) : null}
           </div>
         </CardContent>
       </Card>

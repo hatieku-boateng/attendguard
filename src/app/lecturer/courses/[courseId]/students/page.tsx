@@ -235,81 +235,165 @@ export default async function CourseStudentsPage({
                   : "Activation link could not be emailed. Check email configuration."}
             </p>
           ) : null}
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Student ID</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Programme</TableHead>
-                <TableHead>Level</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Account</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {students.map((student) => (
-                <TableRow key={student.enrolmentId}>
-                  <TableCell className="font-medium">{student.name}</TableCell>
-                  <TableCell>{student.studentIdNumber}</TableCell>
-                  <TableCell>{student.email}</TableCell>
-                  <TableCell>{student.programme || "-"}</TableCell>
-                  <TableCell>{student.level || "-"}</TableCell>
-                  <TableCell>
-                    <StatusBadge status={student.status} />
-                  </TableCell>
-                  <TableCell>
-                    <StatusBadge status={student.activatedAt ? "active" : student.accountStatus} />
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {student.status === "active" ? (
-                      <div className="flex flex-wrap justify-end gap-2">
-                        {student.accountStatus !== "active" ? (
-                          <form action={resendStudentActivationAction}>
+          {/* Desktop Table */}
+          <div className="hidden md:block overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Student ID</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Programme</TableHead>
+                  <TableHead>Level</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Account</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {students.map((student) => (
+                  <TableRow key={student.enrolmentId}>
+                    <TableCell className="font-medium">{student.name}</TableCell>
+                    <TableCell>{student.studentIdNumber}</TableCell>
+                    <TableCell>{student.email}</TableCell>
+                    <TableCell>{student.programme || "-"}</TableCell>
+                    <TableCell>{student.level || "-"}</TableCell>
+                    <TableCell>
+                      <StatusBadge status={student.status} />
+                    </TableCell>
+                    <TableCell>
+                      <StatusBadge status={student.activatedAt ? "active" : student.accountStatus} />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {student.status === "active" ? (
+                        <div className="flex flex-wrap justify-end gap-2">
+                          {student.accountStatus !== "active" ? (
+                            <form action={resendStudentActivationAction}>
+                              <input name="courseId" type="hidden" value={course.id} />
+                              <input name="studentUserId" type="hidden" value={student.userId} />
+                              <PendingSubmitButton
+                                pendingLabel="Sending..."
+                                size="sm"
+                                variant="outline"
+                              >
+                                Resend activation
+                              </PendingSubmitButton>
+                            </form>
+                          ) : null}
+                          <form action={removeStudentFromCourseAction}>
                             <input name="courseId" type="hidden" value={course.id} />
-                            <input name="studentUserId" type="hidden" value={student.userId} />
-                            <PendingSubmitButton
-                              pendingLabel="Sending..."
+                            <input
+                              name="enrolmentId"
+                              type="hidden"
+                              value={student.enrolmentId}
+                            />
+                            <ConfirmSubmitButton
+                              className="w-auto"
+                              message={`Remove ${student.name} from this course? Existing attendance history will be preserved.`}
                               size="sm"
                               variant="outline"
                             >
-                              Resend activation
-                            </PendingSubmitButton>
+                              Remove
+                            </ConfirmSubmitButton>
                           </form>
-                        ) : null}
-                        <form action={removeStudentFromCourseAction}>
-                          <input name="courseId" type="hidden" value={course.id} />
-                          <input
-                            name="enrolmentId"
-                            type="hidden"
-                            value={student.enrolmentId}
-                          />
-                          <ConfirmSubmitButton
-                            className="w-auto"
-                            message={`Remove ${student.name} from this course? Existing attendance history will be preserved.`}
-                            size="sm"
-                            variant="outline"
-                          >
-                            Remove
-                          </ConfirmSubmitButton>
-                        </form>
-                      </div>
-                    ) : (
-                      <span className="text-sm text-muted-foreground">No active access</span>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
-              {students.length === 0 ? (
-                <TableRow>
-                  <TableCell className="h-24 text-center text-muted-foreground" colSpan={8}>
-                    No students have been enrolled yet.
-                  </TableCell>
-                </TableRow>
-              ) : null}
-            </TableBody>
-          </Table>
+                        </div>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">No active access</span>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {students.length === 0 ? (
+                  <TableRow>
+                    <TableCell className="h-24 text-center text-muted-foreground" colSpan={8}>
+                      No students have been enrolled yet.
+                    </TableCell>
+                  </TableRow>
+                ) : null}
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* Mobile Cards */}
+          <div className="md:hidden divide-y divide-border/20">
+            {students.map((student) => (
+              <div key={student.enrolmentId} className="py-4.5 flex flex-col gap-3.5">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="min-w-0 flex-1">
+                    <span className="text-sm font-extrabold text-foreground leading-snug">{student.name}</span>
+                    <p className="text-[10px] text-muted-foreground font-semibold mt-0.5">
+                      {student.studentIdNumber} <span className="text-muted-foreground/35 mx-1">/</span> {student.email}
+                    </p>
+                  </div>
+                  <div className="flex flex-col items-end gap-1.5 shrink-0">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[9px] text-muted-foreground/60 font-semibold uppercase tracking-wider">Enrol:</span>
+                      <StatusBadge status={student.status} />
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[9px] text-muted-foreground/60 font-semibold uppercase tracking-wider">Acct:</span>
+                      <StatusBadge status={student.activatedAt ? "active" : student.accountStatus} />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2.5 text-xs bg-slate-950/[0.015] dark:bg-white/[0.015] p-3 rounded-xl border border-border/25">
+                  <div>
+                    <span className="text-[9px] text-muted-foreground/50 block font-black uppercase tracking-wider">Programme</span>
+                    <span className="font-bold text-foreground/80 mt-0.5 block truncate">{student.programme || "-"}</span>
+                  </div>
+                  <div>
+                    <span className="text-[9px] text-muted-foreground/50 block font-black uppercase tracking-wider">Level</span>
+                    <span className="font-bold text-foreground/80 mt-0.5 block truncate">{student.level || "-"}</span>
+                  </div>
+                </div>
+
+                {student.status === "active" ? (
+                  <div className="flex flex-col sm:flex-row gap-2 pt-1">
+                    {student.accountStatus !== "active" ? (
+                      <form action={resendStudentActivationAction} className="flex-1">
+                        <input name="courseId" type="hidden" value={course.id} />
+                        <input name="studentUserId" type="hidden" value={student.userId} />
+                        <PendingSubmitButton
+                          pendingLabel="Sending..."
+                          size="sm"
+                          variant="outline"
+                          className="w-full text-xs font-bold"
+                        >
+                          Resend activation
+                        </PendingSubmitButton>
+                      </form>
+                    ) : null}
+                    <form action={removeStudentFromCourseAction} className="flex-1">
+                      <input name="courseId" type="hidden" value={course.id} />
+                      <input
+                        name="enrolmentId"
+                        type="hidden"
+                        value={student.enrolmentId}
+                      />
+                      <ConfirmSubmitButton
+                        className="w-full h-8.5 text-xs font-bold"
+                        message={`Remove ${student.name} from this course? Existing attendance history will be preserved.`}
+                        size="sm"
+                        variant="outline"
+                      >
+                        Remove Student
+                      </ConfirmSubmitButton>
+                    </form>
+                  </div>
+                ) : (
+                  <div className="text-center py-1 bg-muted/30 border border-dashed border-border/40 rounded-lg">
+                    <span className="text-xs text-muted-foreground font-semibold">No active access</span>
+                  </div>
+                )}
+              </div>
+            ))}
+            {students.length === 0 ? (
+              <div className="flex flex-col items-center justify-center gap-3 py-12 px-6">
+                <p className="text-center text-muted-foreground text-sm font-semibold">No students enrolled yet.</p>
+              </div>
+            ) : null}
+          </div>
         </CardContent>
       </Card>
     </>

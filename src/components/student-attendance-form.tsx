@@ -32,7 +32,7 @@ export function StudentAttendanceForm({
   result?: string;
 }) {
   const formRef = useRef<HTMLFormElement>(null);
-  const storageKey = `attendguard:pending-attendance:${sessionId}`;
+  const storageKey = `pu-attendance:pending-attendance:${sessionId}`;
   const [pendingSubmission, setPendingSubmission] =
     useState<PendingSubmission | null>(() => {
       if (typeof window === "undefined" || result) {

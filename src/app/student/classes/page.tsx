@@ -1,5 +1,5 @@
 import { eq, inArray } from "drizzle-orm";
-import { ExternalLink, FileText, Link2, HelpCircle } from "lucide-react";
+import { ExternalLink, FileText, Link2, FileSpreadsheet, FileImage, Video, HelpCircle, BookOpen, Presentation } from "lucide-react";
 
 import { PageHeader } from "@/components/page-header";
 import { StatusBadge } from "@/components/status-badge";
@@ -15,14 +15,54 @@ import {
 import { getDb } from "@/db/client";
 import { courseResources, courses, enrolments } from "@/db/schema";
 import { requireRole } from "@/lib/auth";
+import { cn } from "@/lib/utils";
 
 // Helper to match resource type icons
 function getResourceIcon(type: string) {
   const normalized = type.toLowerCase();
-  if (normalized.includes("link") || normalized.includes("url")) {
+  if (normalized.includes("link") || normalized.includes("url") || normalized.includes("web")) {
     return <Link2 className="size-4.5 text-primary" />;
   }
-  return <FileText className="size-4.5 text-cyan-500" />;
+  if (normalized.includes("pdf")) {
+    return <FileText className="size-4.5 text-rose-500" />;
+  }
+  if (normalized.includes("excel") || normalized.includes("sheet") || normalized.includes("csv")) {
+    return <FileSpreadsheet className="size-4.5 text-emerald-500" />;
+  }
+  if (normalized.includes("image") || normalized.includes("png") || normalized.includes("jpg")) {
+    return <FileImage className="size-4.5 text-blue-500" />;
+  }
+  if (normalized.includes("video") || normalized.includes("mp4") || normalized.includes("media")) {
+    return <Video className="size-4.5 text-indigo-500" />;
+  }
+  if (normalized.includes("slide") || normalized.includes("powerpoint") || normalized.includes("ppt")) {
+    return <Presentation className="size-4.5 text-amber-500" />;
+  }
+  return <BookOpen className="size-4.5 text-cyan-500" />;
+}
+
+// Helper to map resource border colors
+function getResourceBorderClass(type: string) {
+  const normalized = type.toLowerCase();
+  if (normalized.includes("link") || normalized.includes("url") || normalized.includes("web")) {
+    return "border-l-primary";
+  }
+  if (normalized.includes("pdf")) {
+    return "border-l-rose-550 dark:border-l-rose-500";
+  }
+  if (normalized.includes("excel") || normalized.includes("sheet") || normalized.includes("csv")) {
+    return "border-l-emerald-550 dark:border-l-emerald-500";
+  }
+  if (normalized.includes("image") || normalized.includes("png") || normalized.includes("jpg")) {
+    return "border-l-blue-550 dark:border-l-blue-500";
+  }
+  if (normalized.includes("video") || normalized.includes("mp4") || normalized.includes("media")) {
+    return "border-l-indigo-550 dark:border-l-indigo-500";
+  }
+  if (normalized.includes("slide") || normalized.includes("powerpoint") || normalized.includes("ppt")) {
+    return "border-l-amber-550 dark:border-l-amber-500";
+  }
+  return "border-l-cyan-550 dark:border-l-cyan-500";
 }
 
 export default async function StudentClassesPage() {
@@ -131,7 +171,10 @@ export default async function StudentClassesPage() {
 
               return (
                 <div 
-                  className="rounded-2xl border border-border/40 bg-card/25 p-5 hover:bg-card/75 transition-all duration-300 shadow-sm flex flex-col justify-between group/resource hover:border-primary/40 hover:shadow-md hover:-translate-y-0.5" 
+                  className={cn(
+                    "rounded-2xl border border-border/40 bg-card/25 pl-4.5 pr-5 py-5 hover:bg-card/75 transition-all duration-300 shadow-sm flex flex-col justify-between group/resource hover:border-primary/45 hover:shadow-md hover:-translate-y-0.5 border-l-4",
+                    getResourceBorderClass(resource.resourceType)
+                  )} 
                   key={resource.id}
                 >
                   <div>

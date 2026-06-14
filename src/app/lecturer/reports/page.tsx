@@ -53,7 +53,8 @@ export default async function LecturerReportsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="pt-4 px-0">
-          <div className="overflow-x-auto">
+          {/* Desktop Table */}
+          <div className="hidden md:block overflow-x-auto">
             <Table>
               <TableHeader className="bg-slate-950/[0.02] dark:bg-white/[0.01]">
                 <TableRow className="hover:bg-transparent border-b border-border/30">
@@ -95,6 +96,46 @@ export default async function LecturerReportsPage() {
                 ) : null}
               </TableBody>
             </Table>
+          </div>
+
+          {/* Mobile Cards */}
+          <div className="md:hidden divide-y divide-border/20">
+            {rows.map((course) => (
+              <div key={course.id} className="p-5 flex flex-col gap-3.5">
+                <div className="min-w-0">
+                  <span className="text-sm font-extrabold text-foreground leading-snug">{course.courseCode}</span>
+                  <h3 className="text-xs text-muted-foreground font-semibold mt-1 leading-relaxed">{course.courseTitle}</h3>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2.5 text-xs bg-slate-950/[0.015] dark:bg-white/[0.015] p-3 rounded-xl border border-border/25">
+                  <div>
+                    <span className="text-[9px] text-muted-foreground/50 block font-black uppercase tracking-wider">Semester</span>
+                    <span className="font-bold text-foreground/80 mt-0.5 block truncate">{course.semester}</span>
+                  </div>
+                  <div>
+                    <span className="text-[9px] text-muted-foreground/50 block font-black uppercase tracking-wider">Year</span>
+                    <span className="font-bold text-foreground/80 mt-0.5 block truncate">{course.academicYear}</span>
+                  </div>
+                </div>
+
+                <div className="flex justify-end pt-1">
+                  <Button asChild size="sm" variant="outline" className="h-8.5 rounded-lg text-xs font-bold shadow-sm w-full">
+                    <a href={`/api/reports/attendance?courseId=${course.id}`} className="flex items-center justify-center gap-1.5">
+                      <Download className="size-3.5" />
+                      <span>Export CSV Register</span>
+                    </a>
+                  </Button>
+                </div>
+              </div>
+            ))}
+            {rows.length === 0 ? (
+              <div className="flex flex-col items-center justify-center gap-3 py-12 px-6">
+                <span className="flex size-12 items-center justify-center rounded-2xl bg-muted/60 border border-border/40 text-muted-foreground/35">
+                  <Download className="size-6" />
+                </span>
+                <p className="font-semibold text-muted-foreground/60 text-sm">No courses are available for reporting yet.</p>
+              </div>
+            ) : null}
           </div>
         </CardContent>
       </Card>

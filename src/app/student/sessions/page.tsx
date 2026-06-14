@@ -83,7 +83,8 @@ export default async function StudentSessionsPage() {
       <Card className="glass-panel glass-panel-hover overflow-hidden relative border-border/40">
         <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-emerald-500 to-teal-500" />
         <CardContent className="pt-6 px-0">
-          <div className="overflow-x-auto">
+          {/* Desktop Table */}
+          <div className="hidden md:block overflow-x-auto">
             <Table>
               <TableHeader className="bg-slate-950/[0.02] dark:bg-white/[0.01]">
                 <TableRow className="hover:bg-transparent border-b border-border/30">
@@ -144,6 +145,62 @@ export default async function StudentSessionsPage() {
                 ) : null}
               </TableBody>
             </Table>
+          </div>
+
+          {/* Mobile Cards */}
+          <div className="md:hidden divide-y divide-border/20">
+            {rows.map((session) => {
+              const passkey = decryptPasskey(session.passkeyCiphertext);
+              const isCompleted = Boolean(session.recordId);
+
+              return (
+                <div key={session.id} className="p-5 flex flex-col gap-3.5">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0 flex-1">
+                      <span className="text-sm font-extrabold text-foreground leading-snug">{session.title}</span>
+                      <p className="text-[10px] text-muted-foreground font-semibold mt-0.5 leading-relaxed">
+                        {session.courseCode}: {session.courseTitle}
+                      </p>
+                    </div>
+                    <StatusBadge status={isCompleted ? "present" : session.status} />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2.5 text-xs bg-slate-950/[0.015] dark:bg-white/[0.015] p-3 rounded-xl border border-border/25">
+                    <div>
+                      <span className="text-[9px] text-muted-foreground/50 block font-black uppercase tracking-wider">Final Close</span>
+                      <span className="font-bold text-foreground/80 mt-0.5 block">{session.finalClosesAt.toLocaleString()}</span>
+                    </div>
+                    <div>
+                      <span className="text-[9px] text-muted-foreground/50 block font-black uppercase tracking-wider">Passkey</span>
+                      <div className="mt-0.5">
+                        {passkey ? (
+                          <code className="px-2 py-0.5 rounded bg-muted font-mono text-xs text-foreground font-extrabold border border-border/40">
+                            {passkey}
+                          </code>
+                        ) : (
+                          <span className="text-xs text-muted-foreground/50 font-medium">Pending</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end pt-1">
+                    <Button asChild size="sm" disabled={!passkey || isCompleted} className="h-9 rounded-xl text-xs font-bold shadow-sm w-full">
+                      <Link href={`/student/check-in/${session.id}`} className="justify-center">Check in</Link>
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+            {rows.length === 0 ? (
+              <div className="flex flex-col items-center justify-center gap-3 py-12 px-6">
+                <span className="flex size-12 items-center justify-center rounded-2xl bg-muted/60 border border-border/40 text-muted-foreground/35">
+                  <Clock className="size-6" />
+                </span>
+                <p className="font-semibold text-muted-foreground/60 text-sm">No active sessions are open.</p>
+                <p className="text-[0.68rem] text-muted-foreground/40 max-w-xs leading-relaxed text-center">Attendance checking sessions will appear here as soon as they are launched.</p>
+              </div>
+            ) : null}
           </div>
         </CardContent>
       </Card>

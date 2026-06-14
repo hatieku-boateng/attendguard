@@ -1,4 +1,5 @@
 import { eq } from "drizzle-orm";
+import { History } from "lucide-react";
 
 import { PageHeader } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
@@ -38,44 +39,63 @@ export default async function AttendanceHistoryPage() {
   return (
     <>
       <PageHeader
-        title="Attendance history"
-        description="Attendance records linked to your student account, including absences recorded when sessions close."
+        title="Attendance History"
+        description="Review all recorded attendance logs linked to your student profile, including geofence distance offsets."
       />
-      <Card>
-        <CardContent className="pt-6">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Course</TableHead>
-                <TableHead>Session</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Check-in</TableHead>
-                <TableHead>Distance</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.map((record) => (
-                <TableRow key={record.id}>
-                  <TableCell>
-                    {record.courseCode}: {record.courseTitle}
-                  </TableCell>
-                  <TableCell>{record.sessionTitle}</TableCell>
-                  <TableCell>
-                    <StatusBadge status={record.status} />
-                  </TableCell>
-                  <TableCell>{record.checkInAt.toLocaleString()}</TableCell>
-                  <TableCell>{record.distance ?? "-"}m</TableCell>
+      <Card className="glass-panel glass-panel-hover overflow-hidden relative border-border/40">
+        <div className="absolute inset-x-0 top-0 h-1 bg-[linear-gradient(90deg,var(--primary),oklch(0.52_0.14_200))]" />
+        <CardContent className="pt-6 px-0">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader className="bg-slate-950/[0.02] dark:bg-white/[0.01]">
+                <TableRow className="hover:bg-transparent border-b border-border/30">
+                  <TableHead className="px-6 py-3 font-semibold text-muted-foreground text-xs">Course</TableHead>
+                  <TableHead className="px-4 py-3 font-semibold text-muted-foreground text-xs">Session</TableHead>
+                  <TableHead className="px-4 py-3 font-semibold text-muted-foreground text-xs">Status</TableHead>
+                  <TableHead className="px-4 py-3 font-semibold text-muted-foreground text-xs">Check-in Time</TableHead>
+                  <TableHead className="px-6 py-3 text-right font-semibold text-muted-foreground text-xs">Distance</TableHead>
                 </TableRow>
-              ))}
-              {rows.length === 0 ? (
-                <TableRow>
-                  <TableCell className="h-24 text-center text-muted-foreground" colSpan={5}>
-                    No attendance records yet.
-                  </TableCell>
-                </TableRow>
-              ) : null}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {rows.map((record) => (
+                  <TableRow key={record.id} className="hover:bg-muted/30 border-b border-border/20 transition-colors">
+                    <TableCell className="px-6 py-4.5 font-bold text-foreground text-sm">
+                      <span className="font-extrabold text-foreground">{record.courseCode}</span>
+                      <span className="block text-[0.7rem] text-muted-foreground font-semibold mt-1">{record.courseTitle}</span>
+                    </TableCell>
+                    <TableCell className="px-4 py-4.5 font-semibold text-foreground/80 text-xs">{record.sessionTitle}</TableCell>
+                    <TableCell className="px-4 py-4.5">
+                      <StatusBadge status={record.status} />
+                    </TableCell>
+                    <TableCell className="px-4 py-4.5 text-xs font-semibold text-muted-foreground">
+                      {record.checkInAt.toLocaleString()}
+                    </TableCell>
+                    <TableCell className="px-6 py-4.5 text-right font-mono text-xs text-foreground font-bold">
+                      {record.distance !== null && record.distance !== undefined ? (
+                        <span className="px-2 py-0.5 rounded bg-muted border border-border/40 text-muted-foreground">
+                          {parseFloat(record.distance).toFixed(1)}m
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground/40 font-medium">-</span>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {rows.length === 0 ? (
+                  <TableRow>
+                    <TableCell className="h-44 text-center text-muted-foreground text-xs" colSpan={5}>
+                      <div className="flex flex-col items-center justify-center gap-3 py-6">
+                        <span className="flex size-12 items-center justify-center rounded-2xl bg-muted/60 border border-border/40 text-muted-foreground/35 animate-pulse">
+                          <History className="size-6" />
+                        </span>
+                        <p className="font-semibold text-muted-foreground/60 text-sm">No attendance records found.</p>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : null}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
     </>

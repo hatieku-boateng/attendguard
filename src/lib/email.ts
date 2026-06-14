@@ -137,7 +137,7 @@ export async function sendStudentActivationEmail({
   await transporter.sendMail({
     from: `"${senderName}" <${senderAddress}>`,
     to,
-    subject: "Activate your AttendGuard student account",
+    subject: "Activate your Pentecost University Attendance student account",
     text: [
       `Hello ${studentName},`,
       "",

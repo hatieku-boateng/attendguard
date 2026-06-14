@@ -160,7 +160,7 @@ export default function Home() {
                 <div className="space-y-6">
                   {/* Phone Header */}
                   <div className="flex items-center justify-between text-2xs text-muted-foreground font-extrabold pt-2">
-                    <span>AttendGuard</span>
+                    <span>PU Attendance</span>
                     <span className="flex items-center gap-1">
                       <span className="size-1.5 rounded-full bg-emerald-500" />
                       GPS Locked
@@ -437,7 +437,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* "Join AttendGuard as a Lecturer" Section */}
+      {/* "Join Pentecost University Attendance" Section */}
       <section className="py-24 mx-auto max-w-[85rem] px-6 sm:px-8 relative z-10">
         <div className="grid gap-12 lg:grid-cols-[1fr_0.9fr] items-center">
           
@@ -446,7 +446,7 @@ export default function Home() {
             <span className="text-xs font-bold text-primary tracking-widest uppercase">Workspace Access</span>
             <div className="space-y-4">
               <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl text-gradient-primary">
-                Join AttendGuard as a Lecturer.
+                Join Pentecost University Attendance.
               </h2>
               <p className="text-base text-muted-foreground font-semibold max-w-lg leading-relaxed">
                 Unlock dashboard controls. Host geofenced check-ins, import enrolments, manage audits, and generate auditable session spreadsheets.
@@ -498,7 +498,7 @@ export default function Home() {
           <div className="space-y-4 text-left">
             <BrandMark />
             <p className="text-xs text-muted-foreground font-semibold leading-relaxed max-w-xs">
-              AttendGuard is a secure geolocation verification platform designed to manage institutional registers, verify coordinate check-ins, and export immutable academic logs.
+              Pentecost University Attendance is a secure geolocation verification platform designed to manage institutional registers, verify coordinate check-ins, and export immutable academic logs.
             </p>
           </div>
 
@@ -534,7 +534,7 @@ export default function Home() {
           <div className="space-y-3.5 text-left">
             <h5 className="text-[10px] font-extrabold uppercase tracking-widest text-foreground">Contact</h5>
             <ul className="space-y-2.5 text-xs font-semibold text-muted-foreground">
-              <li className="hover:text-primary transition-colors cursor-default">support@attendguard.edu</li>
+              <li className="hover:text-primary transition-colors cursor-default">support@pentvars.edu.gh</li>
               <li className="hover:text-primary transition-colors cursor-default">PU Institution</li>
               <li className="hover:text-primary transition-colors cursor-default">Verification Operations</li>
             </ul>
@@ -543,7 +543,7 @@ export default function Home() {
 
         {/* Footer Bottom copyright */}
         <div className="mx-auto max-w-[85rem] px-6 sm:px-8 pt-8 border-t border-border/40 flex flex-col sm:flex-row gap-4 justify-between items-center text-[10px] font-black uppercase tracking-widest text-muted-foreground leading-none">
-          <span>© 2026 AttendGuard. All rights reserved.</span>
+          <span>© 2026 Pentecost University. All rights reserved.</span>
           <div className="flex gap-6">
             <Link href="#" className="hover:text-primary transition-colors">Privacy Policy</Link>
             <Link href="#" className="hover:text-primary transition-colors">Terms of Service</Link>

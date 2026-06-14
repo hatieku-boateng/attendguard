@@ -188,7 +188,7 @@ export function AppShell({
             {/* Page Title Context */}
             <div className="hidden sm:block">
               <h1 className="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-2">
-                <span className="text-muted-foreground/60">AttendGuard Suite</span>
+                <span className="text-muted-foreground/60">PU Attendance</span>
                 <ChevronRight className="size-3 text-muted-foreground/40" />
                 <span className="text-primary">{user.role} Portal</span>
               </h1>

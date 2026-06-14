@@ -23,9 +23,26 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AttendGuard",
+  metadataBase: new URL(process.env.APP_URL || "https://attendguard.vercel.app"),
+  title: "Pentecost University Attendance",
   description:
-    "Secure attendance management for lecturer-led courses and student check-ins.",
+    "Secure attendance management system for Pentecost University.",
+  icons: {
+    icon: "/puc-crest.jpg",
+    apple: "/puc-crest.jpg",
+  },
+  openGraph: {
+    title: "Pentecost University Attendance",
+    description: "Secure attendance management system for Pentecost University.",
+    images: [
+      {
+        url: "/puc-logo-full.png",
+        width: 1200,
+        height: 630,
+        alt: "Pentecost University Logo",
+      },
+    ],
+  },
 };
 
 export default function RootLayout({

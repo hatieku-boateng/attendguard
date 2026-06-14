@@ -185,7 +185,7 @@ export default async function DevBypassPage() {
         <div className="flex items-center gap-2">
           <Key className="size-6 text-primary animate-pulse" />
           <span className="font-black tracking-tight text-lg uppercase bg-clip-text text-transparent bg-gradient-to-r from-primary to-cyan-500">
-            AttendGuard DevPortal
+            PU Attendance DevPortal
           </span>
         </div>
         <nav className="flex items-center gap-4">

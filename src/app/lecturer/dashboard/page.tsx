@@ -1,7 +1,7 @@
 import { and, count, desc, eq, inArray } from "drizzle-orm";
 
 import { getDb } from "@/db/client";
-import { Clock } from "lucide-react";
+import { Clock, Activity, AlertTriangle, BarChart3, CalendarCheck } from "lucide-react";
 import {
   attendanceAttempts,
   attendanceRecords,
@@ -292,7 +292,12 @@ export default async function LecturerDashboardPage() {
         <Card className="glass-panel glass-panel-hover border-border/40 overflow-hidden relative">
           <div className="absolute inset-x-0 top-0 h-1 bg-[linear-gradient(90deg,var(--primary),oklch(0.52_0.14_200))]" />
           <CardHeader className="border-b border-border/30 bg-slate-950/[0.01] dark:bg-white/[0.01] pb-4">
-            <CardTitle className="text-base font-bold text-foreground">Attendance Health</CardTitle>
+            <CardTitle className="text-base font-bold text-foreground flex items-center gap-2.5">
+              <span className="flex size-7 items-center justify-center rounded-lg bg-primary/10 text-primary border border-primary/15">
+                <Activity className="size-4" />
+              </span>
+              Attendance Health
+            </CardTitle>
             <CardDescription className="text-xs text-muted-foreground mt-1">
               Recorded attendance distribution across all courses.
             </CardDescription>
@@ -329,7 +334,12 @@ export default async function LecturerDashboardPage() {
         <Card className="glass-panel glass-panel-hover border-border/40 overflow-hidden relative">
           <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-amber-500 to-rose-500" />
           <CardHeader className="border-b border-border/30 bg-slate-950/[0.01] dark:bg-white/[0.01] pb-4">
-            <CardTitle className="text-base font-bold text-foreground">Students at Risk</CardTitle>
+            <CardTitle className="text-base font-bold text-foreground flex items-center gap-2.5">
+              <span className="flex size-7 items-center justify-center rounded-lg bg-rose-500/10 text-rose-500 border border-rose-500/15 animate-pulse">
+                <AlertTriangle className="size-4" />
+              </span>
+              Students at Risk
+            </CardTitle>
             <CardDescription className="text-xs text-muted-foreground mt-1">
               Students currently on two or more consecutive absences.
             </CardDescription>
@@ -379,7 +389,12 @@ export default async function LecturerDashboardPage() {
         <Card className="glass-panel glass-panel-hover border-border/40 overflow-hidden relative">
           <div className="absolute inset-x-0 top-0 h-1 bg-[linear-gradient(90deg,var(--primary),oklch(0.52_0.14_200))]" />
           <CardHeader className="border-b border-border/30 bg-slate-950/[0.01] dark:bg-white/[0.01] pb-4">
-            <CardTitle className="text-base font-bold text-foreground">Course Comparison</CardTitle>
+            <CardTitle className="text-base font-bold text-foreground flex items-center gap-2.5">
+              <span className="flex size-7 items-center justify-center rounded-lg bg-primary/10 text-primary border border-primary/15">
+                <BarChart3 className="size-4" />
+              </span>
+              Course Comparison
+            </CardTitle>
             <CardDescription className="text-xs text-muted-foreground mt-1">
               Attendance rate per course using present, late, and manual check-ins.
             </CardDescription>
@@ -405,7 +420,12 @@ export default async function LecturerDashboardPage() {
         <Card className="glass-panel glass-panel-hover border-border/40 overflow-hidden relative">
           <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-cyan-500 to-indigo-500" />
           <CardHeader className="border-b border-border/30 bg-slate-950/[0.01] dark:bg-white/[0.01] pb-4">
-            <CardTitle className="text-base font-bold text-foreground">Recent Session Outcomes</CardTitle>
+            <CardTitle className="text-base font-bold text-foreground flex items-center gap-2.5">
+              <span className="flex size-7 items-center justify-center rounded-lg bg-cyan-500/10 text-cyan-500 border border-cyan-500/15">
+                <CalendarCheck className="size-4" />
+              </span>
+              Recent Session Outcomes
+            </CardTitle>
             <CardDescription className="text-xs text-muted-foreground mt-1">
               Quick review of student attendance from your latest active sessions.
             </CardDescription>

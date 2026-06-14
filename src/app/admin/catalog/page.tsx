@@ -1,11 +1,12 @@
 import Link from "next/link";
-import { desc } from "drizzle-orm";
-import { Pencil, Plus } from "lucide-react";
+import { asc, desc, eq } from "drizzle-orm";
+import { Pencil, Plus, Search } from "lucide-react";
 
 import { PageHeader } from "@/components/page-header";
 import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -15,16 +16,97 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { getDb } from "@/db/client";
-import { courseCatalog } from "@/db/schema";
+import { academicYears, courseCatalog, departments, faculties } from "@/db/schema";
 import { requireRole } from "@/lib/auth";
+import { ensureDefaultFacultyDepartment, ensureGeneratedAcademicYears } from "@/lib/institution-data";
 
-export default async function AdminCatalogPage() {
+export default async function AdminCatalogPage({
+  searchParams,
+}: {
+  searchParams: Promise<{
+    q?: string;
+    facultyId?: string;
+    departmentId?: string;
+    academicYearId?: string;
+    status?: string;
+  }>;
+}) {
   await requireRole("administrator");
+  await ensureDefaultFacultyDepartment();
+  await ensureGeneratedAcademicYears();
+  const query = await searchParams;
+  const searchTerm = (query.q ?? "").trim().toLowerCase();
   const db = getDb();
-  const courses = await db
-    .select()
-    .from(courseCatalog)
-    .orderBy(desc(courseCatalog.createdAt));
+  const [courseRows, facultyRows, departmentRows, academicYearRows] = await Promise.all([
+    db
+      .select({
+        id: courseCatalog.id,
+        courseCode: courseCatalog.courseCode,
+        courseTitle: courseCatalog.courseTitle,
+        programme: courseCatalog.programme,
+        level: courseCatalog.level,
+        description: courseCatalog.description,
+        status: courseCatalog.status,
+        createdAt: courseCatalog.createdAt,
+        facultyId: courseCatalog.facultyId,
+        departmentId: courseCatalog.departmentId,
+        academicYearId: courseCatalog.academicYearId,
+        facultyName: faculties.name,
+        departmentName: departments.name,
+        academicYear: academicYears.displayName,
+      })
+      .from(courseCatalog)
+      .leftJoin(faculties, eq(courseCatalog.facultyId, faculties.id))
+      .leftJoin(departments, eq(courseCatalog.departmentId, departments.id))
+      .leftJoin(academicYears, eq(courseCatalog.academicYearId, academicYears.id))
+      .orderBy(desc(courseCatalog.createdAt)),
+    db.select().from(faculties).orderBy(asc(faculties.name)),
+    db.select().from(departments).orderBy(asc(departments.name)),
+    db.select().from(academicYears).orderBy(asc(academicYears.startYear)),
+  ]);
+  const courses = courseRows.filter((course) => {
+    if (query.facultyId && query.facultyId !== "all" && course.facultyId !== query.facultyId) {
+      return false;
+    }
+
+    if (
+      query.departmentId &&
+      query.departmentId !== "all" &&
+      course.departmentId !== query.departmentId
+    ) {
+      return false;
+    }
+
+    if (
+      query.academicYearId &&
+      query.academicYearId !== "all" &&
+      course.academicYearId !== query.academicYearId
+    ) {
+      return false;
+    }
+
+    if (query.status && query.status !== "all" && course.status !== query.status) {
+      return false;
+    }
+
+    if (!searchTerm) {
+      return true;
+    }
+
+    return [
+      course.courseCode,
+      course.courseTitle,
+      course.description ?? "",
+      course.programme ?? "",
+      course.level ?? "",
+      course.facultyName ?? "",
+      course.departmentName ?? "",
+      course.academicYear ?? "",
+    ]
+      .join(" ")
+      .toLowerCase()
+      .includes(searchTerm);
+  });
 
   return (
     <>
@@ -42,7 +124,43 @@ export default async function AdminCatalogPage() {
       />
       <Card className="glass-panel glass-panel-hover overflow-hidden relative border-border/40">
         <div className="absolute inset-x-0 top-0 h-1 bg-[linear-gradient(90deg,var(--primary),oklch(0.52_0.14_200))]" />
-        <CardContent className="pt-6 px-0">
+        <CardContent className="space-y-5 pt-6 px-0">
+          <form className="mx-5 grid gap-3 lg:grid-cols-[1fr_220px_220px_180px_150px_auto]">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                className="pl-9"
+                defaultValue={query.q ?? ""}
+                name="q"
+                placeholder="Search course, programme, faculty, department"
+              />
+            </div>
+            <select className="h-9 rounded-lg border bg-card px-3 text-sm" defaultValue={query.facultyId ?? "all"} name="facultyId">
+              <option value="all">All faculties</option>
+              {facultyRows.map((faculty) => (
+                <option key={faculty.id} value={faculty.id}>{faculty.name}</option>
+              ))}
+            </select>
+            <select className="h-9 rounded-lg border bg-card px-3 text-sm" defaultValue={query.departmentId ?? "all"} name="departmentId">
+              <option value="all">All departments</option>
+              {departmentRows.map((department) => (
+                <option key={department.id} value={department.id}>{department.name}</option>
+              ))}
+            </select>
+            <select className="h-9 rounded-lg border bg-card px-3 text-sm" defaultValue={query.academicYearId ?? "all"} name="academicYearId">
+              <option value="all">All years</option>
+              {academicYearRows.map((year) => (
+                <option key={year.id} value={year.id}>{year.displayName}</option>
+              ))}
+            </select>
+            <select className="h-9 rounded-lg border bg-card px-3 text-sm" defaultValue={query.status ?? "all"} name="status">
+              <option value="all">All statuses</option>
+              <option value="active">Active</option>
+              <option value="draft">Draft</option>
+              <option value="archived">Archived</option>
+            </select>
+            <Button type="submit">Filter</Button>
+          </form>
           {/* Desktop Table */}
           <div className="hidden md:block overflow-x-auto">
             <Table>
@@ -51,6 +169,7 @@ export default async function AdminCatalogPage() {
                   <TableHead className="px-6 py-3 font-semibold text-muted-foreground text-xs">Course Details</TableHead>
                   <TableHead className="px-4 py-3 font-semibold text-muted-foreground text-xs">Programme / Major</TableHead>
                   <TableHead className="px-4 py-3 font-semibold text-muted-foreground text-xs">Level</TableHead>
+                  <TableHead className="px-4 py-3 font-semibold text-muted-foreground text-xs">Faculty / Department</TableHead>
                   <TableHead className="px-4 py-3 font-semibold text-muted-foreground text-xs">Status</TableHead>
                   <TableHead className="px-6 py-3 text-right font-semibold text-muted-foreground text-xs">Actions</TableHead>
                 </TableRow>
@@ -66,6 +185,12 @@ export default async function AdminCatalogPage() {
                     </TableCell>
                     <TableCell className="px-4 py-4.5 text-xs font-bold text-foreground/80">{course.programme || "-"}</TableCell>
                     <TableCell className="px-4 py-4.5 text-xs font-bold text-foreground/80">{course.level || "-"}</TableCell>
+                    <TableCell className="px-4 py-4.5 text-xs font-bold text-foreground/80">
+                      <span className="block">{course.facultyName ?? "-"}</span>
+                      <span className="block text-muted-foreground">
+                        {course.departmentName ?? "-"} / {course.academicYear ?? "-"}
+                      </span>
+                    </TableCell>
                     <TableCell className="px-4 py-4.5">
                       <StatusBadge status={course.status} />
                     </TableCell>
@@ -81,7 +206,7 @@ export default async function AdminCatalogPage() {
                 ))}
                 {courses.length === 0 ? (
                   <TableRow>
-                    <TableCell className="h-44 text-center text-muted-foreground text-xs" colSpan={5}>
+                    <TableCell className="h-44 text-center text-muted-foreground text-xs" colSpan={6}>
                       <div className="flex flex-col items-center justify-center gap-3 py-6">
                         <span className="flex size-12 items-center justify-center rounded-2xl bg-muted/60 border border-border/40 text-muted-foreground/35 animate-pulse">
                           <Plus className="size-6" />

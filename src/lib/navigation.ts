@@ -5,6 +5,9 @@ export function getWorkspaceNavItems(role: UserRole) {
     return [
       { href: "/admin/dashboard", label: "Dashboard" },
       { href: "/admin/lecturers", label: "Lecturers" },
+      { href: "/admin/faculties", label: "Faculties" },
+      { href: "/admin/departments", label: "Departments" },
+      { href: "/admin/academic-years", label: "Academic Years" },
       { href: "/admin/catalog", label: "Catalogue" },
       { href: "/admin/courses", label: "Assignments" },
       { href: "/admin/students", label: "Students" },

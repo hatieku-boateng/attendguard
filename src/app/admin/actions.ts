@@ -6,12 +6,15 @@ import { and, count, eq, inArray } from "drizzle-orm";
 
 import { getDb } from "@/db/client";
 import {
+  academicYears,
   attendancePasskeys,
   attendanceRecords,
   attendanceSessions,
   auditLogs,
   courseCatalog,
   courses,
+  departments,
+  faculties,
   enrolments,
   lecturerProfiles,
   studentProfiles,
@@ -19,6 +22,11 @@ import {
 } from "@/db/schema";
 import { hashPassword, requireRole } from "@/lib/auth";
 import { cleanString, fileToDataUrl } from "@/lib/form-utils";
+import {
+  normalizeProgrammeLevel,
+  normalizeStudentCategory,
+  parseAcademicYear,
+} from "@/lib/institution";
 
 const enrolmentStatuses = ["active", "withdrawn", "completed"] as const;
 const studentAccountStatuses = ["pending", "active", "suspended", "disabled"] as const;
@@ -50,6 +58,309 @@ function cleanStudentAccountStatus(value: FormDataEntryValue | null) {
   return studentAccountStatuses.includes(status as (typeof studentAccountStatuses)[number])
     ? (status as (typeof studentAccountStatuses)[number])
     : null;
+}
+
+function cleanRecordStatus(value: FormDataEntryValue | null) {
+  const status = cleanString(value, { uppercase: false });
+
+  return status === "inactive" || status === "archived" ? status : "active";
+}
+
+export async function createFacultyAction(formData: FormData) {
+  const admin = await requireRole("administrator");
+  const name = cleanString(formData.get("name"));
+  const code = cleanString(formData.get("code")).toUpperCase();
+
+  if (!name || !code) {
+    redirect("/admin/faculties/new?error=missing");
+  }
+
+  const db = getDb();
+  const [existing] = await db
+    .select({ id: faculties.id })
+    .from(faculties)
+    .where(eq(faculties.code, code))
+    .limit(1);
+
+  if (existing) {
+    redirect("/admin/faculties/new?error=exists");
+  }
+
+  const [faculty] = await db
+    .insert(faculties)
+    .values({
+      name,
+      code,
+      description: cleanString(formData.get("description")) || null,
+      status: "active",
+    })
+    .returning({ id: faculties.id });
+
+  await db.insert(auditLogs).values({
+    userId: admin.id,
+    action: "faculty_created",
+    entityType: "faculty",
+    entityId: faculty.id,
+    newValue: { name, code },
+  });
+
+  revalidatePath("/admin/faculties");
+  redirect("/admin/faculties");
+}
+
+export async function updateFacultyAction(formData: FormData) {
+  const admin = await requireRole("administrator");
+  const facultyId = cleanId(formData.get("facultyId"));
+  const name = cleanString(formData.get("name"));
+  const code = cleanString(formData.get("code")).toUpperCase();
+
+  if (!facultyId || !name || !code) {
+    redirect(`/admin/faculties/${facultyId}/edit?error=missing`);
+  }
+
+  const db = getDb();
+  await db
+    .update(faculties)
+    .set({
+      name,
+      code,
+      description: cleanString(formData.get("description")) || null,
+      status: cleanRecordStatus(formData.get("status")),
+      updatedAt: new Date(),
+    })
+    .where(eq(faculties.id, facultyId));
+
+  await db.insert(auditLogs).values({
+    userId: admin.id,
+    action: "faculty_updated",
+    entityType: "faculty",
+    entityId: facultyId,
+    newValue: { name, code },
+  });
+
+  revalidatePath("/admin/faculties");
+  redirect("/admin/faculties");
+}
+
+export async function deleteFacultyAction(formData: FormData) {
+  const admin = await requireRole("administrator");
+  const facultyId = cleanId(formData.get("facultyId"));
+
+  if (!facultyId) {
+    redirect("/admin/faculties");
+  }
+
+  const db = getDb();
+  const [[departmentCount], [studentCount], [catalogCount]] = await Promise.all([
+    db.select({ value: count() }).from(departments).where(eq(departments.facultyId, facultyId)),
+    db.select({ value: count() }).from(studentProfiles).where(eq(studentProfiles.facultyId, facultyId)),
+    db.select({ value: count() }).from(courseCatalog).where(eq(courseCatalog.facultyId, facultyId)),
+  ]);
+
+  if (
+    (departmentCount?.value ?? 0) > 0 ||
+    (studentCount?.value ?? 0) > 0 ||
+    (catalogCount?.value ?? 0) > 0
+  ) {
+    await db
+      .update(faculties)
+      .set({ status: "inactive", updatedAt: new Date() })
+      .where(eq(faculties.id, facultyId));
+    redirect("/admin/faculties?archived=1");
+  }
+
+  await db.delete(faculties).where(eq(faculties.id, facultyId));
+  await db.insert(auditLogs).values({
+    userId: admin.id,
+    action: "faculty_deleted",
+    entityType: "faculty",
+    entityId: facultyId,
+  });
+
+  revalidatePath("/admin/faculties");
+  redirect("/admin/faculties?deleted=1");
+}
+
+export async function createDepartmentAction(formData: FormData) {
+  const admin = await requireRole("administrator");
+  const facultyId = cleanId(formData.get("facultyId"));
+  const name = cleanString(formData.get("name"));
+  const code = cleanString(formData.get("code")).toUpperCase();
+
+  if (!facultyId || !name || !code) {
+    redirect("/admin/departments/new?error=missing");
+  }
+
+  const db = getDb();
+  const [department] = await db
+    .insert(departments)
+    .values({
+      facultyId,
+      name,
+      code,
+      description: cleanString(formData.get("description")) || null,
+      status: "active",
+    })
+    .returning({ id: departments.id });
+
+  await db.insert(auditLogs).values({
+    userId: admin.id,
+    action: "department_created",
+    entityType: "department",
+    entityId: department.id,
+    newValue: { facultyId, name, code },
+  });
+
+  revalidatePath("/admin/departments");
+  revalidatePath("/admin/faculties");
+  redirect("/admin/departments");
+}
+
+export async function updateDepartmentAction(formData: FormData) {
+  const admin = await requireRole("administrator");
+  const departmentId = cleanId(formData.get("departmentId"));
+  const facultyId = cleanId(formData.get("facultyId"));
+  const name = cleanString(formData.get("name"));
+  const code = cleanString(formData.get("code")).toUpperCase();
+
+  if (!departmentId || !facultyId || !name || !code) {
+    redirect(`/admin/departments/${departmentId}/edit?error=missing`);
+  }
+
+  const db = getDb();
+  await db
+    .update(departments)
+    .set({
+      facultyId,
+      name,
+      code,
+      description: cleanString(formData.get("description")) || null,
+      status: cleanRecordStatus(formData.get("status")),
+      updatedAt: new Date(),
+    })
+    .where(eq(departments.id, departmentId));
+
+  await db.insert(auditLogs).values({
+    userId: admin.id,
+    action: "department_updated",
+    entityType: "department",
+    entityId: departmentId,
+    newValue: { facultyId, name, code },
+  });
+
+  revalidatePath("/admin/departments");
+  revalidatePath("/admin/faculties");
+  redirect("/admin/departments");
+}
+
+export async function deleteDepartmentAction(formData: FormData) {
+  const admin = await requireRole("administrator");
+  const departmentId = cleanId(formData.get("departmentId"));
+
+  if (!departmentId) {
+    redirect("/admin/departments");
+  }
+
+  const db = getDb();
+  const [[studentCount], [catalogCount]] = await Promise.all([
+    db.select({ value: count() }).from(studentProfiles).where(eq(studentProfiles.departmentId, departmentId)),
+    db.select({ value: count() }).from(courseCatalog).where(eq(courseCatalog.departmentId, departmentId)),
+  ]);
+
+  if ((studentCount?.value ?? 0) > 0 || (catalogCount?.value ?? 0) > 0) {
+    await db
+      .update(departments)
+      .set({ status: "inactive", updatedAt: new Date() })
+      .where(eq(departments.id, departmentId));
+    redirect("/admin/departments?archived=1");
+  }
+
+  await db.delete(departments).where(eq(departments.id, departmentId));
+  await db.insert(auditLogs).values({
+    userId: admin.id,
+    action: "department_deleted",
+    entityType: "department",
+    entityId: departmentId,
+  });
+
+  revalidatePath("/admin/departments");
+  revalidatePath("/admin/faculties");
+  redirect("/admin/departments?deleted=1");
+}
+
+export async function createAcademicYearAction(formData: FormData) {
+  const admin = await requireRole("administrator");
+  const parsed = parseAcademicYear(cleanString(formData.get("displayName"), { uppercase: false }));
+
+  if (!parsed) {
+    redirect("/admin/academic-years/new?error=format");
+  }
+
+  const db = getDb();
+  const [year] = await db
+    .insert(academicYears)
+    .values({
+      startYear: parsed.startYear,
+      endYear: parsed.endYear,
+      displayName: parsed.displayName,
+      isCurrent: false,
+      status: "active",
+    })
+    .returning({ id: academicYears.id });
+
+  await db.insert(auditLogs).values({
+    userId: admin.id,
+    action: "academic_year_created",
+    entityType: "academic_year",
+    entityId: year.id,
+    newValue: parsed,
+  });
+
+  revalidatePath("/admin/academic-years");
+  redirect("/admin/academic-years");
+}
+
+export async function updateAcademicYearAction(formData: FormData) {
+  const admin = await requireRole("administrator");
+  const academicYearId = cleanId(formData.get("academicYearId"));
+  const parsed = parseAcademicYear(cleanString(formData.get("displayName"), { uppercase: false }));
+  const isCurrent = formData.get("isCurrent") === "on";
+
+  if (!academicYearId || !parsed) {
+    redirect(`/admin/academic-years/${academicYearId}/edit?error=format`);
+  }
+
+  const db = getDb();
+
+  if (isCurrent) {
+    await db
+      .update(academicYears)
+      .set({ isCurrent: false, updatedAt: new Date() })
+      .where(eq(academicYears.isCurrent, true));
+  }
+
+  await db
+    .update(academicYears)
+    .set({
+      startYear: parsed.startYear,
+      endYear: parsed.endYear,
+      displayName: parsed.displayName,
+      isCurrent,
+      status: cleanRecordStatus(formData.get("status")),
+      updatedAt: new Date(),
+    })
+    .where(eq(academicYears.id, academicYearId));
+
+  await db.insert(auditLogs).values({
+    userId: admin.id,
+    action: "academic_year_updated",
+    entityType: "academic_year",
+    entityId: academicYearId,
+    newValue: { ...parsed, isCurrent },
+  });
+
+  revalidatePath("/admin/academic-years");
+  redirect("/admin/academic-years");
 }
 
 function revalidateEnrolmentViews(courseId?: string, enrolmentId?: string) {
@@ -311,6 +622,22 @@ export async function createCatalogCourseAction(formData: FormData) {
   }
 
   const db = getDb();
+  const facultyId = cleanId(formData.get("facultyId")) || null;
+  const departmentId = cleanId(formData.get("departmentId")) || null;
+  const academicYearId = cleanId(formData.get("academicYearId")) || null;
+
+  if (facultyId && departmentId) {
+    const [department] = await db
+      .select({ id: departments.id })
+      .from(departments)
+      .where(and(eq(departments.id, departmentId), eq(departments.facultyId, facultyId)))
+      .limit(1);
+
+    if (!department) {
+      redirect("/admin/catalog/new?error=department");
+    }
+  }
+
   const [existingCourse] = await db
     .select({ id: courseCatalog.id })
     .from(courseCatalog)
@@ -328,6 +655,9 @@ export async function createCatalogCourseAction(formData: FormData) {
       courseTitle,
       programme: cleanString(formData.get("programme")) || null,
       level: cleanString(formData.get("level")) || null,
+      facultyId,
+      departmentId,
+      academicYearId,
       description: cleanString(formData.get("description")) || null,
       status: "active",
     })
@@ -356,6 +686,22 @@ export async function updateCatalogCourseAction(formData: FormData) {
   }
 
   const db = getDb();
+  const facultyId = cleanId(formData.get("facultyId")) || null;
+  const departmentId = cleanId(formData.get("departmentId")) || null;
+  const academicYearId = cleanId(formData.get("academicYearId")) || null;
+
+  if (facultyId && departmentId) {
+    const [department] = await db
+      .select({ id: departments.id })
+      .from(departments)
+      .where(and(eq(departments.id, departmentId), eq(departments.facultyId, facultyId)))
+      .limit(1);
+
+    if (!department) {
+      redirect(`/admin/catalog/${catalogCourseId}/edit?error=department`);
+    }
+  }
+
   await db
     .update(courseCatalog)
     .set({
@@ -363,6 +709,9 @@ export async function updateCatalogCourseAction(formData: FormData) {
       courseTitle,
       programme: cleanString(formData.get("programme")) || null,
       level: cleanString(formData.get("level")) || null,
+      facultyId,
+      departmentId,
+      academicYearId,
       description: cleanString(formData.get("description")) || null,
       status:
         cleanString(formData.get("status"), { uppercase: false }) === "archived"
@@ -406,6 +755,30 @@ export async function deleteCatalogCourseAction(formData: FormData) {
   }
 
   const db = getDb();
+  const [linkedCourses] = await db
+    .select({ total: count() })
+    .from(courses)
+    .where(eq(courses.catalogCourseId, catalogCourseId));
+
+  if ((linkedCourses?.total ?? 0) > 0) {
+    await db
+      .update(courseCatalog)
+      .set({ status: "archived", updatedAt: new Date() })
+      .where(eq(courseCatalog.id, catalogCourseId));
+
+    await db.insert(auditLogs).values({
+      userId: admin.id,
+      action: "catalog_course_archived",
+      entityType: "course_catalog",
+      entityId: catalogCourseId,
+      reason: "Course catalogue record is linked to assigned courses.",
+    });
+
+    revalidatePath("/admin/catalog");
+    revalidatePath("/admin/courses");
+    redirect("/admin/catalog?archived=1");
+  }
+
   await db.delete(courseCatalog).where(eq(courseCatalog.id, catalogCourseId));
   await db.insert(auditLogs).values({
     userId: admin.id,
@@ -551,8 +924,17 @@ export async function updateStudentAccountAction(formData: FormData) {
   const email = cleanString(formData.get("email"), { uppercase: false }).toLowerCase();
   const studentIdNumber = cleanString(formData.get("studentIdNumber"));
   const status = cleanStudentAccountStatus(formData.get("status"));
+  const studentCategory = normalizeStudentCategory(
+    cleanString(formData.get("studentCategory"), { uppercase: false }),
+  );
+  const programmeLevel = normalizeProgrammeLevel(
+    cleanString(formData.get("programmeLevel"), { uppercase: false }),
+  );
+  const facultyId = cleanId(formData.get("facultyId")) || null;
+  const departmentId = cleanId(formData.get("departmentId")) || null;
+  const academicYearId = cleanId(formData.get("academicYearId")) || null;
 
-  if (!studentId || !name || !email || !studentIdNumber || !status) {
+  if (!studentId || !name || !email || !studentIdNumber || !status || !studentCategory || !programmeLevel) {
     redirect(`/admin/students/${studentId}/edit?error=missing`);
   }
 
@@ -565,6 +947,11 @@ export async function updateStudentAccountAction(formData: FormData) {
       previousEmail: users.email,
       previousStatus: users.status,
       previousStudentIdNumber: studentProfiles.studentIdNumber,
+      previousStudentCategory: studentProfiles.studentCategory,
+      previousProgrammeLevel: studentProfiles.programmeLevel,
+      previousFacultyId: studentProfiles.facultyId,
+      previousDepartmentId: studentProfiles.departmentId,
+      previousAcademicYearId: studentProfiles.academicYearId,
       previousProgramme: studentProfiles.programme,
       previousLevel: studentProfiles.level,
       previousClassGroup: studentProfiles.classGroup,
@@ -602,6 +989,18 @@ export async function updateStudentAccountAction(formData: FormData) {
   const level = cleanString(formData.get("level")) || null;
   const classGroup = cleanString(formData.get("classGroup")) || null;
 
+  if (facultyId && departmentId) {
+    const [department] = await db
+      .select({ id: departments.id })
+      .from(departments)
+      .where(and(eq(departments.id, departmentId), eq(departments.facultyId, facultyId)))
+      .limit(1);
+
+    if (!department) {
+      redirect(`/admin/students/${studentId}/edit?error=department`);
+    }
+  }
+
   await db
     .update(users)
     .set({ name, email, status, updatedAt: new Date() })
@@ -611,6 +1010,11 @@ export async function updateStudentAccountAction(formData: FormData) {
     .update(studentProfiles)
     .set({
       studentIdNumber,
+      studentCategory,
+      programmeLevel,
+      facultyId,
+      departmentId,
+      academicYearId,
       programme,
       level,
       classGroup,
@@ -628,6 +1032,11 @@ export async function updateStudentAccountAction(formData: FormData) {
       email: target.previousEmail,
       status: target.previousStatus,
       studentIdNumber: target.previousStudentIdNumber,
+      studentCategory: target.previousStudentCategory,
+      programmeLevel: target.previousProgrammeLevel,
+      facultyId: target.previousFacultyId,
+      departmentId: target.previousDepartmentId,
+      academicYearId: target.previousAcademicYearId,
       programme: target.previousProgramme,
       level: target.previousLevel,
       classGroup: target.previousClassGroup,
@@ -637,6 +1046,11 @@ export async function updateStudentAccountAction(formData: FormData) {
       email,
       status,
       studentIdNumber,
+      studentCategory,
+      programmeLevel,
+      facultyId,
+      departmentId,
+      academicYearId,
       programme,
       level,
       classGroup,

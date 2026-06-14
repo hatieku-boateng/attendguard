@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { eq } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 import { ArrowLeft, Trash2 } from "lucide-react";
 
 import {
@@ -21,8 +21,19 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { getDb } from "@/db/client";
-import { attendanceRecords, courses, enrolments, studentProfiles, users } from "@/db/schema";
+import {
+  academicYears,
+  attendanceRecords,
+  courses,
+  departments,
+  enrolments,
+  faculties,
+  studentProfiles,
+  users,
+} from "@/db/schema";
 import { requireRole } from "@/lib/auth";
+import { programmeLevels, studentCategories } from "@/lib/institution";
+import { ensureDefaultFacultyDepartment, ensureGeneratedAcademicYears } from "@/lib/institution-data";
 
 function errorMessage(error?: string) {
   if (error === "email") {
@@ -48,6 +59,8 @@ export default async function EditStudentAccountPage({
   searchParams: Promise<{ error?: string }>;
 }) {
   await requireRole("administrator");
+  await ensureDefaultFacultyDepartment();
+  await ensureGeneratedAcademicYears();
   const { studentId } = await params;
   const query = await searchParams;
   const db = getDb();
@@ -61,6 +74,11 @@ export default async function EditStudentAccountPage({
       activatedAt: users.emailVerifiedAt,
       createdAt: users.createdAt,
       studentIdNumber: studentProfiles.studentIdNumber,
+      studentCategory: studentProfiles.studentCategory,
+      programmeLevel: studentProfiles.programmeLevel,
+      facultyId: studentProfiles.facultyId,
+      departmentId: studentProfiles.departmentId,
+      academicYearId: studentProfiles.academicYearId,
       programme: studentProfiles.programme,
       level: studentProfiles.level,
       classGroup: studentProfiles.classGroup,
@@ -87,7 +105,7 @@ export default async function EditStudentAccountPage({
     );
   }
 
-  const [studentEnrolments, attendanceRows] = await Promise.all([
+  const [studentEnrolments, attendanceRows, facultyRows, departmentRows, academicYearRows] = await Promise.all([
     db
       .select({
         enrolmentId: enrolments.id,
@@ -105,6 +123,9 @@ export default async function EditStudentAccountPage({
       .select({ id: attendanceRecords.id })
       .from(attendanceRecords)
       .where(eq(attendanceRecords.studentId, target.studentId)),
+    db.select().from(faculties).orderBy(asc(faculties.name)),
+    db.select().from(departments).orderBy(asc(departments.name)),
+    db.select().from(academicYears).orderBy(asc(academicYears.startYear)),
   ]);
   const message = errorMessage(query.error);
 
@@ -171,6 +192,88 @@ export default async function EditStudentAccountPage({
                     <SelectItem value="disabled">Disabled</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="studentCategory">Student category</Label>
+                <Select defaultValue={target.studentCategory} name="studentCategory">
+                  <SelectTrigger className="w-full" id="studentCategory">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {studentCategories.map((category) => (
+                      <SelectItem key={category.value} value={category.value}>
+                        {category.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="programmeLevel">Programme level</Label>
+                <Select defaultValue={target.programmeLevel} name="programmeLevel">
+                  <SelectTrigger className="w-full" id="programmeLevel">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {programmeLevels.map((level) => (
+                      <SelectItem key={level.value} value={level.value}>
+                        {level.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="facultyId">Faculty</Label>
+                <select
+                  className="h-9 w-full rounded-lg border bg-card px-3 text-sm"
+                  defaultValue={target.facultyId ?? ""}
+                  id="facultyId"
+                  name="facultyId"
+                >
+                  <option value="">Select faculty</option>
+                  {facultyRows.map((faculty) => (
+                    <option key={faculty.id} value={faculty.id}>
+                      {faculty.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="departmentId">Department</Label>
+                <select
+                  className="h-9 w-full rounded-lg border bg-card px-3 text-sm"
+                  defaultValue={target.departmentId ?? ""}
+                  id="departmentId"
+                  name="departmentId"
+                >
+                  <option value="">Select department</option>
+                  {departmentRows.map((department) => (
+                    <option key={department.id} value={department.id}>
+                      {department.name}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-muted-foreground">
+                  The server verifies that the selected department belongs to the selected faculty.
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="academicYearId">Academic year</Label>
+                <select
+                  className="h-9 w-full rounded-lg border bg-card px-3 text-sm"
+                  defaultValue={target.academicYearId ?? ""}
+                  id="academicYearId"
+                  name="academicYearId"
+                >
+                  <option value="">Select academic year</option>
+                  {academicYearRows.map((year) => (
+                    <option key={year.id} value={year.id}>
+                      {year.displayName}
+                      {year.isCurrent ? " (current)" : ""}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="programme">Programme</Label>

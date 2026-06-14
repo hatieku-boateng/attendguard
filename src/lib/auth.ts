@@ -7,7 +7,7 @@ import bcrypt from "bcryptjs";
 import { eq } from "drizzle-orm";
 
 import { getDb } from "@/db/client";
-import { lecturerProfiles, studentProfiles, users } from "@/db/schema";
+import { auditLogs, lecturerProfiles, studentProfiles, users } from "@/db/schema";
 
 export type UserRole = "administrator" | "lecturer" | "student";
 
@@ -176,11 +176,48 @@ export async function requireUser() {
   return user;
 }
 
+function isProductionDeployment() {
+  if (process.env.VERCEL_ENV) {
+    return process.env.VERCEL_ENV === "production";
+  }
+
+  return process.env.NODE_ENV === "production";
+}
+
+function canUseDevBypass(user: CurrentUser) {
+  const configuredEmail = process.env.DEV_BYPASS_EMAIL?.trim().toLowerCase();
+
+  return (
+    process.env.ENABLE_DEV_BYPASS === "true" &&
+    !isProductionDeployment() &&
+    user.role === "administrator" &&
+    Boolean(configuredEmail) &&
+    user.email.toLowerCase() === configuredEmail
+  );
+}
+
 export async function requireRole(role: UserRole | UserRole[]) {
   const user = await requireUser();
   const allowedRoles = Array.isArray(role) ? role : [role];
 
   if (!allowedRoles.includes(user.role)) {
+    if (canUseDevBypass(user)) {
+      await getDb().insert(auditLogs).values({
+        userId: user.id,
+        action: "development_role_bypass",
+        entityType: "auth",
+        entityId: user.id,
+        newValue: {
+          requestedRoles: allowedRoles,
+          actualRole: user.role,
+          vercelEnv: process.env.VERCEL_ENV ?? null,
+        },
+        reason: "Authorized non-production development bypass.",
+      });
+
+      return user;
+    }
+
     if (user.role === "student") {
       redirect("/student/dashboard");
     }

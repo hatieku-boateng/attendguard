@@ -12,6 +12,7 @@ import {
   attendanceRecords,
   attendanceSessions,
   auditLogs,
+  courseCatalog,
   courseResources,
   courses,
   enrolments,
@@ -27,6 +28,8 @@ import {
 } from "@/lib/activation";
 import { hashPassword, requireRole } from "@/lib/auth";
 import { sendStudentActivationEmail } from "@/lib/email";
+import { ensureAcademicYear, ensureDefaultFacultyDepartment } from "@/lib/institution-data";
+import { normalizeProgrammeLevel, normalizeStudentCategory } from "@/lib/institution";
 
 function cleanString(value: FormDataEntryValue | null) {
   return String(value ?? "").trim();
@@ -105,6 +108,10 @@ type CourseForEnrolment = {
   programme: string | null;
   level: string | null;
   classGroup: string;
+  academicYear: string;
+  facultyId: string | null;
+  departmentId: string | null;
+  academicYearId: string | null;
 };
 
 type StudentInput = {
@@ -114,6 +121,8 @@ type StudentInput = {
   programme: string | null;
   level: string | null;
   classGroup: string | null;
+  studentCategory: "regular" | "weekend" | "access";
+  programmeLevel: "diploma" | "undergraduate" | "postgraduate";
 };
 
 async function enrolStudentWithActivation({
@@ -128,6 +137,14 @@ async function enrolStudentWithActivation({
   const programme = student.programme || course.programme;
   const level = student.level || course.level;
   const classGroup = student.classGroup || course.classGroup;
+  const defaultInstitution = await ensureDefaultFacultyDepartment();
+  const academicYear =
+    course.academicYearId
+      ? null
+      : await ensureAcademicYear(course.academicYear);
+  const facultyId = course.facultyId ?? defaultInstitution.faculty.id;
+  const departmentId = course.departmentId ?? defaultInstitution.department.id;
+  const academicYearId = course.academicYearId ?? academicYear?.id ?? null;
 
   const [existingByEmail] = await db
     .select()
@@ -167,6 +184,11 @@ async function enrolStudentWithActivation({
         programme: profile.programme || programme,
         level: profile.level || level,
         classGroup: profile.classGroup || classGroup,
+        studentCategory: profile.studentCategory || student.studentCategory,
+        programmeLevel: profile.programmeLevel || student.programmeLevel,
+        facultyId: profile.facultyId || facultyId,
+        departmentId: profile.departmentId || departmentId,
+        academicYearId: profile.academicYearId || academicYearId,
         updatedAt: new Date(),
       })
       .where(eq(studentProfiles.id, profile.id));
@@ -188,6 +210,11 @@ async function enrolStudentWithActivation({
       .values({
         userId: createdUser.id,
         studentIdNumber: student.studentIdNumber,
+        studentCategory: student.studentCategory,
+        programmeLevel: student.programmeLevel,
+        facultyId,
+        departmentId,
+        academicYearId,
         programme,
         level,
         classGroup,
@@ -264,8 +291,13 @@ export async function importStudentsAction(formData: FormData) {
       programme: courses.programme,
       level: courses.level,
       classGroup: courses.classGroup,
+      academicYear: courses.academicYear,
+      facultyId: courseCatalog.facultyId,
+      departmentId: courseCatalog.departmentId,
+      academicYearId: courseCatalog.academicYearId,
     })
     .from(courses)
+    .leftJoin(courseCatalog, eq(courses.catalogCourseId, courseCatalog.id))
     .where(
       and(
         eq(courses.id, courseId),
@@ -311,6 +343,20 @@ export async function importStudentsAction(formData: FormData) {
     const programme = getField(row, "programme")?.toUpperCase() || null;
     const level = getField(row, "level")?.toUpperCase() || null;
     const classGroup = getField(row, "class group")?.toUpperCase() || null;
+    const studentCategory =
+      normalizeStudentCategory(
+        getField(row, "student category") ??
+          getField(row, "classification") ??
+          getField(row, "student classification") ??
+          null,
+      ) ?? "regular";
+    const programmeLevel =
+      normalizeProgrammeLevel(
+        getField(row, "programme level") ??
+          getField(row, "degree level") ??
+          getField(row, "study level") ??
+          null,
+      ) ?? "undergraduate";
 
     if (!name || !studentIdNumber || !email) {
       report.errors += 1;
@@ -328,7 +374,16 @@ export async function importStudentsAction(formData: FormData) {
     const result = await enrolStudentWithActivation({
       db,
       course,
-      student: { name, studentIdNumber, email, programme, level, classGroup },
+      student: {
+        name,
+        studentIdNumber,
+        email,
+        programme,
+        level,
+        classGroup,
+        studentCategory,
+        programmeLevel,
+      },
     });
 
     if (!result.ok) {
@@ -374,8 +429,13 @@ export async function addStudentManuallyAction(formData: FormData) {
       programme: courses.programme,
       level: courses.level,
       classGroup: courses.classGroup,
+      academicYear: courses.academicYear,
+      facultyId: courseCatalog.facultyId,
+      departmentId: courseCatalog.departmentId,
+      academicYearId: courseCatalog.academicYearId,
     })
     .from(courses)
+    .leftJoin(courseCatalog, eq(courses.catalogCourseId, courseCatalog.id))
     .where(
       and(
         eq(courses.id, courseId),
@@ -398,6 +458,8 @@ export async function addStudentManuallyAction(formData: FormData) {
       programme: cleanString(formData.get("programme")).toUpperCase() || null,
       level: cleanString(formData.get("level")).toUpperCase() || null,
       classGroup: cleanString(formData.get("classGroup")).toUpperCase() || null,
+      studentCategory: "regular",
+      programmeLevel: "undergraduate",
     },
   });
 

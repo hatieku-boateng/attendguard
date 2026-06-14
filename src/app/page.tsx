@@ -71,15 +71,15 @@ export default function Home() {
       </div>
 
       {/* Navigation Header */}
-      <header className="mx-auto flex w-full max-w-[85rem] items-center justify-between px-6 py-6 sm:px-8 z-30 relative">
+      <header className="mx-auto flex w-full max-w-[85rem] items-center justify-between px-4 sm:px-6 py-6 z-30 relative">
         <BrandMark />
-        <nav className="flex items-center gap-4">
+        <nav className="flex items-center gap-2 sm:gap-4">
           <ThemeToggle />
-          <div className="flex items-center gap-2 rounded-full border border-white/60 bg-white/70 p-1.5 shadow-md shadow-slate-950/[0.02] backdrop-blur-xl dark:bg-slate-950/40 dark:border-white/[0.08] transition-colors">
-            <Button asChild variant="ghost" className="rounded-full px-5 text-sm font-semibold h-8.5 hover:bg-muted dark:hover:bg-white/[0.06]">
+          <div className="flex items-center gap-1 sm:gap-2 rounded-full border border-white/60 bg-white/70 p-1 sm:p-1.5 shadow-md shadow-slate-950/[0.02] backdrop-blur-xl dark:bg-slate-950/40 dark:border-white/[0.08] transition-colors">
+            <Button asChild variant="ghost" className="hidden md:inline-flex rounded-full px-5 text-sm font-semibold h-8.5 hover:bg-muted dark:hover:bg-white/[0.06]">
               <Link href="/activate-account">Activate Student</Link>
             </Button>
-            <Button asChild className="rounded-full px-6 text-sm font-bold shadow-sm h-8.5 bg-primary text-primary-foreground hover:bg-primary/95 transition-all">
+            <Button asChild className="rounded-full px-4 sm:px-6 text-xs sm:text-sm font-bold shadow-sm h-7.5 sm:h-8.5 bg-primary text-primary-foreground hover:bg-primary/95 transition-all">
               <Link href="/login">Sign In</Link>
             </Button>
           </div>
@@ -98,7 +98,7 @@ export default function Home() {
             </div>
             
             <div className="space-y-4">
-              <h1 className="text-5xl font-black leading-[1.05] tracking-tight text-foreground sm:text-6xl lg:text-[4.5rem]">
+              <h1 className="text-4xl font-black leading-[1.05] tracking-tight text-foreground sm:text-5xl lg:text-[4.5rem]">
                 Your Attendance,<br />
                 <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-cyan-500">
                   Simplified.
@@ -109,15 +109,15 @@ export default function Home() {
               </p>
             </div>
 
-            <div className="flex flex-wrap gap-4 pt-2">
-              <Button asChild size="lg" className="rounded-full px-8 shadow-md shadow-primary/10 hover:shadow-lg transition-all font-bold h-12 bg-primary text-primary-foreground">
-                <Link href="/login">
+            <div className="flex flex-col sm:flex-row gap-3 pt-2">
+              <Button asChild size="lg" className="w-full sm:w-auto rounded-full px-8 shadow-md shadow-primary/10 hover:shadow-lg transition-all font-bold h-12 bg-primary text-primary-foreground">
+                <Link href="/login" className="justify-center">
                   Sign In to Console
                   <ArrowRight className="size-4.5" />
                 </Link>
               </Button>
-              <Button asChild size="lg" variant="outline" className="rounded-full px-8 font-semibold glass-panel-hover h-12 border-border hover:bg-muted dark:hover:bg-zinc-900">
-                <Link href="/activate-account">Activate Student</Link>
+              <Button asChild size="lg" variant="outline" className="w-full sm:w-auto rounded-full px-8 font-semibold glass-panel-hover h-12 border-border hover:bg-muted dark:hover:bg-zinc-900">
+                <Link href="/activate-account" className="justify-center">Activate Student</Link>
               </Button>
             </div>
 
@@ -252,9 +252,9 @@ export default function Home() {
             ].map((metric, i) => (
               <div 
                 key={i} 
-                className={`rounded-3xl border p-8 text-center flex flex-col items-center justify-center shadow-sm ${metric.color}`}
+                className={`rounded-3xl border p-6 sm:p-8 text-center flex flex-col items-center justify-center shadow-sm ${metric.color}`}
               >
-                <span className="text-4xl font-black tracking-tight">{metric.value}</span>
+                <span className="text-3xl sm:text-4xl font-black tracking-tight">{metric.value}</span>
                 <span className="text-xs font-extrabold uppercase tracking-widest text-muted-foreground mt-2">{metric.label}</span>
               </div>
             ))}
@@ -296,7 +296,7 @@ export default function Home() {
               return (
                 <div 
                   key={i} 
-                  className="glass-panel relative overflow-hidden rounded-3xl p-6 shadow-sm hover:scale-[1.01] transition-transform duration-300 select-none"
+                  className="glass-panel relative overflow-hidden rounded-3xl p-5 sm:p-6 shadow-sm hover:scale-[1.01] transition-transform duration-300 select-none"
                 >
                   <div className="space-y-4">
                     <span className={`flex size-11 items-center justify-center rounded-2xl border ${feature.color}`}>
@@ -345,7 +345,7 @@ export default function Home() {
           ].map((item, i) => {
             const Icon = item.icon;
             return (
-              <div key={i} className="flex flex-col items-center space-y-4 max-w-[240px] mx-auto">
+              <div key={i} className="flex flex-col items-center space-y-4 max-w-[280px] md:max-w-none w-full mx-auto">
                 <span className={`flex size-20 items-center justify-center rounded-full border shadow-sm ${item.color}`}>
                   <Icon className="size-8" />
                 </span>
@@ -413,7 +413,7 @@ export default function Home() {
             ].map((card, i) => (
               <div 
                 key={i} 
-                className={`rounded-3xl border bg-background/50 backdrop-blur-xl p-8 shadow-sm flex flex-col justify-between ${card.border}`}
+                className={`rounded-3xl border bg-background/50 backdrop-blur-xl p-6 sm:p-8 shadow-sm flex flex-col justify-between ${card.border}`}
               >
                 <div className="space-y-4 text-left">
                   <span className={`inline-flex items-center rounded-full px-3 py-0.5 text-[10px] font-black uppercase tracking-wider border ${card.badgeColor}`}>
@@ -453,8 +453,8 @@ export default function Home() {
               </p>
             </div>
 
-            <Button asChild size="lg" className="rounded-full px-8 shadow-sm font-bold h-12 bg-primary text-primary-foreground">
-              <Link href="/login">
+            <Button asChild size="lg" className="w-full sm:w-auto rounded-full px-8 shadow-sm font-bold h-12 bg-primary text-primary-foreground justify-center">
+              <Link href="/login" className="justify-center">
                 Sign In to Console
                 <ArrowRight className="size-4.5" />
               </Link>
@@ -542,7 +542,7 @@ export default function Home() {
         </div>
 
         {/* Footer Bottom copyright */}
-        <div className="mx-auto max-w-[85rem] px-6 sm:px-8 pt-8 border-t border-border/40 flex flex-col sm:flex-row gap-4 justify-between items-center text-[10px] font-black uppercase tracking-widest text-muted-foreground leading-none">
+        <div className="mx-auto max-w-[85rem] px-6 sm:px-8 pt-8 border-t border-border/40 flex flex-col sm:flex-row gap-4 justify-between items-center text-[10px] font-black uppercase tracking-widest text-muted-foreground leading-relaxed sm:leading-none text-center sm:text-left">
           <span>© 2026 Pentecost University. All rights reserved.</span>
           <div className="flex gap-6">
             <Link href="#" className="hover:text-primary transition-colors">Privacy Policy</Link>

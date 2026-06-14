@@ -23,7 +23,7 @@ export default async function DevBypassPage() {
           <div className="absolute bottom-[10%] right-[-15%] w-[50rem] h-[50rem] rounded-full bg-cyan-500/5 blur-[130px] dark:bg-cyan-500/3 animate-pulse" />
         </div>
 
-        <Card className="w-full max-w-md glass-panel rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden border-none text-left space-y-6 z-10">
+        <Card className="w-full max-w-md glass-panel rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden border-none text-left space-y-6 z-10">
           <div className="size-12 rounded-2xl bg-rose-500/10 border border-rose-500/25 flex items-center justify-center shadow-inner">
             <Key className="size-6 text-rose-500 animate-pulse" />
           </div>
@@ -180,31 +180,30 @@ export default async function DevBypassPage() {
         <div className="absolute bottom-[10%] right-[-15%] w-[50rem] h-[50rem] rounded-full bg-cyan-500/5 blur-[130px] dark:bg-cyan-500/3 animate-pulse" />
       </div>
 
-      {/* Header */}
-      <header className="mx-auto flex w-full max-w-[85rem] items-center justify-between px-6 py-6 sm:px-8 z-30 relative">
-        <div className="flex items-center gap-2">
-          <Key className="size-6 text-primary animate-pulse" />
-          <span className="font-black tracking-tight text-lg uppercase bg-clip-text text-transparent bg-gradient-to-r from-primary to-cyan-500">
-            PU Attendance DevPortal
+      <header className="mx-auto flex w-full max-w-[85rem] items-center justify-between px-4 sm:px-6 py-6 z-30 relative">
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          <Key className="size-5 sm:size-6 text-primary animate-pulse shrink-0" />
+          <span className="font-black tracking-tight text-sm sm:text-lg uppercase bg-clip-text text-transparent bg-gradient-to-r from-primary to-cyan-500">
+            PU DevPortal
           </span>
         </div>
-        <nav className="flex items-center gap-4">
-          <Button asChild variant="outline" className="rounded-full px-5 text-sm font-semibold h-8.5 border-border hover:bg-muted dark:hover:bg-white/[0.06]">
+        <nav className="flex items-center gap-2 sm:gap-4">
+          <Button asChild variant="outline" className="rounded-full px-3 sm:px-5 text-xs sm:text-sm font-semibold h-7.5 sm:h-8.5 border-border hover:bg-muted dark:hover:bg-white/[0.06]">
             <Link href="/" className="inline-flex items-center gap-1.5">
               <ArrowLeft className="size-3.5" />
-              Return Home
+              <span className="hidden sm:inline">Return Home</span>
             </Link>
           </Button>
         </nav>
       </header>
 
       {/* Content */}
-      <section className="mx-auto max-w-[85rem] px-6 pt-8 pb-12 sm:px-8 z-10 relative text-center">
+      <section className="mx-auto max-w-[85rem] px-4 sm:px-6 pt-8 pb-12 z-10 relative text-center">
         <div className="max-w-3xl mx-auto space-y-4 mb-12">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 text-primary px-3 py-1 text-2xs font-extrabold uppercase tracking-widest border border-primary/25">
             Internal Portal Inspector
           </span>
-          <h1 className="text-4xl font-black leading-[1.08] tracking-tight text-foreground sm:text-5xl">
+          <h1 className="text-3xl font-black leading-[1.08] tracking-tight text-foreground sm:text-5xl">
             Check the Inside of the System.
           </h1>
           <p className="text-base leading-relaxed text-muted-foreground font-semibold max-w-xl mx-auto">
@@ -218,7 +217,7 @@ export default async function DevBypassPage() {
           {/* Admin Column */}
           <Card className="glass-panel rounded-3xl shadow-xl flex flex-col justify-between text-left relative overflow-hidden border-none">
             <div className="absolute inset-x-0 top-0 h-1 bg-[linear-gradient(90deg,oklch(0.78_0.14_85),oklch(0.62_0.12_65))]" />
-            <CardHeader className="pt-8 pb-4">
+            <CardHeader className="p-6 sm:pt-8 sm:pb-4">
               <span className="inline-flex w-fit items-center gap-1 px-3 py-1 rounded-full border text-[9px] font-black uppercase tracking-wider text-amber-600 bg-amber-500/10 border-amber-500/20 dark:text-amber-400">
                 <ShieldCheck className="size-3.5" />
                 Administrator
@@ -228,7 +227,7 @@ export default async function DevBypassPage() {
                 Manage lecturers, catalogs, courses, and view full audit registers.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6 pb-8">
+            <CardContent className="p-6 sm:space-y-6 sm:pb-8 pt-0">
               <div className="space-y-3 pt-2">
                 <p className="text-xs font-extrabold uppercase tracking-wider text-muted-foreground">Available Accounts</p>
                 {admins.length === 0 ? (
@@ -256,7 +255,7 @@ export default async function DevBypassPage() {
           {/* Lecturer Column */}
           <Card className="glass-panel rounded-3xl shadow-xl flex flex-col justify-between text-left relative overflow-hidden border-none">
             <div className="absolute inset-x-0 top-0 h-1 bg-[linear-gradient(90deg,var(--primary),oklch(0.64_0.16_145))]" />
-            <CardHeader className="pt-8 pb-4">
+            <CardHeader className="p-6 sm:pt-8 sm:pb-4">
               <span className="inline-flex w-fit items-center gap-1 px-3 py-1 rounded-full border text-[9px] font-black uppercase tracking-wider text-primary bg-primary/10 border-primary/20">
                 <BookOpen className="size-3.5" />
                 Lecturer
@@ -266,7 +265,7 @@ export default async function DevBypassPage() {
                 Open coordinate perimeters, enrol students, and export Excel registers.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6 pb-8">
+            <CardContent className="p-6 sm:space-y-6 sm:pb-8 pt-0">
               <div className="space-y-3 pt-2">
                 <p className="text-xs font-extrabold uppercase tracking-wider text-muted-foreground">Available Accounts</p>
                 {lecturers.length === 0 ? (
@@ -294,7 +293,7 @@ export default async function DevBypassPage() {
           {/* Student Column */}
           <Card className="glass-panel rounded-3xl shadow-xl flex flex-col justify-between text-left relative overflow-hidden border-none">
             <div className="absolute inset-x-0 top-0 h-1 bg-[linear-gradient(90deg,oklch(0.64_0.16_145),oklch(0.50_0.15_180))]" />
-            <CardHeader className="pt-8 pb-4">
+            <CardHeader className="p-6 sm:pt-8 sm:pb-4">
               <span className="inline-flex w-fit items-center gap-1 px-3 py-1 rounded-full border text-[9px] font-black uppercase tracking-wider text-emerald-600 bg-emerald-500/10 border-emerald-500/20 dark:text-emerald-400">
                 <GraduationCap className="size-3.5" />
                 Student
@@ -304,7 +303,7 @@ export default async function DevBypassPage() {
                 Check in to live geofenced lectures, check accuracy, and view logs.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6 pb-8">
+            <CardContent className="p-6 sm:space-y-6 sm:pb-8 pt-0">
               <div className="space-y-3 pt-2">
                 <p className="text-xs font-extrabold uppercase tracking-wider text-muted-foreground">Available Accounts</p>
                 {students.length === 0 ? (

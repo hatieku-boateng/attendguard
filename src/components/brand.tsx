@@ -26,11 +26,13 @@ export function BrandMark({
         />
       </span>
       <span className="grid gap-0.5">
-        <span className="text-[0.95rem] font-extrabold leading-none tracking-tight text-current transition-all duration-300 group-hover:translate-x-0.5">
-          Pentecost University
+        <span className="text-[0.85rem] sm:text-[0.95rem] font-extrabold leading-none tracking-tight text-current transition-all duration-300 group-hover:translate-x-0.5">
+          <span className="inline sm:hidden">PU</span>
+          <span className="hidden sm:inline">Pentecost University</span>
         </span>
-        <span className="text-[0.62rem] font-black uppercase tracking-[0.15em] text-secondary mt-0.5">
-          Attendance System
+        <span className="text-[0.55rem] sm:text-[0.62rem] font-black uppercase tracking-[0.15em] text-secondary mt-0.5">
+          <span className="inline sm:hidden">Attendance</span>
+          <span className="hidden sm:inline">Attendance System</span>
         </span>
       </span>
     </Link>

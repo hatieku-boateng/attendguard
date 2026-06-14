@@ -174,8 +174,8 @@ export function AppShell({
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 lg:h-screen lg:overflow-hidden bg-slate-50/20 dark:bg-zinc-950/10">
         {/* Sticky Dashboard Navbar */}
-        <header className="sticky top-0 z-40 h-20 border-b border-border/40 bg-background/70 backdrop-blur-xl flex items-center justify-between px-6 sm:px-8">
-          <div className="flex items-center gap-4">
+        <header className="sticky top-0 z-40 h-20 border-b border-border/40 bg-background/70 backdrop-blur-xl flex items-center justify-between px-4 sm:px-8">
+          <div className="flex items-center gap-2.5 sm:gap-4">
             {/* Mobile Sidebar Trigger */}
             <Button
               variant="ghost"
@@ -188,17 +188,17 @@ export function AppShell({
             {/* Page Title Context */}
             <div className="block">
               <h1 className="text-[10px] sm:text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5 sm:gap-2">
-                <span className="text-muted-foreground/60 truncate max-w-[80px] sm:max-w-none">PU Attendance</span>
-                <ChevronRight className="size-2.5 sm:size-3 text-muted-foreground/40 shrink-0" />
+                <span className="text-muted-foreground/60 truncate max-w-[80px] sm:max-w-none hidden sm:inline">PU Attendance</span>
+                <ChevronRight className="size-2.5 sm:size-3 text-muted-foreground/40 shrink-0 hidden sm:block" />
                 <span className="text-primary truncate">{user.role} Portal</span>
               </h1>
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/5 px-3 py-1 text-[0.68rem] font-bold text-emerald-600 dark:text-emerald-400 shadow-sm shadow-emerald-500/[0.02]">
+          <div className="flex items-center gap-2 sm:gap-4">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/5 px-2 py-1 sm:px-3 text-[0.68rem] font-bold text-emerald-600 dark:text-emerald-400 shadow-sm shadow-emerald-500/[0.02]">
               <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              Secure Session
+              <span className="hidden sm:inline">Secure Session</span>
             </span>
             <ThemeToggle className="scale-90" />
           </div>

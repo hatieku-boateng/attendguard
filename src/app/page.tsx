@@ -491,58 +491,86 @@ export default function Home() {
 
 
       {/* Footer */}
-      <footer className="border-t border-border/50 bg-zinc-50/50 dark:bg-zinc-950/20 pt-16 pb-8 relative z-10 transition-colors">
-        <div className="mx-auto max-w-[85rem] px-6 sm:px-8 grid gap-8 sm:grid-cols-2 md:grid-cols-[1.5fr_1fr_1fr_1fr] pb-12">
+      <footer className="border-t border-border/50 bg-zinc-50/50 dark:bg-zinc-950/20 pt-16 pb-8 relative z-10 transition-colors overflow-hidden">
+        {/* Decorative ambient light inside footer */}
+        <div className="absolute bottom-0 right-1/4 w-72 h-72 rounded-full bg-primary/3 blur-[80px] dark:bg-primary/2 pointer-events-none" />
+
+        <div className="mx-auto max-w-[85rem] px-6 sm:px-8 grid gap-10 grid-cols-2 md:grid-cols-[1.5fr_1fr_1fr_1fr] pb-12 relative z-10">
           
           {/* Logo column */}
-          <div className="space-y-4 text-left">
+          <div className="space-y-4 text-left col-span-2 md:col-span-1">
             <BrandMark />
-            <p className="text-xs text-muted-foreground font-semibold leading-relaxed max-w-xs">
+            <p className="text-xs text-muted-foreground/85 font-medium leading-relaxed max-w-sm">
               Pentecost University Attendance is a secure geolocation verification platform designed to manage institutional registers, verify coordinate check-ins, and export immutable academic logs.
             </p>
           </div>
 
           {/* Features Column */}
-          <div className="space-y-3.5 text-left">
-            <h5 className="text-[10px] font-extrabold uppercase tracking-widest text-foreground">Features</h5>
-            <ul className="space-y-2.5 text-xs font-semibold text-muted-foreground">
-              <li className="hover:text-primary transition-colors cursor-default">Geofenced Perimeters</li>
-              <li className="hover:text-primary transition-colors cursor-default">Device Security Keys</li>
-              <li className="hover:text-primary transition-colors cursor-default">Lecturer Console</li>
-              <li className="hover:text-primary transition-colors cursor-default">CSV Audit Trail</li>
+          <div className="space-y-4 text-left col-span-1">
+            <h5 className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-foreground/80">Features</h5>
+            <ul className="space-y-3 text-xs font-semibold text-muted-foreground">
+              <li className="flex items-center gap-2 hover:text-primary transition-colors cursor-default">
+                <Radar className="size-3.5 text-primary/70 shrink-0" />
+                <span>Geofenced Perimeters</span>
+              </li>
+              <li className="flex items-center gap-2 hover:text-primary transition-colors cursor-default">
+                <KeyRound className="size-3.5 text-primary/70 shrink-0" />
+                <span>Device Security Keys</span>
+              </li>
+              <li className="flex items-center gap-2 hover:text-primary transition-colors cursor-default">
+                <UserCheck className="size-3.5 text-primary/70 shrink-0" />
+                <span>Lecturer Console</span>
+              </li>
+              <li className="flex items-center gap-2 hover:text-primary transition-colors cursor-default">
+                <FileSpreadsheet className="size-3.5 text-primary/70 shrink-0" />
+                <span>CSV Audit Trail</span>
+              </li>
             </ul>
           </div>
 
           {/* Academic Portal Column */}
-          <div className="space-y-3.5 text-left">
-            <h5 className="text-[10px] font-extrabold uppercase tracking-widest text-foreground">Academic Portal</h5>
-            <ul className="space-y-2.5 text-xs font-semibold text-muted-foreground">
+          <div className="space-y-4 text-left col-span-1">
+            <h5 className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-foreground/80">Academic Portal</h5>
+            <ul className="space-y-3 text-xs font-semibold text-muted-foreground">
               <li>
-                <Link href="/login" className="hover:text-primary transition-colors">
-                  Sign In to Console
+                <Link href="/login" className="group flex items-center gap-2 hover:text-primary transition-colors">
+                  <Lock className="size-3.5 text-primary/70 shrink-0 group-hover:text-primary transition-colors" />
+                  <span>Sign In to Console</span>
+                  <ArrowRight className="size-3 opacity-0 -translate-x-1.5 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-200 shrink-0" />
                 </Link>
               </li>
               <li>
-                <Link href="/activate-account" className="hover:text-primary transition-colors">
-                  Activate Student
+                <Link href="/activate-account" className="group flex items-center gap-2 hover:text-primary transition-colors">
+                  <Fingerprint className="size-3.5 text-primary/70 shrink-0 group-hover:text-primary transition-colors" />
+                  <span>Activate Student</span>
+                  <ArrowRight className="size-3 opacity-0 -translate-x-1.5 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-200 shrink-0" />
                 </Link>
               </li>
             </ul>
           </div>
 
           {/* Contact Column */}
-          <div className="space-y-3.5 text-left">
-            <h5 className="text-[10px] font-extrabold uppercase tracking-widest text-foreground">Contact</h5>
-            <ul className="space-y-2.5 text-xs font-semibold text-muted-foreground">
-              <li className="hover:text-primary transition-colors cursor-default">support@pentvars.edu.gh</li>
-              <li className="hover:text-primary transition-colors cursor-default">PU Institution</li>
-              <li className="hover:text-primary transition-colors cursor-default">Verification Operations</li>
+          <div className="space-y-4 text-left col-span-2 sm:col-span-1">
+            <h5 className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-foreground/80">Contact</h5>
+            <ul className="space-y-3 text-xs font-semibold text-muted-foreground">
+              <li className="flex items-center gap-2 hover:text-primary transition-colors cursor-default">
+                <MailOpen className="size-3.5 text-primary/70 shrink-0" />
+                <span>support@pentvars.edu.gh</span>
+              </li>
+              <li className="flex items-center gap-2 hover:text-primary transition-colors cursor-default">
+                <MapPin className="size-3.5 text-primary/70 shrink-0" />
+                <span>PU Institution</span>
+              </li>
+              <li className="flex items-center gap-2 hover:text-primary transition-colors cursor-default">
+                <ShieldCheck className="size-3.5 text-primary/70 shrink-0" />
+                <span>Verification Operations</span>
+              </li>
             </ul>
           </div>
         </div>
 
         {/* Footer Bottom copyright */}
-        <div className="mx-auto max-w-[85rem] px-6 sm:px-8 pt-8 border-t border-border/40 flex flex-col sm:flex-row gap-4 justify-between items-center text-[10px] font-black uppercase tracking-widest text-muted-foreground leading-relaxed sm:leading-none text-center sm:text-left">
+        <div className="mx-auto max-w-[85rem] px-6 sm:px-8 pt-8 border-t border-border/40 flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground leading-relaxed sm:leading-none relative z-10">
           <span>© 2026 Pentecost University. All rights reserved.</span>
           <div className="flex gap-6">
             <Link href="#" className="hover:text-primary transition-colors">Privacy Policy</Link>

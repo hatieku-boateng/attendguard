@@ -5,7 +5,7 @@ import { Pencil, Plus, Search } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -19,6 +19,25 @@ import { Label } from "@/components/ui/label";
 import { getDb } from "@/db/client";
 import { attendanceSessions, courses } from "@/db/schema";
 import { requireRole } from "@/lib/auth";
+import { FormModal } from "@/components/form-modal";
+import { LocationFields } from "@/components/location-fields";
+import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  createAttendanceSessionAction,
+  updateAttendanceSessionAction,
+  deleteAttendanceSessionAction,
+} from "@/app/lecturer/sessions/actions";
+
+function toDateTimeLocalValue(date: Date) {
+  return date.toISOString().slice(0, 16);
+}
 
 const statusOptions = ["draft", "open", "closed", "cancelled"] as const;
 
@@ -46,12 +65,59 @@ export default async function LecturerSessionsPage({
     from?: string;
     to?: string;
     sort?: string;
+    modal?: string;
+    id?: string;
+    error?: string;
   }>;
 }) {
   const params = await searchParams;
   const user = await requireRole("lecturer");
   const db = getDb();
   const lecturerId = user.lecturerProfileId ?? "";
+
+  let editSession = null;
+  if (params.modal === "edit" && params.id) {
+    const [foundSession] = await db
+      .select({
+        id: attendanceSessions.id,
+        title: attendanceSessions.sessionTitle,
+        status: attendanceSessions.status,
+        opensAt: attendanceSessions.opensAt,
+        normalClosesAt: attendanceSessions.normalClosesAt,
+        finalClosesAt: attendanceSessions.finalClosesAt,
+        radius: attendanceSessions.geofenceRadiusMeters,
+        maxAccuracy: attendanceSessions.maxAcceptedAccuracyMeters,
+        lecturerLatitude: attendanceSessions.lecturerLatitude,
+        lecturerLongitude: attendanceSessions.lecturerLongitude,
+        lecturerLocationAccuracy: attendanceSessions.lecturerLocationAccuracy,
+        courseId: attendanceSessions.courseId,
+        courseCode: courses.courseCode,
+        courseTitle: courses.courseTitle,
+      })
+      .from(attendanceSessions)
+      .innerJoin(courses, eq(attendanceSessions.courseId, courses.id))
+      .where(
+        and(
+          eq(attendanceSessions.id, params.id),
+          eq(attendanceSessions.lecturerId, lecturerId),
+        ),
+      )
+      .limit(1);
+
+    if (foundSession) {
+      editSession = foundSession;
+    }
+  }
+
+  const errorMessages: Record<string, string> = {
+    time: "Opening time must be before normal close, and normal close must be before final close.",
+    "lecturer-accuracy":
+      "The captured lecturer location accuracy is above the selected limit. Recapture closer to the class location or increase the limit.",
+    location: "Enter a valid latitude and longitude for the lecture location.",
+    missing:
+      "Complete all required session fields and keep or accept the captured session location.",
+  };
+
   const query = cleanParam(params.q);
   const status = cleanParam(params.status);
   const courseId = cleanParam(params.courseId);
@@ -131,7 +197,7 @@ export default async function LecturerSessionsPage({
         description="Open sessions, generate passkeys, monitor submissions, and close attendance windows."
         actions={
           <Button asChild>
-            <Link href="/lecturer/sessions/new">
+            <Link href="/lecturer/sessions?modal=new">
               <Plus className="size-4" />
               New session
             </Link>
@@ -252,7 +318,7 @@ export default async function LecturerSessionsPage({
                     <TableCell className="text-right">
                       <Button asChild size="sm" variant="outline">
                         <Link
-                          href={`/lecturer/courses/${session.courseId}/sessions/${session.id}/edit`}
+                          href={`/lecturer/sessions?modal=edit&id=${session.id}`}
                         >
                           <Pencil className="size-4" />
                           Edit
@@ -301,7 +367,7 @@ export default async function LecturerSessionsPage({
 
                 <div className="flex justify-end pt-1">
                   <Button asChild size="sm" variant="outline" className="h-8.5 rounded-lg text-xs font-bold shadow-sm w-full">
-                    <Link href={`/lecturer/courses/${session.courseId}/sessions/${session.id}/edit`} className="flex items-center justify-center gap-1.5">
+                    <Link href={`/lecturer/sessions?modal=edit&id=${session.id}`} className="flex items-center justify-center gap-1.5">
                       <Pencil className="size-3.5" />
                       <span>Edit Session</span>
                     </Link>
@@ -317,6 +383,232 @@ export default async function LecturerSessionsPage({
           </div>
         </CardContent>
       </Card>
+
+      {/* New Session Modal */}
+      <FormModal
+        isOpen={params.modal === "new"}
+        title="New attendance session"
+        description="Capture the lecture location, set the attendance radius, and define normal and final closing times."
+        className="sm:max-w-2xl"
+      >
+        <form action={createAttendanceSessionAction} className="grid gap-4 sm:grid-cols-2 pt-2">
+          {params.error && errorMessages[params.error] ? (
+            <p className="sm:col-span-2 rounded-xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-xs font-semibold text-destructive leading-relaxed">
+              {errorMessages[params.error]}
+            </p>
+          ) : null}
+          <div className="space-y-1.5 sm:col-span-2">
+            <Label htmlFor="courseId" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Course</Label>
+            <Select name="courseId" required defaultValue={params.courseId}>
+              <SelectTrigger id="courseId">
+                <SelectValue placeholder="Select course" />
+              </SelectTrigger>
+              <SelectContent>
+                {lecturerCourses.map((course) => (
+                  <SelectItem key={course.id} value={course.id}>
+                    {course.code}: {course.title}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5 sm:col-span-2">
+            <Label htmlFor="sessionTitle" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Session title</Label>
+            <Input id="sessionTitle" name="sessionTitle" required placeholder="e.g. Week 1 Lecture" />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="geofenceRadiusMeters" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Attendance radius</Label>
+            <Input
+              defaultValue={30}
+              id="geofenceRadiusMeters"
+              min={10}
+              name="geofenceRadiusMeters"
+              required
+              type="number"
+            />
+            <p className="text-[10px] leading-relaxed text-muted-foreground">
+              Students outside this distance from the captured lecture location are flagged or rejected.
+            </p>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="maxAcceptedAccuracyMeters" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">GPS accuracy limit</Label>
+            <Input
+              defaultValue={50}
+              id="maxAcceptedAccuracyMeters"
+              min={10}
+              name="maxAcceptedAccuracyMeters"
+              required
+              type="number"
+            />
+            <p className="text-[10px] leading-relaxed text-muted-foreground">
+              The lecturer and students must have GPS accuracy within this range in metres.
+            </p>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="opensAt" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Opens at</Label>
+            <Input id="opensAt" name="opensAt" required type="datetime-local" />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="normalClosesAt" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Normal closes at</Label>
+            <Input id="normalClosesAt" name="normalClosesAt" required type="datetime-local" />
+          </div>
+          <div className="space-y-1.5 sm:col-span-2">
+            <Label htmlFor="finalClosesAt" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Final closes at</Label>
+            <Input id="finalClosesAt" name="finalClosesAt" required type="datetime-local" />
+          </div>
+          <div className="space-y-1.5 sm:col-span-2">
+            <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Lecturer location</Label>
+            <LocationFields
+              accuracyName="lecturerLocationAccuracy"
+              allowManualEntry
+              latitudeName="lecturerLatitude"
+              longitudeName="lecturerLongitude"
+              maxAccuracyInputId="maxAcceptedAccuracyMeters"
+              requireAcceptance
+            />
+          </div>
+          <div className="sm:col-span-2 pt-2">
+            <Button className="w-full py-5 rounded-xl font-bold shadow-md shadow-primary/20 hover:shadow-lg text-sm" type="submit">
+              Open attendance session
+            </Button>
+          </div>
+        </form>
+      </FormModal>
+
+      {/* Edit Session Modal */}
+      {editSession && (
+        <FormModal
+          isOpen={params.modal === "edit" && !!editSession}
+          title="Edit attendance session"
+          description={`${editSession.courseCode}: ${editSession.courseTitle}`}
+          className="sm:max-w-4xl"
+        >
+          <div className="grid gap-6 pt-2 lg:grid-cols-[1fr_320px]">
+            <Card className="border-0 shadow-none bg-transparent">
+              <CardContent className="p-0">
+                <form action={updateAttendanceSessionAction} className="grid gap-4 sm:grid-cols-2">
+                  <input name="sessionId" type="hidden" value={editSession.id} />
+                  {params.error && errorMessages[params.error] ? (
+                    <p className="sm:col-span-2 rounded-xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-xs font-semibold text-destructive leading-relaxed">
+                      {errorMessages[params.error]}
+                    </p>
+                  ) : null}
+                  <div className="space-y-1.5 sm:col-span-2">
+                    <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Course</Label>
+                    <div className="rounded-lg border bg-muted/50 px-3 py-2 text-sm text-muted-foreground font-semibold">
+                      {editSession.courseCode}: {editSession.courseTitle}
+                    </div>
+                    <p className="text-[10px] text-muted-foreground/60 font-medium leading-relaxed">
+                      Course ownership is fixed for an existing session.
+                    </p>
+                  </div>
+                  <div className="space-y-1.5 sm:col-span-2">
+                    <Label htmlFor="sessionTitle" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Session title</Label>
+                    <Input
+                      defaultValue={editSession.title}
+                      id="sessionTitle"
+                      name="sessionTitle"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="geofenceRadiusMeters" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Attendance radius</Label>
+                    <Input
+                      defaultValue={editSession.radius}
+                      id="geofenceRadiusMeters"
+                      min={10}
+                      name="geofenceRadiusMeters"
+                      required
+                      type="number"
+                    />
+                    <p className="text-[10px] leading-relaxed text-muted-foreground">
+                      Students outside this distance from the captured lecture location are flagged or rejected.
+                    </p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="maxAcceptedAccuracyMeters" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">GPS accuracy limit</Label>
+                    <Input
+                      defaultValue={editSession.maxAccuracy}
+                      id="maxAcceptedAccuracyMeters"
+                      min={10}
+                      name="maxAcceptedAccuracyMeters"
+                      required
+                      type="number"
+                    />
+                    <p className="text-[10px] leading-relaxed text-muted-foreground">
+                      The lecturer and students must have GPS accuracy within this range in metres.
+                    </p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="opensAt" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Opens at</Label>
+                    <Input
+                      defaultValue={toDateTimeLocalValue(editSession.opensAt)}
+                      id="opensAt"
+                      name="opensAt"
+                      required
+                      type="datetime-local"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="normalClosesAt" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Normal closes at</Label>
+                    <Input
+                      defaultValue={toDateTimeLocalValue(editSession.normalClosesAt)}
+                      id="normalClosesAt"
+                      name="normalClosesAt"
+                      required
+                      type="datetime-local"
+                    />
+                  </div>
+                  <div className="space-y-1.5 sm:col-span-2">
+                    <Label htmlFor="finalClosesAt" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Final closes at</Label>
+                    <Input
+                      defaultValue={toDateTimeLocalValue(editSession.finalClosesAt)}
+                      id="finalClosesAt"
+                      name="finalClosesAt"
+                      required
+                      type="datetime-local"
+                    />
+                  </div>
+                  <div className="space-y-1.5 sm:col-span-2">
+                    <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Lecturer location</Label>
+                    <LocationFields
+                      accuracyName="lecturerLocationAccuracy"
+                      allowManualEntry
+                      initialAccuracy={editSession.lecturerLocationAccuracy}
+                      initialLatitude={editSession.lecturerLatitude}
+                      initialLongitude={editSession.lecturerLongitude}
+                      latitudeName="lecturerLatitude"
+                      longitudeName="lecturerLongitude"
+                      maxAccuracyInputId="maxAcceptedAccuracyMeters"
+                      requireAcceptance
+                    />
+                  </div>
+                  <div className="sm:col-span-2 pt-2">
+                    <Button className="w-full py-5 rounded-xl font-bold shadow-md shadow-primary/20 hover:shadow-lg text-sm" type="submit">Save session changes</Button>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
+
+            <Card className="border-destructive/20 bg-destructive/5 dark:bg-destructive/2 h-fit self-start">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-bold text-destructive">Delete session</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4 text-xs text-muted-foreground">
+                <p className="leading-relaxed">
+                  Deleting this session removes its passkeys, attendance records, and review attempts.
+                </p>
+                <form action={deleteAttendanceSessionAction}>
+                  <input name="sessionId" type="hidden" value={editSession.id} />
+                  <ConfirmSubmitButton message="Delete this attendance session? This will remove related passkeys, attendance records, and attempts." className="w-full bg-destructive text-destructive-foreground hover:bg-destructive/90 h-8.5 rounded-lg flex items-center justify-center gap-1.5 font-bold">
+                    Delete session
+                  </ConfirmSubmitButton>
+                </form>
+              </CardContent>
+            </Card>
+          </div>
+        </FormModal>
+      )}
     </>
   );
 }

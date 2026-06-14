@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { eq } from "drizzle-orm";
-import { Pencil, Plus } from "lucide-react";
+import { Pencil, Plus, Trash2 } from "lucide-react";
 
 import { PageHeader } from "@/components/page-header";
 import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Table,
   TableBody,
@@ -14,13 +16,33 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { getDb } from "@/db/client";
-import { courses, lecturerProfiles, users } from "@/db/schema";
+import { courses, lecturerProfiles, users, courseCatalog } from "@/db/schema";
 import { requireRole } from "@/lib/auth";
+import { FormModal } from "@/components/form-modal";
+import {
+  createAssignedCourseAction,
+  updateAssignedCourseAction,
+  deleteAssignedCourseAction,
+} from "@/app/admin/actions";
 
-export default async function AdminCoursesPage() {
+export default async function AdminCoursesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ modal?: string; id?: string; error?: string }>;
+}) {
   await requireRole("administrator");
+  const params = await searchParams;
   const db = getDb();
+
   const rows = await db
     .select({
       id: courses.id,
@@ -37,6 +59,31 @@ export default async function AdminCoursesPage() {
     .innerJoin(lecturerProfiles, eq(courses.lecturerId, lecturerProfiles.id))
     .innerJoin(users, eq(lecturerProfiles.userId, users.id));
 
+  // Fetch lists for modals
+  const lecturers = await db
+    .select({
+      id: lecturerProfiles.id,
+      name: users.name,
+      email: users.email,
+    })
+    .from(lecturerProfiles)
+    .innerJoin(users, eq(lecturerProfiles.userId, users.id));
+
+  const catalogCourses = await db
+    .select()
+    .from(courseCatalog)
+    .where(eq(courseCatalog.status, "active"));
+
+  // Fetch course for edit modal
+  let editCourse = null;
+  if (params.modal === "edit" && params.id) {
+    [editCourse] = await db
+      .select()
+      .from(courses)
+      .where(eq(courses.id, params.id))
+      .limit(1);
+  }
+
   return (
     <>
       <PageHeader
@@ -44,7 +91,7 @@ export default async function AdminCoursesPage() {
         description="Attach registered course catalog templates to verified lecturers to initiate attendance geofencing perimeters."
         actions={
           <Button asChild className="rounded-xl shadow-sm">
-            <Link href="/admin/courses/new" className="flex items-center gap-1.5">
+            <Link href="/admin/courses?modal=new" className="flex items-center gap-1.5">
               <Plus className="size-4.5" />
               <span>Assign Course Offering</span>
             </Link>
@@ -88,7 +135,7 @@ export default async function AdminCoursesPage() {
                     </TableCell>
                     <TableCell className="px-6 py-4.5 text-right">
                       <Button asChild size="sm" variant="outline" className="h-8.5 rounded-lg text-xs font-bold shadow-sm">
-                        <Link href={`/admin/courses/${course.id}/edit`} className="flex items-center gap-1.5">
+                        <Link href={`/admin/courses?modal=edit&id=${course.id}`} className="flex items-center gap-1.5">
                           <Pencil className="size-3.5" />
                           <span>Manage</span>
                         </Link>
@@ -148,7 +195,7 @@ export default async function AdminCoursesPage() {
 
                 <div className="flex justify-end pt-1.5">
                   <Button asChild size="sm" variant="outline" className="h-8.5 rounded-lg text-xs font-bold shadow-sm w-full">
-                    <Link href={`/admin/courses/${course.id}/edit`} className="flex items-center justify-center gap-1.5">
+                    <Link href={`/admin/courses?modal=edit&id=${course.id}`} className="flex items-center justify-center gap-1.5">
                       <Pencil className="size-3.5" />
                       <span>Manage Offering</span>
                     </Link>
@@ -167,6 +214,166 @@ export default async function AdminCoursesPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Assign Course Offering Modal */}
+      <FormModal
+        isOpen={params.modal === "new"}
+        title="Assign course"
+        description="Select a catalogue course and assign it to a lecturer for a semester or class group."
+        className="sm:max-w-xl"
+      >
+        <form action={createAssignedCourseAction} className="grid gap-4 sm:grid-cols-2 pt-2">
+          {params.error ? (
+            <p className="rounded-xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-xs font-semibold text-destructive leading-relaxed sm:col-span-2">
+              Complete all required fields and select a valid course and lecturer.
+            </p>
+          ) : null}
+          <div className="space-y-1.5 sm:col-span-2">
+            <Label htmlFor="catalogCourseId" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Course</Label>
+            <Select name="catalogCourseId" required>
+              <SelectTrigger id="catalogCourseId">
+                <SelectValue placeholder="Select course" />
+              </SelectTrigger>
+              <SelectContent>
+                {catalogCourses.map((course) => (
+                  <SelectItem key={course.id} value={course.id}>
+                    {course.courseCode} - {course.courseTitle}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5 sm:col-span-2">
+            <Label htmlFor="lecturerId" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Assigned lecturer</Label>
+            <Select name="lecturerId" required>
+              <SelectTrigger id="lecturerId">
+                <SelectValue placeholder="Select lecturer" />
+              </SelectTrigger>
+              <SelectContent>
+                {lecturers.map((lecturer) => (
+                  <SelectItem key={lecturer.id} value={lecturer.id}>
+                    {lecturer.name} ({lecturer.email})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="semester" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Semester</Label>
+            <Input id="semester" name="semester" placeholder="Semester 1" required />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="academicYear" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Academic year</Label>
+            <Input id="academicYear" name="academicYear" placeholder="2026/2027" required />
+          </div>
+          <div className="space-y-1.5 sm:col-span-2">
+            <Label htmlFor="classGroup" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Class group</Label>
+            <Input id="classGroup" name="classGroup" placeholder="main" />
+          </div>
+          <div className="sm:col-span-2 pt-2">
+            <Button className="w-full py-5 rounded-xl font-bold shadow-md shadow-primary/20 hover:shadow-lg text-sm" type="submit">
+              Assign course
+            </Button>
+          </div>
+        </form>
+      </FormModal>
+
+      {/* Edit Course Offering Modal */}
+      {editCourse && (
+        <FormModal
+          isOpen={params.modal === "edit" && !!editCourse}
+          title="Manage assignment"
+          description={`${editCourse.courseCode}: ${editCourse.courseTitle}`}
+          className="sm:max-w-2xl"
+        >
+          <div className="grid gap-6 pt-2 md:grid-cols-[1fr_200px]">
+            <form action={updateAssignedCourseAction} className="grid gap-4 sm:grid-cols-2">
+              <input name="courseId" type="hidden" value={editCourse.id} />
+              {params.error ? (
+                <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive sm:col-span-2">
+                  Select a lecturer and complete the assignment details.
+                </p>
+              ) : null}
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label htmlFor="lecturerId">Assigned lecturer</Label>
+                <Select defaultValue={editCourse.lecturerId} name="lecturerId" required>
+                  <SelectTrigger id="lecturerId">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {lecturers.map((lecturer) => (
+                      <SelectItem key={lecturer.id} value={lecturer.id}>
+                        {lecturer.name} ({lecturer.email})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="semester">Semester</Label>
+                <Input
+                  defaultValue={editCourse.semester}
+                  id="semester"
+                  name="semester"
+                  required
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="academicYear">Academic year</Label>
+                <Input
+                  defaultValue={editCourse.academicYear}
+                  id="academicYear"
+                  name="academicYear"
+                  required
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="classGroup">Class group</Label>
+                <Input
+                  defaultValue={editCourse.classGroup}
+                  id="classGroup"
+                  name="classGroup"
+                  required
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="status">Status</Label>
+                <Select defaultValue={editCourse.status} name="status">
+                  <SelectTrigger id="status">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="draft">Draft</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="archived">Archived</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="sm:col-span-2 pt-2">
+                <Button className="w-full" type="submit">
+                  Save assignment
+                </Button>
+              </div>
+            </form>
+
+            <div className="rounded-xl border border-border bg-muted/40 p-4 space-y-4 text-xs text-muted-foreground flex flex-col justify-between h-fit self-start">
+              <div>
+                <h4 className="font-extrabold text-foreground uppercase tracking-wider mb-2">Remove Assignment</h4>
+                <p className="leading-relaxed">
+                  Removing this assignment deletes the lecturer-course offering, including related enrolments, sessions, and resources.
+                </p>
+              </div>
+              <form action={deleteAssignedCourseAction}>
+                <input name="courseId" type="hidden" value={editCourse.id} />
+                <ConfirmSubmitButton message="Delete this course assignment? This will remove related enrolments, sessions, and resources." className="w-full bg-destructive text-destructive-foreground hover:bg-destructive/90 h-8.5 rounded-lg flex items-center justify-center gap-1.5 font-bold">
+                  <Trash2 className="size-3.5" />
+                  <span>Delete Assignment</span>
+                </ConfirmSubmitButton>
+              </form>
+            </div>
+          </div>
+        </FormModal>
+      )}
     </>
   );
 }

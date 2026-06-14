@@ -1,11 +1,14 @@
 import Link from "next/link";
 import { eq } from "drizzle-orm";
-import { Pencil, Plus, UserRound } from "lucide-react";
+import { Pencil, Plus, UserRound, Trash2 } from "lucide-react";
 
 import { PageHeader } from "@/components/page-header";
 import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import {
   Table,
   TableBody,
@@ -17,9 +20,20 @@ import {
 import { getDb } from "@/db/client";
 import { lecturerProfiles, users } from "@/db/schema";
 import { requireRole } from "@/lib/auth";
+import { FormModal } from "@/components/form-modal";
+import {
+  createLecturerAction,
+  updateLecturerAction,
+  deleteLecturerAction,
+} from "@/app/admin/actions";
 
-export default async function AdminLecturersPage() {
+export default async function AdminLecturersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ modal?: string; id?: string; error?: string }>;
+}) {
   await requireRole("administrator");
+  const params = await searchParams;
   const db = getDb();
   const lecturers = await db
     .select({
@@ -34,6 +48,32 @@ export default async function AdminLecturersPage() {
     .from(lecturerProfiles)
     .innerJoin(users, eq(lecturerProfiles.userId, users.id));
 
+  // Fetch lecturer for edit modal
+  let editLecturer = null;
+  if (params.modal === "edit" && params.id) {
+    [editLecturer] = await db
+      .select({
+        id: lecturerProfiles.id,
+        name: users.name,
+        email: users.email,
+        avatarUrl: users.avatarUrl,
+        staffId: lecturerProfiles.staffId,
+        department: lecturerProfiles.department,
+        status: users.status,
+      })
+      .from(lecturerProfiles)
+      .innerJoin(users, eq(lecturerProfiles.userId, users.id))
+      .where(eq(lecturerProfiles.id, params.id))
+      .limit(1);
+  }
+
+  const errorMessages: Record<string, string> = {
+    invalid: "Enter a name, email, and password of at least 8 characters.",
+    exists: "A user already exists with that email.",
+    image: "Upload a valid image under 750 KB.",
+    assigned: "Remove this lecturer's course assignments before deleting the lecturer.",
+  };
+
   return (
     <>
       <PageHeader
@@ -41,7 +81,7 @@ export default async function AdminLecturersPage() {
         description="Provision, configure, and monitor verified instructor workspaces and staff assignments."
         actions={
           <Button asChild className="rounded-xl shadow-sm">
-            <Link href="/admin/lecturers/new" className="flex items-center gap-1.5">
+            <Link href="/admin/lecturers?modal=new" className="flex items-center gap-1.5">
               <Plus className="size-4.5" />
               <span>Register Lecturer</span>
             </Link>
@@ -92,7 +132,7 @@ export default async function AdminLecturersPage() {
                     </TableCell>
                     <TableCell className="px-6 py-4.5 text-right">
                       <Button asChild size="sm" variant="outline" className="h-8.5 rounded-lg text-xs font-bold shadow-sm">
-                        <Link href={`/admin/lecturers/${lecturer.id}/edit`} className="flex items-center gap-1.5">
+                        <Link href={`/admin/lecturers?modal=edit&id=${lecturer.id}`} className="flex items-center gap-1.5">
                           <Pencil className="size-3.5" />
                           <span>Edit</span>
                         </Link>
@@ -155,7 +195,7 @@ export default async function AdminLecturersPage() {
 
                 <div className="flex justify-end pt-1.5">
                   <Button asChild size="sm" variant="outline" className="h-8.5 rounded-lg text-xs font-bold shadow-sm w-full">
-                    <Link href={`/admin/lecturers/${lecturer.id}/edit`} className="flex items-center justify-center gap-1.5">
+                    <Link href={`/admin/lecturers?modal=edit&id=${lecturer.id}`} className="flex items-center justify-center gap-1.5">
                       <Pencil className="size-3.5" />
                       <span>Edit Account</span>
                     </Link>
@@ -174,6 +214,152 @@ export default async function AdminLecturersPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Register Lecturer Modal */}
+      <FormModal
+        isOpen={params.modal === "new"}
+        title="New lecturer"
+        description="Create a teacher account. The lecturer can later enrol students and manage assigned attendance sessions."
+        className="sm:max-w-xl"
+      >
+        <form
+          action={createLecturerAction}
+          className="grid gap-4 sm:grid-cols-2 pt-2"
+          encType="multipart/form-data"
+        >
+          {params.error && errorMessages[params.error] ? (
+            <p className="rounded-xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-xs font-semibold text-destructive leading-relaxed sm:col-span-2">
+              {errorMessages[params.error]}
+            </p>
+          ) : null}
+          <div className="space-y-1.5 sm:col-span-2">
+            <Label htmlFor="name" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Full name</Label>
+            <Input id="name" name="name" required placeholder="e.g. Dr. Jane Doe" />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="email" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Email address</Label>
+            <Input id="email" name="email" required type="email" placeholder="jane.doe@university.edu" />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="password" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Temporary password</Label>
+            <Input id="password" name="password" required type="password" placeholder="••••••••" />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="staffId" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Staff ID</Label>
+            <Input id="staffId" name="staffId" placeholder="L-100" />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="department" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Department</Label>
+            <Input id="department" name="department" placeholder="Computer Science" />
+          </div>
+          <div className="space-y-1.5 sm:col-span-2">
+            <div className="flex justify-between items-center">
+              <Label htmlFor="avatar" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Profile picture</Label>
+              <span className="text-[0.68rem] text-muted-foreground/60 font-medium">JPG/PNG/GIF up to 750KB</span>
+            </div>
+            <Input accept="image/*" id="avatar" name="avatar" type="file" className="file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 cursor-pointer pt-1.5" />
+          </div>
+          <div className="sm:col-span-2 pt-2">
+            <Button className="w-full py-5 rounded-xl font-bold shadow-md shadow-primary/20 hover:shadow-lg text-sm" type="submit">
+              Create lecturer account
+            </Button>
+          </div>
+        </form>
+      </FormModal>
+
+      {/* Edit Lecturer Modal */}
+      {editLecturer && (
+        <FormModal
+          isOpen={params.modal === "edit" && !!editLecturer}
+          title="Edit lecturer"
+          description="Update lecturer details, picture, and administrative profile data."
+          className="sm:max-w-2xl"
+        >
+          <div className="grid gap-6 pt-2 md:grid-cols-[1fr_200px]">
+            <form
+              action={updateLecturerAction}
+              className="grid gap-4 sm:grid-cols-2"
+              encType="multipart/form-data"
+            >
+              <input name="lecturerId" type="hidden" value={editLecturer.id} />
+              {params.error && errorMessages[params.error] ? (
+                <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive sm:col-span-2">
+                  {errorMessages[params.error]}
+                </p>
+              ) : null}
+              <div className="flex items-center gap-4 sm:col-span-2">
+                <span className="flex size-16 items-center justify-center rounded-lg bg-muted shrink-0">
+                  {editLecturer.avatarUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      alt=""
+                      className="size-16 rounded-lg object-cover"
+                      src={editLecturer.avatarUrl}
+                    />
+                  ) : (
+                    <UserRound className="size-6 text-muted-foreground" />
+                  )}
+                </span>
+                <div className="space-y-1 text-sm text-muted-foreground min-w-0">
+                  <p className="font-semibold text-foreground truncate">{editLecturer.name}</p>
+                  <p className="truncate">{editLecturer.email}</p>
+                </div>
+              </div>
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label htmlFor="name">Full name</Label>
+                <Input defaultValue={editLecturer.name} id="name" name="name" required />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  defaultValue={editLecturer.email}
+                  id="email"
+                  name="email"
+                  required
+                  type="email"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="staffId">Staff ID</Label>
+                <Input defaultValue={editLecturer.staffId ?? ""} id="staffId" name="staffId" />
+              </div>
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label htmlFor="department">Department</Label>
+                <Input
+                  defaultValue={editLecturer.department ?? ""}
+                  id="department"
+                  name="department"
+                />
+              </div>
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label htmlFor="avatar">Replace picture</Label>
+                <Input accept="image/*" id="avatar" name="avatar" type="file" />
+              </div>
+              <div className="sm:col-span-2 pt-2">
+                <Button className="w-full" type="submit">
+                  Save lecturer
+                </Button>
+              </div>
+            </form>
+
+            <div className="rounded-xl border border-border bg-muted/40 p-4 space-y-4 text-xs text-muted-foreground flex flex-col justify-between h-fit self-start">
+              <div>
+                <h4 className="font-extrabold text-foreground uppercase tracking-wider mb-2">Delete Lecturer</h4>
+                <p className="leading-relaxed">
+                  Lecturer accounts can be deleted after their assigned courses have been removed or reassigned.
+                </p>
+              </div>
+              <form action={deleteLecturerAction}>
+                <input name="lecturerId" type="hidden" value={editLecturer.id} />
+                <ConfirmSubmitButton message="Delete this lecturer account? This cannot be undone." className="w-full bg-destructive text-destructive-foreground hover:bg-destructive/90 h-8.5 rounded-lg flex items-center justify-center gap-1.5 font-bold">
+                  <Trash2 className="size-3.5" />
+                  <span>Delete Lecturer</span>
+                </ConfirmSubmitButton>
+              </form>
+            </div>
+          </div>
+        </FormModal>
+      )}
     </>
   );
 }

@@ -30,7 +30,7 @@ export function AuthFrame({
         <BrandMark />
         <nav className="flex items-center gap-4">
           <ThemeToggle />
-          <Button asChild variant="outline" className="rounded-full px-5 text-sm font-semibold h-8.5 border-border hover:bg-muted dark:hover:bg-zinc-850">
+          <Button asChild variant="outline" className="rounded-full px-5 text-sm font-semibold h-8.5 border-border hover:bg-muted dark:hover:bg-white/[0.06]">
             <Link href="/" className="inline-flex items-center gap-1.5">
               <ArrowLeft className="size-3.5" />
               Return Home

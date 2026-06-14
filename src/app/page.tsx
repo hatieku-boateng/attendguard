@@ -75,8 +75,8 @@ export default function Home() {
         <BrandMark />
         <nav className="flex items-center gap-4">
           <ThemeToggle />
-          <div className="flex items-center gap-2 rounded-full border border-white/60 bg-white/70 p-1.5 shadow-md shadow-slate-950/[0.02] backdrop-blur-xl dark:bg-zinc-900/60 dark:border-zinc-800/60 transition-colors">
-            <Button asChild variant="ghost" className="rounded-full px-5 text-sm font-semibold h-8.5 hover:bg-muted dark:hover:bg-zinc-850">
+          <div className="flex items-center gap-2 rounded-full border border-white/60 bg-white/70 p-1.5 shadow-md shadow-slate-950/[0.02] backdrop-blur-xl dark:bg-slate-950/40 dark:border-white/[0.08] transition-colors">
+            <Button asChild variant="ghost" className="rounded-full px-5 text-sm font-semibold h-8.5 hover:bg-muted dark:hover:bg-white/[0.06]">
               <Link href="/activate-account">Activate Student</Link>
             </Button>
             <Button asChild className="rounded-full px-6 text-sm font-bold shadow-sm h-8.5 bg-primary text-primary-foreground hover:bg-primary/95 transition-all">
@@ -122,7 +122,7 @@ export default function Home() {
             </div>
 
             {/* Feature tick list */}
-            <div className="flex flex-wrap items-center gap-x-8 gap-y-3 text-xs font-extrabold text-muted-foreground pt-4 border-t border-border/50">
+            <div className="flex flex-wrap items-center gap-x-8 gap-y-3 text-xs font-extrabold text-muted-foreground pt-2">
               <div className="flex items-center gap-2">
                 <span className="size-1.5 rounded-full bg-emerald-500" />
                 Fast check-in
@@ -214,7 +214,7 @@ export default function Home() {
 
             {/* Floating Graphic Badge next to Phone */}
             <div className="absolute -right-4 top-24 animate-float-badge z-10 shrink-0">
-              <div className="relative flex size-24 items-center justify-center rounded-full border border-white/60 bg-white/90 shadow-xl dark:bg-zinc-900/95 dark:border-zinc-800/60 p-1">
+              <div className="relative flex size-24 items-center justify-center rounded-full border border-white/60 bg-white/90 shadow-xl dark:bg-slate-950/80 dark:border-white/[0.08] p-1">
                 <div className="absolute inset-2 rounded-full border border-dashed border-primary/20 animate-spin-slow" />
                 <div className="flex flex-col items-center justify-center text-center space-y-0.5">
                   <ShieldCheck className="size-6 text-primary" />
@@ -296,7 +296,7 @@ export default function Home() {
               return (
                 <div 
                   key={i} 
-                  className="glass-panel border-white/60 dark:border-zinc-800/40 relative overflow-hidden rounded-3xl p-6 shadow-sm hover:scale-[1.01] transition-transform duration-300 select-none"
+                  className="glass-panel relative overflow-hidden rounded-3xl p-6 shadow-sm hover:scale-[1.01] transition-transform duration-300 select-none"
                 >
                   <div className="space-y-4">
                     <span className={`flex size-11 items-center justify-center rounded-2xl border ${feature.color}`}>

@@ -16,12 +16,34 @@ import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
 const errorMessages: Record<string, string> = {
-  missing: "Enter both email and password.",
+  missing: "Choose a portal, then enter both email and password.",
   invalid: "The email or password is incorrect.",
   inactive: "This account is not active.",
   "already-active": "Your account is already active. Sign in to continue.",
   "too-many": "Too many attempts were detected. Please wait a few minutes and try again.",
+  "role-mismatch": "This account is not registered for the selected portal.",
 };
+
+const portalOptions = [
+  {
+    label: "Admin",
+    value: "administrator",
+    icon: ShieldCheck,
+    color: "has-checked:border-amber-500 has-checked:bg-amber-500/10",
+  },
+  {
+    label: "Lecturer",
+    value: "lecturer",
+    icon: BookOpen,
+    color: "has-checked:border-primary has-checked:bg-primary/10",
+  },
+  {
+    label: "Student",
+    value: "student",
+    icon: GraduationCap,
+    color: "has-checked:border-emerald-500 has-checked:bg-emerald-500/10",
+  },
+];
 
 export default async function LoginPage({
   searchParams,
@@ -76,6 +98,37 @@ export default async function LoginPage({
                 {message}
               </p>
             ) : null}
+
+            <div className="space-y-2">
+              <Label className="text-xs font-extrabold text-muted-foreground uppercase tracking-widest leading-none">
+                Login portal
+              </Label>
+              <div className="grid grid-cols-3 gap-2">
+                {portalOptions.map((portal) => {
+                  const Icon = portal.icon;
+
+                  return (
+                    <Label
+                      key={portal.value}
+                      className={cn(
+                        "flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border border-border/70 bg-background/50 px-2 py-3 text-center text-[10px] font-black uppercase tracking-wide text-muted-foreground shadow-sm transition-all hover:border-primary/50 hover:bg-primary/5 has-checked:text-foreground",
+                        portal.color,
+                      )}
+                    >
+                      <input
+                        className="sr-only"
+                        name="role"
+                        required
+                        type="radio"
+                        value={portal.value}
+                      />
+                      <Icon className="size-4" />
+                      {portal.label}
+                    </Label>
+                  );
+                })}
+              </div>
+            </div>
             
             <div className="space-y-1.5">
               <Label htmlFor="email" className="text-xs font-extrabold tracking-tight text-muted-foreground uppercase tracking-widest leading-none">Email address</Label>

@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 
 import {
   deleteCatalogCourseAction,
@@ -19,8 +19,9 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { getDb } from "@/db/client";
-import { courseCatalog } from "@/db/schema";
+import { academicYears, courseCatalog, departments, faculties } from "@/db/schema";
 import { requireRole } from "@/lib/auth";
+import { ensureDefaultFacultyDepartment, ensureGeneratedAcademicYears } from "@/lib/institution-data";
 
 export default async function EditCatalogCoursePage({
   params,
@@ -30,14 +31,17 @@ export default async function EditCatalogCoursePage({
   searchParams: Promise<{ error?: string }>;
 }) {
   await requireRole("administrator");
+  await ensureDefaultFacultyDepartment();
+  await ensureGeneratedAcademicYears();
   const { catalogCourseId } = await params;
   const query = await searchParams;
   const db = getDb();
-  const [course] = await db
-    .select()
-    .from(courseCatalog)
-    .where(eq(courseCatalog.id, catalogCourseId))
-    .limit(1);
+  const [[course], facultyRows, departmentRows, academicYearRows] = await Promise.all([
+    db.select().from(courseCatalog).where(eq(courseCatalog.id, catalogCourseId)).limit(1),
+    db.select().from(faculties).orderBy(asc(faculties.name)),
+    db.select().from(departments).orderBy(asc(departments.name)),
+    db.select().from(academicYears).orderBy(asc(academicYears.startYear)),
+  ]);
 
   if (!course) {
     return <PageHeader title="Catalogue course not found" />;
@@ -97,6 +101,55 @@ export default async function EditCatalogCoursePage({
                     <SelectItem value="archived">Archived</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="facultyId">Faculty</Label>
+                <select
+                  className="h-9 w-full rounded-lg border bg-card px-3 text-sm"
+                  defaultValue={course.facultyId ?? ""}
+                  id="facultyId"
+                  name="facultyId"
+                >
+                  <option value="">Select faculty</option>
+                  {facultyRows.map((faculty) => (
+                    <option key={faculty.id} value={faculty.id}>
+                      {faculty.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="departmentId">Department</Label>
+                <select
+                  className="h-9 w-full rounded-lg border bg-card px-3 text-sm"
+                  defaultValue={course.departmentId ?? ""}
+                  id="departmentId"
+                  name="departmentId"
+                >
+                  <option value="">Select department</option>
+                  {departmentRows.map((department) => (
+                    <option key={department.id} value={department.id}>
+                      {department.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="academicYearId">Academic year</Label>
+                <select
+                  className="h-9 w-full rounded-lg border bg-card px-3 text-sm"
+                  defaultValue={course.academicYearId ?? ""}
+                  id="academicYearId"
+                  name="academicYearId"
+                >
+                  <option value="">Select academic year</option>
+                  {academicYearRows.map((year) => (
+                    <option key={year.id} value={year.id}>
+                      {year.displayName}
+                      {year.isCurrent ? " (current)" : ""}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div className="space-y-2 sm:col-span-2">
                 <Label htmlFor="description">Description</Label>

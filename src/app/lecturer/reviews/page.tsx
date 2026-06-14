@@ -7,7 +7,6 @@ import {
 } from "@/app/lecturer/sessions/actions";
 import { PageHeader } from "@/components/page-header";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
-import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/status-badge";
 import {
   Card,

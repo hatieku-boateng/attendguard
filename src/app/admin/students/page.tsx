@@ -23,8 +23,17 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { getDb } from "@/db/client";
-import { courses, enrolments, studentProfiles, users } from "@/db/schema";
+import {
+  academicYears,
+  courses,
+  departments,
+  enrolments,
+  faculties,
+  studentProfiles,
+  users,
+} from "@/db/schema";
 import { requireRole } from "@/lib/auth";
+import { programmeLevelLabel, studentCategoryLabel } from "@/lib/institution";
 
 const accountStatuses = ["pending", "active", "suspended", "disabled"] as const;
 
@@ -32,18 +41,6 @@ function normalizeAccountStatus(value?: string) {
   return accountStatuses.includes(value as (typeof accountStatuses)[number])
     ? (value as (typeof accountStatuses)[number])
     : "all";
-}
-
-function accountStatusVariant(status: string) {
-  if (status === "active") {
-    return "default" as const;
-  }
-
-  if (status === "pending") {
-    return "secondary" as const;
-  }
-
-  return "destructive" as const;
 }
 
 function noticeFor(query: {
@@ -107,12 +104,20 @@ export default async function AdminStudentsPage({
         activatedAt: users.emailVerifiedAt,
         createdAt: users.createdAt,
         studentIdNumber: studentProfiles.studentIdNumber,
+        studentCategory: studentProfiles.studentCategory,
+        programmeLevel: studentProfiles.programmeLevel,
         programme: studentProfiles.programme,
         level: studentProfiles.level,
         classGroup: studentProfiles.classGroup,
+        facultyName: faculties.name,
+        departmentName: departments.name,
+        academicYear: academicYears.displayName,
       })
       .from(studentProfiles)
       .innerJoin(users, eq(studentProfiles.userId, users.id))
+      .leftJoin(faculties, eq(studentProfiles.facultyId, faculties.id))
+      .leftJoin(departments, eq(studentProfiles.departmentId, departments.id))
+      .leftJoin(academicYears, eq(studentProfiles.academicYearId, academicYears.id))
       .orderBy(asc(users.name)),
     db
       .select({
@@ -177,6 +182,11 @@ export default async function AdminStudentsPage({
         student.programme ?? "",
         student.level ?? "",
         student.classGroup ?? "",
+        studentCategoryLabel(student.studentCategory),
+        programmeLevelLabel(student.programmeLevel),
+        student.facultyName ?? "",
+        student.departmentName ?? "",
+        student.academicYear ?? "",
         ...student.enrolments.flatMap((enrolment) => [
           enrolment.courseCode,
           enrolment.courseTitle,
@@ -341,8 +351,8 @@ export default async function AdminStudentsPage({
                   <TableHead className="px-4 py-3 font-semibold text-muted-foreground text-xs">Student</TableHead>
                   <TableHead className="px-4 py-3 font-semibold text-muted-foreground text-xs">Account</TableHead>
                   <TableHead className="px-4 py-3 font-semibold text-muted-foreground text-xs">Course Assignments</TableHead>
-                  <TableHead className="px-4 py-3 font-semibold text-muted-foreground text-xs">Programme</TableHead>
-                  <TableHead className="px-4 py-3 font-semibold text-muted-foreground text-xs">Level</TableHead>
+                  <TableHead className="px-4 py-3 font-semibold text-muted-foreground text-xs">Classification</TableHead>
+                  <TableHead className="px-4 py-3 font-semibold text-muted-foreground text-xs">Faculty / Department</TableHead>
                   <TableHead className="px-4 py-3 font-semibold text-muted-foreground text-xs">Group</TableHead>
                   <TableHead className="px-4 py-3 font-semibold text-muted-foreground text-xs">Created</TableHead>
                   <TableHead className="px-6 py-3 text-right font-semibold text-muted-foreground text-xs">Actions</TableHead>
@@ -396,8 +406,18 @@ export default async function AdminStudentsPage({
                         <Badge variant="outline" className="text-[0.65rem] font-bold text-muted-foreground bg-muted/20 border-border/50">Unassigned</Badge>
                       )}
                     </TableCell>
-                    <TableCell className="px-4 py-4.5 text-xs font-bold text-foreground/80">{student.programme ?? "-"}</TableCell>
-                    <TableCell className="px-4 py-4.5 text-xs font-bold text-foreground/80">{student.level ?? "-"}</TableCell>
+                    <TableCell className="px-4 py-4.5 text-xs font-bold text-foreground/80">
+                      <span className="block">{studentCategoryLabel(student.studentCategory)}</span>
+                      <span className="block text-muted-foreground">
+                        {programmeLevelLabel(student.programmeLevel)}
+                      </span>
+                    </TableCell>
+                    <TableCell className="px-4 py-4.5 text-xs font-bold text-foreground/80">
+                      <span className="block">{student.facultyName ?? "-"}</span>
+                      <span className="block text-muted-foreground">
+                        {student.departmentName ?? "-"} / {student.academicYear ?? "-"}
+                      </span>
+                    </TableCell>
                     <TableCell className="px-4 py-4.5 text-xs font-bold text-foreground/80">{student.classGroup ?? "-"}</TableCell>
                     <TableCell className="px-4 py-4.5 text-xs font-semibold text-muted-foreground">
                       {student.createdAt.toLocaleDateString("en-GB", {

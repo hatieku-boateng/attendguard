@@ -89,6 +89,18 @@ export const reviewStatusEnum = pgEnum("review_status", [
   "rejected",
 ]);
 
+export const studentCategoryEnum = pgEnum("student_category", [
+  "regular",
+  "weekend",
+  "access",
+]);
+
+export const programmeLevelEnum = pgEnum("programme_level", [
+  "diploma",
+  "undergraduate",
+  "postgraduate",
+]);
+
 const id = uuid("id").defaultRandom().primaryKey();
 const createdAt = timestamp("created_at", { withTimezone: true })
   .notNull()
@@ -118,6 +130,65 @@ export const users = pgTable(
   ],
 );
 
+export const faculties = pgTable(
+  "faculties",
+  {
+    id,
+    name: varchar("name", { length: 200 }).notNull(),
+    code: varchar("code", { length: 40 }).notNull(),
+    description: text("description"),
+    status: varchar("status", { length: 40 }).notNull().default("active"),
+    createdAt,
+    updatedAt,
+  },
+  (table) => [
+    uniqueIndex("faculties_name_unique").on(table.name),
+    uniqueIndex("faculties_code_unique").on(table.code),
+    index("faculties_status_idx").on(table.status),
+  ],
+);
+
+export const departments = pgTable(
+  "departments",
+  {
+    id,
+    facultyId: uuid("faculty_id")
+      .notNull()
+      .references(() => faculties.id, { onDelete: "restrict" }),
+    name: varchar("name", { length: 200 }).notNull(),
+    code: varchar("code", { length: 40 }).notNull(),
+    description: text("description"),
+    status: varchar("status", { length: 40 }).notNull().default("active"),
+    createdAt,
+    updatedAt,
+  },
+  (table) => [
+    uniqueIndex("departments_faculty_name_unique").on(table.facultyId, table.name),
+    uniqueIndex("departments_code_unique").on(table.code),
+    index("departments_faculty_id_idx").on(table.facultyId),
+    index("departments_status_idx").on(table.status),
+  ],
+);
+
+export const academicYears = pgTable(
+  "academic_years",
+  {
+    id,
+    startYear: integer("start_year").notNull(),
+    endYear: integer("end_year").notNull(),
+    displayName: varchar("display_name", { length: 20 }).notNull(),
+    isCurrent: boolean("is_current").notNull().default(false),
+    status: varchar("status", { length: 40 }).notNull().default("active"),
+    createdAt,
+    updatedAt,
+  },
+  (table) => [
+    uniqueIndex("academic_years_display_name_unique").on(table.displayName),
+    index("academic_years_current_idx").on(table.isCurrent),
+    index("academic_years_status_idx").on(table.status),
+  ],
+);
+
 export const studentProfiles = pgTable(
   "student_profiles",
   {
@@ -126,6 +197,21 @@ export const studentProfiles = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     studentIdNumber: varchar("student_id_number", { length: 80 }).notNull(),
+    studentCategory: studentCategoryEnum("student_category")
+      .notNull()
+      .default("regular"),
+    programmeLevel: programmeLevelEnum("programme_level")
+      .notNull()
+      .default("undergraduate"),
+    facultyId: uuid("faculty_id").references(() => faculties.id, {
+      onDelete: "restrict",
+    }),
+    departmentId: uuid("department_id").references(() => departments.id, {
+      onDelete: "restrict",
+    }),
+    academicYearId: uuid("academic_year_id").references(() => academicYears.id, {
+      onDelete: "set null",
+    }),
     programme: varchar("programme", { length: 160 }),
     level: varchar("level", { length: 50 }),
     classGroup: varchar("class_group", { length: 80 }),
@@ -140,6 +226,9 @@ export const studentProfiles = pgTable(
     index("student_profiles_programme_idx").on(table.programme),
     index("student_profiles_level_idx").on(table.level),
     index("student_profiles_class_group_idx").on(table.classGroup),
+    index("student_profiles_faculty_id_idx").on(table.facultyId),
+    index("student_profiles_department_id_idx").on(table.departmentId),
+    index("student_profiles_academic_year_id_idx").on(table.academicYearId),
   ],
 );
 
@@ -189,6 +278,15 @@ export const courseCatalog = pgTable(
     courseTitle: varchar("course_title", { length: 200 }).notNull(),
     programme: varchar("programme", { length: 160 }),
     level: varchar("level", { length: 50 }),
+    academicYearId: uuid("academic_year_id").references(() => academicYears.id, {
+      onDelete: "set null",
+    }),
+    facultyId: uuid("faculty_id").references(() => faculties.id, {
+      onDelete: "restrict",
+    }),
+    departmentId: uuid("department_id").references(() => departments.id, {
+      onDelete: "restrict",
+    }),
     description: text("description"),
     status: courseStatusEnum("status").notNull().default("active"),
     createdAt,
@@ -197,6 +295,9 @@ export const courseCatalog = pgTable(
   (table) => [
     uniqueIndex("course_catalog_code_unique").on(table.courseCode),
     index("course_catalog_status_idx").on(table.status),
+    index("course_catalog_faculty_id_idx").on(table.facultyId),
+    index("course_catalog_department_id_idx").on(table.departmentId),
+    index("course_catalog_academic_year_id_idx").on(table.academicYearId),
   ],
 );
 
@@ -552,12 +653,44 @@ export const usersRelations = relations(users, ({ one }) => ({
   activationToken: one(studentActivationTokens),
 }));
 
+export const facultiesRelations = relations(faculties, ({ many }) => ({
+  departments: many(departments),
+  students: many(studentProfiles),
+  catalogEntries: many(courseCatalog),
+}));
+
+export const departmentsRelations = relations(departments, ({ one, many }) => ({
+  faculty: one(faculties, {
+    fields: [departments.facultyId],
+    references: [faculties.id],
+  }),
+  students: many(studentProfiles),
+  catalogEntries: many(courseCatalog),
+}));
+
+export const academicYearsRelations = relations(academicYears, ({ many }) => ({
+  students: many(studentProfiles),
+  catalogEntries: many(courseCatalog),
+}));
+
 export const studentProfilesRelations = relations(
   studentProfiles,
   ({ one, many }) => ({
     user: one(users, {
       fields: [studentProfiles.userId],
       references: [users.id],
+    }),
+    faculty: one(faculties, {
+      fields: [studentProfiles.facultyId],
+      references: [faculties.id],
+    }),
+    department: one(departments, {
+      fields: [studentProfiles.departmentId],
+      references: [departments.id],
+    }),
+    academicYear: one(academicYears, {
+      fields: [studentProfiles.academicYearId],
+      references: [academicYears.id],
     }),
     enrolments: many(enrolments),
     passkeys: many(attendancePasskeys),
@@ -590,7 +723,19 @@ export const lecturerProfilesRelations = relations(
   }),
 );
 
-export const courseCatalogRelations = relations(courseCatalog, ({ many }) => ({
+export const courseCatalogRelations = relations(courseCatalog, ({ one, many }) => ({
+  faculty: one(faculties, {
+    fields: [courseCatalog.facultyId],
+    references: [faculties.id],
+  }),
+  department: one(departments, {
+    fields: [courseCatalog.departmentId],
+    references: [departments.id],
+  }),
+  academicYear: one(academicYears, {
+    fields: [courseCatalog.academicYearId],
+    references: [academicYears.id],
+  }),
   offerings: many(courses),
 }));
 

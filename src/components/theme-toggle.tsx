@@ -6,12 +6,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
 export function ThemeToggle({ className }: { className?: string }) {
-  const [theme, setTheme] = React.useState<"light" | "dark" | "system">("system");
-
-  React.useEffect(() => {
-    const savedTheme = (localStorage.getItem("theme") as "light" | "dark" | "system") || "system";
-    setTheme(savedTheme);
-  }, []);
+  const [theme, setTheme] = React.useState<"light" | "dark" | "system">("light");
 
   const applyTheme = (newTheme: "light" | "dark" | "system") => {
     setTheme(newTheme);

@@ -17,7 +17,6 @@ import {
   LogOut,
   Menu,
   X,
-  ShieldCheck,
   ChevronRight,
   Layers,
   HelpCircle
@@ -37,6 +36,9 @@ type NavItem = {
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   "dashboard": LayoutDashboard,
   "lecturers": GraduationCap,
+  "faculties": Layers,
+  "departments": Layers,
+  "academic-years": Calendar,
   "catalog": BookOpen,
   "courses": BookOpen,
   "students": Users,

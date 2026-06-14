@@ -1,13 +1,13 @@
 import "server-only";
 
-import { Pool } from "pg";
-import { drizzle, NodePgDatabase } from "drizzle-orm/node-postgres";
+import { neon } from "@neondatabase/serverless";
+import { drizzle, type NeonHttpDatabase } from "drizzle-orm/neon-http";
 
 import * as schema from "./schema";
 
-let db: NodePgDatabase<typeof schema> | null = null;
+let db: NeonHttpDatabase<typeof schema> | null = null;
 
-export function getDb(): NodePgDatabase<typeof schema> {
+export function getDb() {
   const databaseUrl = process.env.DATABASE_URL;
 
   if (!databaseUrl) {
@@ -15,10 +15,8 @@ export function getDb(): NodePgDatabase<typeof schema> {
   }
 
   if (!db) {
-    const pool = new Pool({ connectionString: databaseUrl });
-    db = drizzle(pool, { schema });
+    db = drizzle(neon(databaseUrl), { schema });
   }
 
   return db;
 }
-

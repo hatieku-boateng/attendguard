@@ -4,25 +4,18 @@ import Link from "next/link";
 import React from "react";
 import {
   ArrowRight,
-  CheckCircle2,
   FileText,
   KeyRound,
   MapPin,
   Compass,
-  Activity,
-  Lock,
-  Unlock,
   ShieldCheck,
-  Fingerprint,
-  Globe,
-  Layers,
-  Sparkles,
-  Zap,
   Check,
   UserCheck,
   FileSpreadsheet,
   MailOpen,
   ClipboardCheck,
+  Fingerprint,
+  Lock,
   Radar,
 } from "lucide-react";
 
@@ -31,16 +24,6 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 
 export default function Home() {
-  // Smooth mouse-follow gradient hover effect for cards
-  const handleCardMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    const card = e.currentTarget;
-    const rect = card.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    card.style.setProperty("--mouse-x", `${x}px`);
-    card.style.setProperty("--mouse-y", `${y}px`);
-  };
-
   return (
     <main className="min-h-screen bg-background text-foreground overflow-x-hidden relative pb-20 transition-colors duration-500">
       

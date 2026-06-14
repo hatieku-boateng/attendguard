@@ -57,32 +57,32 @@
   --card-foreground: oklch(0.165 0.034 238);
   --popover: oklch(0.998 0.003 220);
   --popover-foreground: oklch(0.165 0.034 238);
-  --primary: oklch(0.41 0.135 181);
+  --primary: oklch(0.35 0.15 258);
   --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.928 0.019 230);
-  --secondary-foreground: oklch(0.235 0.044 242);
+  --secondary: oklch(0.78 0.18 80);
+  --secondary-foreground: oklch(0.15 0.03 260);
   --muted: oklch(0.943 0.013 226);
   --muted-foreground: oklch(0.455 0.037 242);
-  --accent: oklch(0.91 0.065 91);
-  --accent-foreground: oklch(0.29 0.071 67);
+  --accent: oklch(0.78 0.18 80 / 10%);
+  --accent-foreground: oklch(0.55 0.15 80);
   --destructive: oklch(0.58 0.22 25);
   --border: oklch(0.86 0.018 228);
   --input: oklch(0.875 0.018 228);
-  --ring: oklch(0.62 0.12 181);
-  --chart-1: oklch(0.54 0.135 181);
+  --ring: oklch(0.35 0.15 258);
+  --chart-1: oklch(0.35 0.15 258);
   --chart-2: oklch(0.61 0.155 148);
-  --chart-3: oklch(0.66 0.14 82);
+  --chart-3: oklch(0.78 0.18 80);
   --chart-4: oklch(0.50 0.12 256);
   --chart-5: oklch(0.57 0.17 23);
   --radius: 0.5rem;
   --sidebar: oklch(0.205 0.04 238);
   --sidebar-foreground: oklch(0.97 0.006 214);
-  --sidebar-primary: oklch(0.64 0.16 145);
+  --sidebar-primary: oklch(0.35 0.15 258);
   --sidebar-primary-foreground: oklch(0.985 0 0);
   --sidebar-accent: oklch(0.275 0.045 238);
   --sidebar-accent-foreground: oklch(0.97 0.006 214);
   --sidebar-border: oklch(1 0 0 / 12%);
-  --sidebar-ring: oklch(0.62 0.12 181);
+  --sidebar-ring: oklch(0.35 0.15 258);
 }
 
 .dark {
@@ -92,31 +92,31 @@
   --card-foreground: oklch(0.98 0.01 262);
   --popover: oklch(0.13 0.03 262);
   --popover-foreground: oklch(0.98 0.01 262);
-  --primary: oklch(0.65 0.135 181);
-  --primary-foreground: oklch(0.11 0.03 262);
-  --secondary: oklch(0.15 0.03 262);
-  --secondary-foreground: oklch(0.98 0.01 262);
+  --primary: oklch(0.58 0.15 258);
+  --primary-foreground: oklch(0.08 0.02 260);
+  --secondary: oklch(0.78 0.18 80);
+  --secondary-foreground: oklch(0.08 0.02 260);
   --muted: oklch(0.15 0.03 262);
   --muted-foreground: oklch(0.70 0.03 262);
-  --accent: oklch(0.17 0.04 262);
-  --accent-foreground: oklch(0.94 0.03 262);
+  --accent: oklch(0.78 0.18 80 / 15%);
+  --accent-foreground: oklch(0.78 0.18 80);
   --destructive: oklch(0.704 0.191 22.216);
   --border: oklch(0.20 0.04 262 / 50%);
   --input: oklch(0.15 0.03 262 / 85%);
-  --ring: oklch(0.65 0.135 181);
-  --chart-1: oklch(0.65 0.135 181);
+  --ring: oklch(0.58 0.15 258);
+  --chart-1: oklch(0.58 0.15 258);
   --chart-2: oklch(0.61 0.155 148);
-  --chart-3: oklch(0.66 0.14 82);
+  --chart-3: oklch(0.78 0.18 80);
   --chart-4: oklch(0.50 0.12 256);
   --chart-5: oklch(0.57 0.17 23);
   --sidebar: oklch(0.12 0.03 262);
   --sidebar-foreground: oklch(0.98 0.01 262);
-  --sidebar-primary: oklch(0.65 0.135 181);
-  --sidebar-primary-foreground: oklch(0.11 0.03 262);
+  --sidebar-primary: oklch(0.58 0.15 258);
+  --sidebar-primary-foreground: oklch(0.08 0.02 260);
   --sidebar-accent: oklch(0.15 0.03 262);
   --sidebar-accent-foreground: oklch(0.98 0.01 262);
   --sidebar-border: oklch(0.20 0.04 262 / 50%);
-  --sidebar-ring: oklch(0.65 0.135 181);
+  --sidebar-ring: oklch(0.58 0.15 258);
 }
 
 @layer base {
@@ -126,32 +126,32 @@
   body {
     @apply bg-background text-foreground transition-all duration-300;
     background-image:
-      radial-gradient(circle at 10% 5%, oklch(0.90 0.08 190 / 22%) 0, transparent 32rem),
-      radial-gradient(circle at 90% 15%, oklch(0.92 0.09 140 / 15%) 0, transparent 35rem),
-      radial-gradient(circle at 50% 80%, oklch(0.93 0.06 240 / 12%) 0, transparent 40rem),
+      radial-gradient(circle at 10% 5%, oklch(0.35 0.15 258 / 6%) 0, transparent 32rem),
+      radial-gradient(circle at 90% 15%, oklch(0.78 0.18 80 / 6%) 0, transparent 35rem),
+      radial-gradient(circle at 50% 80%, oklch(0.35 0.15 258 / 4%) 0, transparent 40rem),
       linear-gradient(to bottom, oklch(0.994 0.003 220 / 99%), oklch(0.965 0.006 230 / 99%)),
-      linear-gradient(oklch(0.47 0.035 238 / 3.5%) 1px, transparent 1px),
-      linear-gradient(90deg, oklch(0.47 0.035 238 / 3.5%) 1px, transparent 1px);
+      linear-gradient(oklch(0.35 0.15 258 / 2.5%) 1px, transparent 1px),
+      linear-gradient(90deg, oklch(0.35 0.15 258 / 2.5%) 1px, transparent 1px);
     background-attachment: fixed;
     background-size: auto, auto, auto, auto, 48px 48px, 48px 48px;
   }
   .dark body {
     background-image:
-      radial-gradient(circle at 12% 8%, oklch(0.38 0.13 180 / 25%) 0, transparent 45rem),
-      radial-gradient(circle at 88% 12%, oklch(0.35 0.15 285 / 25%) 0, transparent 42rem),
-      radial-gradient(circle at 50% 45%, oklch(0.30 0.12 265 / 22%) 0, transparent 48rem),
-      radial-gradient(circle at 10% 75%, oklch(0.38 0.13 155 / 25%) 0, transparent 45rem),
-      radial-gradient(circle at 90% 85%, oklch(0.35 0.14 275 / 20%) 0, transparent 42rem),
+      radial-gradient(circle at 12% 8%, oklch(0.35 0.15 258 / 15%) 0, transparent 45rem),
+      radial-gradient(circle at 88% 12%, oklch(0.78 0.18 80 / 12%) 0, transparent 42rem),
+      radial-gradient(circle at 50% 45%, oklch(0.35 0.15 258 / 12%) 0, transparent 48rem),
+      radial-gradient(circle at 10% 75%, oklch(0.35 0.15 258 / 15%) 0, transparent 45rem),
+      radial-gradient(circle at 90% 85%, oklch(0.78 0.18 80 / 10%) 0, transparent 42rem),
       linear-gradient(to bottom, oklch(0.12 0.03 262), oklch(0.08 0.025 265)),
-      linear-gradient(oklch(0.65 0.15 262 / 2.5%) 1px, transparent 1px),
-      linear-gradient(90deg, oklch(0.65 0.15 262 / 2.5%) 1px, transparent 1px);
+      linear-gradient(oklch(0.58 0.15 258 / 1.5%) 1px, transparent 1px),
+      linear-gradient(90deg, oklch(0.58 0.15 258 / 1.5%) 1px, transparent 1px);
     background-size: auto, auto, auto, auto, auto, auto, 52px 52px, 52px 52px;
   }
   html {
     @apply font-sans scroll-smooth;
   }
   ::selection {
-    background: oklch(0.72 0.12 181 / 35%);
+    background: oklch(0.35 0.15 258 / 25%);
   }
   .uppercase-input {
     text-transform: uppercase;

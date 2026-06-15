@@ -39,12 +39,56 @@ type AcceptedLocation = {
   accuracy: number;
 };
 
+type ProximityTarget = {
+  latitude: number;
+  longitude: number;
+  radiusMeters: number;
+};
+
+type LocationValidity = {
+  accuracyOk: boolean;
+  distanceMeters: number | null;
+  proximityOk: boolean;
+  ready: boolean;
+};
+
+function calculateDistanceMeters({
+  fromLatitude,
+  fromLongitude,
+  toLatitude,
+  toLongitude,
+}: {
+  fromLatitude: number;
+  fromLongitude: number;
+  toLatitude: number;
+  toLongitude: number;
+}) {
+  const earthRadiusMeters = 6371000;
+  const toRadians = (degrees: number) => (degrees * Math.PI) / 180;
+  const deltaLatitude = toRadians(toLatitude - fromLatitude);
+  const deltaLongitude = toRadians(toLongitude - fromLongitude);
+  const startLatitude = toRadians(fromLatitude);
+  const endLatitude = toRadians(toLatitude);
+
+  const a =
+    Math.sin(deltaLatitude / 2) * Math.sin(deltaLatitude / 2) +
+    Math.cos(startLatitude) *
+      Math.cos(endLatitude) *
+      Math.sin(deltaLongitude / 2) *
+      Math.sin(deltaLongitude / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+  return earthRadiusMeters * c;
+}
+
 export function LocationFields({
   latitudeName,
   longitudeName,
   accuracyName,
   maxAccuracyInputId,
   maxAccuracyMeters,
+  onLocationValidityChange,
+  proximityTarget,
   requireAcceptance = false,
   allowManualEntry = false,
   autoStopAfterMs = defaultAutoStopMs,
@@ -58,6 +102,8 @@ export function LocationFields({
   accuracyName: string;
   maxAccuracyInputId?: string;
   maxAccuracyMeters?: number | string | null;
+  onLocationValidityChange?: (validity: LocationValidity) => void;
+  proximityTarget?: ProximityTarget | null;
   requireAcceptance?: boolean;
   allowManualEntry?: boolean;
   autoStopAfterMs?: number | null;
@@ -141,16 +187,50 @@ export function LocationFields({
     return Number.isFinite(value) && value > 0 ? value : null;
   }
 
-  function buildMessage(accuracy: number, samples: number) {
+  function getDistanceFromTarget(locationToCheck: { lat: number; lng: number }) {
+    if (!proximityTarget) {
+      return null;
+    }
+
+    return calculateDistanceMeters({
+      fromLatitude: proximityTarget.latitude,
+      fromLongitude: proximityTarget.longitude,
+      toLatitude: locationToCheck.lat,
+      toLongitude: locationToCheck.lng,
+    });
+  }
+
+  function isWithinProximity(locationToCheck: { lat: number; lng: number }) {
+    const distance = getDistanceFromTarget(locationToCheck);
+
+    return distance === null || distance <= proximityTarget!.radiusMeters;
+  }
+
+  function buildMessage(
+    accuracy: number,
+    samples: number,
+    locationToCheck?: { lat: number; lng: number },
+  ) {
     const maxAccuracy = getMaxAccuracy();
     const accuracyWarning =
       maxAccuracy && accuracy > maxAccuracy
         ? ` This is above the ${Math.round(maxAccuracy)}m limit; keep capture running for a better GPS lock.`
         : "";
+    const distance = locationToCheck ? getDistanceFromTarget(locationToCheck) : null;
+    const distanceWarning =
+      distance !== null && proximityTarget
+        ? distance > proximityTarget.radiusMeters
+          ? ` Current distance: ${Math.round(distance)}m. Move within ${Math.round(
+              proximityTarget.radiusMeters,
+            )}m of the lecturer's session location.`
+          : ` Current distance: ${Math.round(distance)}m within the ${Math.round(
+              proximityTarget.radiusMeters,
+            )}m session radius.`
+        : "";
 
     return `Best reading: ${Math.round(accuracy)}m accuracy from ${samples} live sample${
       samples === 1 ? "" : "s"
-    }.${accuracyWarning}`;
+    }.${accuracyWarning}${distanceWarning}`;
   }
 
   function canAcceptAccuracy(accuracy: number) {
@@ -328,7 +408,7 @@ export function LocationFields({
 
       setLocation({
         status: "captured",
-        message: buildMessage(best.accuracy, samples),
+        message: buildMessage(best.accuracy, samples, best),
         lat: best.lat,
         lng: best.lng,
         accuracy: best.accuracy,
@@ -337,7 +417,11 @@ export function LocationFields({
 
       const maxAccuracy = getMaxAccuracy();
 
-      if (maxAccuracy && best.accuracy <= maxAccuracy) {
+      if (
+        maxAccuracy &&
+        best.accuracy <= maxAccuracy &&
+        isWithinProximity(best)
+      ) {
         stopLiveCapture();
       }
     };
@@ -487,6 +571,39 @@ export function LocationFields({
   const mapsOpenUrl = hasMapCoordinates
     ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapsQuery)}`
     : "";
+  const distanceFromTarget =
+    hasMapCoordinates && proximityTarget
+      ? calculateDistanceMeters({
+          fromLatitude: proximityTarget.latitude,
+          fromLongitude: proximityTarget.longitude,
+          toLatitude: mapLatitude,
+          toLongitude: mapLongitude,
+        })
+      : null;
+  const accuracyOk = hasNumericValue(effectiveAccuracy)
+    ? canAcceptAccuracy(Number(effectiveAccuracy))
+    : false;
+  const proximityOk =
+    distanceFromTarget === null ||
+    !proximityTarget ||
+    distanceFromTarget <= proximityTarget.radiusMeters;
+  const locationReady =
+    hasMapCoordinates && hasNumericValue(effectiveAccuracy) && accuracyOk && proximityOk;
+
+  useEffect(() => {
+    onLocationValidityChange?.({
+      accuracyOk,
+      distanceMeters: distanceFromTarget,
+      proximityOk,
+      ready: locationReady,
+    });
+  }, [
+    accuracyOk,
+    distanceFromTarget,
+    locationReady,
+    onLocationValidityChange,
+    proximityOk,
+  ]);
 
   function updateManualLocation(field: "lat" | "lng" | "accuracy", value: string) {
     setManualMode(true);
@@ -520,6 +637,16 @@ export function LocationFields({
           {requireAcceptance && !acceptedLocation ? (
             <p className="text-xs font-medium text-destructive">
               Accept a captured location before saving this session.
+            </p>
+          ) : null}
+          {proximityTarget && distanceFromTarget !== null ? (
+            <p
+              className={`text-xs font-medium ${
+                proximityOk ? "text-primary" : "text-destructive"
+              }`}
+            >
+              Distance from session location: {Math.round(distanceFromTarget)}m /{" "}
+              {Math.round(proximityTarget.radiusMeters)}m required.
             </p>
           ) : null}
         </div>

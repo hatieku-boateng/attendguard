@@ -22,6 +22,7 @@ const resultMessages: Record<string, string> = {
   "expired-passkey": "This passkey has expired.",
   "location-required": "Location permission is required.",
   "invalid-location": "The submitted location is invalid.",
+  "poor-accuracy": "Your GPS accuracy is not strong enough yet. Keep capturing until it is within the session limit.",
   "not-enrolled": "Your account is not enrolled in this course.",
   "too-many": "Too many failed attempts. Contact the lecturer.",
 };
@@ -43,6 +44,9 @@ export default async function CheckInPage({
       id: attendanceSessions.id,
       title: attendanceSessions.sessionTitle,
       finalClosesAt: attendanceSessions.finalClosesAt,
+      lecturerLatitude: attendanceSessions.lecturerLatitude,
+      lecturerLongitude: attendanceSessions.lecturerLongitude,
+      geofenceRadiusMeters: attendanceSessions.geofenceRadiusMeters,
       maxAcceptedAccuracyMeters: attendanceSessions.maxAcceptedAccuracyMeters,
       courseCode: courses.courseCode,
       courseTitle: courses.courseTitle,
@@ -90,6 +94,9 @@ export default async function CheckInPage({
           ) : null}
           <StudentAttendanceForm
             action={checkInAction}
+            geofenceRadiusMeters={session.geofenceRadiusMeters}
+            lecturerLatitude={Number(session.lecturerLatitude)}
+            lecturerLongitude={Number(session.lecturerLongitude)}
             maxAcceptedAccuracyMeters={session.maxAcceptedAccuracyMeters}
             passkey={passkey ?? ""}
             result={query.result}

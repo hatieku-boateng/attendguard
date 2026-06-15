@@ -40,7 +40,6 @@ const reviewableRejectionReasons = new Set([
   "invalid_passkey",
   "expired_passkey",
   "passkey_already_used",
-  "outside_permitted_area",
   "duplicate_attendance",
   "too_many_attempts",
 ]);
@@ -259,18 +258,18 @@ export async function checkInAction(formData: FormData) {
   });
 
   if (locationAccuracyMeters > session.maxAcceptedAccuracyMeters) {
-    await logAttempt("requires_review", "poor_location_accuracy", distance);
-    redirect(resultUrl(sessionId, "review"));
+    await logAttempt("rejected", "poor_location_accuracy", distance);
+    redirect(resultUrl(sessionId, "poor-accuracy"));
   }
 
   if (distance > session.geofenceRadiusMeters + locationAccuracyMeters) {
     await logAttempt("rejected", "outside_permitted_area", distance);
-    redirect(resultUrl(sessionId, "review"));
+    redirect(resultUrl(sessionId, "outside"));
   }
 
   if (distance > session.geofenceRadiusMeters) {
-    await logAttempt("requires_review", "outside_permitted_area", distance);
-    redirect(resultUrl(sessionId, "review"));
+    await logAttempt("rejected", "outside_permitted_area", distance);
+    redirect(resultUrl(sessionId, "outside"));
   }
 
   const status = now <= session.normalClosesAt ? "present" : "late";

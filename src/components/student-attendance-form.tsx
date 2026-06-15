@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { WifiOff, RefreshCw } from "lucide-react";
 
 import { LocationFields } from "@/components/location-fields";
@@ -22,17 +22,24 @@ export function StudentAttendanceForm({
   action,
   sessionId,
   passkey,
+  lecturerLatitude,
+  lecturerLongitude,
+  geofenceRadiusMeters,
   maxAcceptedAccuracyMeters,
   result,
 }: {
   action: CheckInAction;
   sessionId: string;
   passkey: string;
+  lecturerLatitude: number;
+  lecturerLongitude: number;
+  geofenceRadiusMeters: number;
   maxAcceptedAccuracyMeters: number;
   result?: string;
 }) {
   const formRef = useRef<HTMLFormElement>(null);
   const storageKey = `pu-attendance:pending-attendance:${sessionId}`;
+  const [locationReady, setLocationReady] = useState(false);
   const [pendingSubmission, setPendingSubmission] =
     useState<PendingSubmission | null>(() => {
       if (typeof window === "undefined" || result) {
@@ -93,6 +100,13 @@ export function StudentAttendanceForm({
     setPendingSubmission(pending);
   }
 
+  const handleLocationValidityChange = useCallback(
+    ({ ready }: { ready: boolean }) => {
+      setLocationReady(ready);
+    },
+    [],
+  );
+
   return (
     <form
       action={action}
@@ -147,18 +161,28 @@ export function StudentAttendanceForm({
           initialLongitude={pendingSubmission?.studentLongitude}
           initialMessage={
             pendingSubmission
-              ? `Recovered saved GPS coordinates. Capture again if you need a fresher reading within ${maxAcceptedAccuracyMeters}m.`
-              : `Capture your device location. Keep GPS running until the accuracy is within ${maxAcceptedAccuracyMeters}m.`
+              ? `Recovered saved GPS coordinates. Capture again if you need a fresher reading inside the ${geofenceRadiusMeters}m session radius.`
+              : `Capture your device location. Keep GPS running until you are inside the ${geofenceRadiusMeters}m session radius and accuracy is within ${maxAcceptedAccuracyMeters}m.`
           }
           key={pendingSubmission?.savedAt ?? "current-location"}
           latitudeName="studentLatitude"
           longitudeName="studentLongitude"
           maxAccuracyMeters={maxAcceptedAccuracyMeters}
+          onLocationValidityChange={handleLocationValidityChange}
+          proximityTarget={{
+            latitude: lecturerLatitude,
+            longitude: lecturerLongitude,
+            radiusMeters: geofenceRadiusMeters,
+          }}
         />
       </div>
 
-      <Button className="w-full py-5 rounded-xl font-bold shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 transition-all text-sm" type="submit">
-        Submit attendance check-in
+      <Button
+        className="w-full py-5 rounded-xl font-bold shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 transition-all text-sm disabled:cursor-not-allowed disabled:opacity-60"
+        disabled={!locationReady}
+        type="submit"
+      >
+        {locationReady ? "Submit attendance check-in" : "Waiting for valid GPS location"}
       </Button>
     </form>
   );

@@ -11,6 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { PasswordInput } from "@/components/password-input";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -83,10 +84,9 @@ export default async function ActivateAccountPage({
             
             <div className="space-y-1.5">
               <Label htmlFor="password" className="text-xs font-extrabold tracking-tight text-muted-foreground uppercase tracking-widest leading-none">Create password</Label>
-              <Input 
+              <PasswordInput 
                 id="password" 
                 name="password" 
-                type="password" 
                 required 
                 placeholder="••••••••" 
                 className="rounded-2xl h-11 px-4 border-border/70 bg-background/50 shadow-sm"

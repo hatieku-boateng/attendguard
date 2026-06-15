@@ -134,11 +134,9 @@
       radial-gradient(circle at 10% 5%, oklch(0.35 0.15 258 / 6%) 0, transparent 32rem),
       radial-gradient(circle at 90% 15%, oklch(0.78 0.18 80 / 6%) 0, transparent 35rem),
       radial-gradient(circle at 50% 80%, oklch(0.35 0.15 258 / 4%) 0, transparent 40rem),
-      linear-gradient(to bottom, oklch(0.994 0.003 220 / 99%), oklch(0.965 0.006 230 / 99%)),
-      linear-gradient(oklch(0.35 0.15 258 / 2.5%) 1px, transparent 1px),
-      linear-gradient(90deg, oklch(0.35 0.15 258 / 2.5%) 1px, transparent 1px);
+      linear-gradient(to bottom, oklch(0.994 0.003 220 / 99%), oklch(0.965 0.006 230 / 99%));
     background-attachment: fixed;
-    background-size: auto, auto, auto, auto, 48px 48px, 48px 48px;
+    background-size: auto, auto, auto, auto;
   }
   .dark body {
     background-image:
@@ -147,10 +145,8 @@
       radial-gradient(circle at 50% 45%, oklch(0.35 0.15 258 / 8%) 0, transparent 48rem),
       radial-gradient(circle at 10% 75%, oklch(0.35 0.15 258 / 10%) 0, transparent 45rem),
       radial-gradient(circle at 90% 85%, oklch(0.78 0.18 80 / 7%) 0, transparent 42rem),
-      linear-gradient(to bottom, oklch(0.185 0.012 262), oklch(0.145 0.01 265)),
-      linear-gradient(oklch(0.62 0.14 258 / 1%) 1px, transparent 1px),
-      linear-gradient(90deg, oklch(0.62 0.14 258 / 1%) 1px, transparent 1px);
-    background-size: auto, auto, auto, auto, auto, auto, 52px 52px, 52px 52px;
+      linear-gradient(to bottom, oklch(0.185 0.012 262), oklch(0.145 0.01 265));
+    background-size: auto, auto, auto, auto, auto, auto;
   }
   html {
     @apply font-sans scroll-smooth;

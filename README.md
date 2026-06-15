@@ -1,85 +1,77 @@
-# AttendGuard
+# Pentecost University Attendance System
 
-Full-stack attendance management system for administrator-managed lecturers,
-course assignment, student enrolment, secure account activation, and
-location-aware attendance sessions.
+A high-performance, secure, and location-aware digital attendance management platform custom-tailored for **Pentecost University**. It transitions paper-based registers into a verified, auditable attendance console featuring automated student enrolment, device passkey binding, and geofenced coordinate verification.
 
-## Stack
+## Core Features
 
-- Next.js App Router
-- TypeScript
-- Tailwind CSS
-- shadcn/ui
-- Drizzle ORM
-- Neon PostgreSQL
-- Gmail SMTP with Nodemailer
+### 👤 Role-Based Portals
+* **Administrator Console**: Manage lecturers, academic years, faculties, departments, and course-to-lecturer assignments.
+* **Lecturer Workspace**: Import student class lists (via CSV), publish course resources, initiate geofenced attendance sessions, review student check-in coordinates, and export registers.
+* **Student Interface**: Check in to active lectures, generate/manage secure device passkeys, and view personal attendance history.
 
-## Local Setup
+### 🔒 Secure Verification Architecture
+* **Geofenced Check-ins**: Location perimeters validate student coordinates against lecturer coordinates during check-in.
+* **Device Passkey Binding**: Authenticates and binds student profiles to individual devices during account activation, preventing proxy attendance.
+* **Student Activation Flow**: Imported students receive unique activation links, confirm their Student ID, and activate their device profile.
 
-Copy `.env.example` to `.env.local` and fill in real values before connecting external services.
+---
 
-At minimum, local database-backed routes require:
+## Technology Stack
 
-```bash
-DATABASE_URL="postgresql://..."
-AUTH_SECRET="a-long-random-secret"
-APP_URL="http://localhost:3000"
-EMAIL_SENDER="sender@gmail.com"
-EMAIL_SENDER_NAME="AttendGuard"
-GMAIL_APP_PASSWORD="gmail-app-password"
-```
+* **Framework**: Next.js (App Router, Turbopack)
+* **Language**: TypeScript
+* **Styling**: Tailwind CSS (v4) & shadcn/ui
+* **Database & ORM**: Drizzle ORM with Neon PostgreSQL
+* **Mail & SMTP**: Gmail SMTP configured with Nodemailer
 
-Run the development server:
+---
 
-```bash
-npm run dev
-```
+## Local Development Setup
 
-Open [http://localhost:3000](http://localhost:3000).
+1. **Install Dependencies**:
+   ```bash
+   npm install
+   ```
 
-## Useful Commands
+2. **Environment Configuration**:
+   Copy `.env.example` to `.env.local` and define the required variables:
+   ```bash
+   DATABASE_URL="postgresql://..."
+   AUTH_SECRET="your-long-random-secret"
+   APP_URL="http://localhost:3000"
+   EMAIL_SENDER="no-reply@pentvars.edu.gh"
+   EMAIL_SENDER_NAME="PU Attendance System"
+   GMAIL_APP_PASSWORD="your-gmail-app-password"
+   ```
 
-```bash
-npm run lint
-npm run typecheck
-npm run build
-npm run db:generate
-npm run db:migrate
-npm run db:studio
-npm run db:seed
-```
+3. **Database Setup**:
+   Generate migrations, push them to your database, and seed initial records:
+   ```bash
+   npm run db:generate
+   npm run db:migrate
+   npm run db:seed
+   ```
 
-## Notes
+4. **Start Development Server**:
+   ```bash
+   npm run dev
+   ```
+   Open [http://localhost:3000](http://localhost:3000) to view the application.
 
-- Keep database access in server-only files.
-- Do not expose secrets with `NEXT_PUBLIC_`.
-- Drizzle schema lives in `src/db/schema.ts`.
-- The database client is lazily initialized in `src/db/client.ts` to keep Next.js builds safe.
-- CSV student import expects headings: `student name`, `student id`, `email address`, with optional `programme`, `level`, and `class group`.
-- Students imported by a lecturer receive a secure one-time activation link by email, confirm their student ID, then set a password.
-- Passkeys are validated by hash and stored encrypted only for authenticated first-version delivery.
-- More operational notes live in `PROJECT_INFORMATION.md`.
+---
 
-## Current Product Scope
+## Utility Commands
 
-- Admin-only lecturer account creation
-- Admin course catalogue management
-- Admin course-to-lecturer assignments
-- Secure imported student account activation
-- Lecturer class roster import
-- Lecturer course resource publishing
-- Attendance session creation with lecturer geolocation
-- Student-specific passkey generation
-- Student active-session check-in with location capture
-- Server-side passkey, time, enrolment, duplicate, accuracy, and geofence validation
-- Lecturer dashboard, session monitoring, manual review approval/rejection
-- Student class list, active sessions, and attendance history
-- CSV attendance report export
+* `npm run lint` — Lint codebase for code style and formatting.
+* `npm run typecheck` — Run TypeScript compile-time type-safety check.
+* `npm run build` — Build production optimized bundle.
+* `npm run db:studio` — Open interactive database studio interface (Drizzle Studio).
 
-## Deploy on Vercel
+---
 
-Production is deployed on Vercel:
+## Production Deployment
 
+Production builds are compiled and deployed to Vercel:
 ```bash
 vercel deploy --prod --force --yes --scope harry-atieku-boateng-s-projects
 ```

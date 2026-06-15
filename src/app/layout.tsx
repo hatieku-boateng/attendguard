@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { InitialLoader } from "@/components/initial-loader";
 
 const appUrl = process.env.APP_URL
   ? process.env.APP_URL.replace(/\/$/, "")
@@ -59,7 +60,10 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <InitialLoader />
+        {children}
+      </body>
     </html>
   );
 }

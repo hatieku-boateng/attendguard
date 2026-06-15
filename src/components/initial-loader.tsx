@@ -1,6 +1,18 @@
-export default function RootLoading() {
+"use client";
+
+import * as React from "react";
+
+export function InitialLoader() {
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (mounted) return null;
+
   return (
-    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background/80 backdrop-blur-md">
+    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background/85 backdrop-blur-md">
       <style dangerouslySetInnerHTML={{__html: `
         @keyframes progress {
           0% { transform: scaleX(0); }

@@ -1,85 +1,93 @@
-# AttendGuard
+# Pentecost University Attendance System
 
-Full-stack attendance management system for administrator-managed lecturers,
-course assignment, student enrolment, secure account activation, and
-location-aware attendance sessions.
+A secure, location-aware digital attendance management platform for Pentecost
+University. It transitions paper-based registers into verified, auditable
+attendance records with administrator-managed lecturers, course assignments,
+student enrolment, account activation, passkeys, and geofenced coordinate
+verification.
 
-## Stack
+## Core Features
 
-- Next.js App Router
-- TypeScript
-- Tailwind CSS
-- shadcn/ui
-- Drizzle ORM
-- Neon PostgreSQL
-- Gmail SMTP with Nodemailer
+### Role-Based Portals
 
-## Local Setup
+* **Administrator Console**: Manage lecturers, students, academic years,
+  faculties, departments, course catalogues, and course-to-lecturer assignments.
+* **Lecturer Workspace**: Enrol students manually or by CSV, publish course
+  resources, create geofenced attendance sessions, manage passkeys, review
+  exceptional attempts, and export registers.
+* **Student Interface**: Activate an imported account, check in to active
+  lectures, and view personal attendance history.
 
-Copy `.env.example` to `.env.local` and fill in real values before connecting external services.
+### Secure Verification Architecture
 
-At minimum, local database-backed routes require:
+* **Geofenced Check-ins**: Lecturer session coordinates define the permitted
+  attendance radius. Student GPS capture continues until the device is within
+  the configured radius and accuracy limit.
+* **Passkey Validation**: Student-specific passkeys are hashed for verification
+  and used with location checks during attendance submission.
+* **Student Activation Flow**: Imported students receive secure activation links,
+  confirm their student ID, and create their password.
+* **Audit Trail**: Attendance records, rejected attempts, manual approvals, and
+  session changes are stored for review and reporting.
 
-```bash
-DATABASE_URL="postgresql://..."
-AUTH_SECRET="a-long-random-secret"
-APP_URL="http://localhost:3000"
-EMAIL_SENDER="sender@gmail.com"
-EMAIL_SENDER_NAME="AttendGuard"
-GMAIL_APP_PASSWORD="gmail-app-password"
-```
+## Technology Stack
 
-Run the development server:
+* **Framework**: Next.js App Router
+* **Language**: TypeScript
+* **Styling**: Tailwind CSS and shadcn/ui
+* **Database and ORM**: Drizzle ORM with Neon PostgreSQL
+* **Mail and SMTP**: Gmail SMTP configured with Nodemailer
 
-```bash
-npm run dev
-```
+## Local Development Setup
 
-Open [http://localhost:3000](http://localhost:3000).
+1. Install dependencies:
+
+   ```bash
+   npm install
+   ```
+
+2. Copy `.env.example` to `.env.local` and define the required variables:
+
+   ```bash
+   DATABASE_URL="postgresql://..."
+   AUTH_SECRET="your-long-random-secret"
+   APP_URL="http://localhost:3000"
+   EMAIL_SENDER="sender@gmail.com"
+   EMAIL_SENDER_NAME="PU Attendance"
+   GMAIL_APP_PASSWORD="your-gmail-app-password"
+   ```
+
+3. Prepare the database:
+
+   ```bash
+   npm run db:generate
+   npm run db:migrate
+   npm run db:seed
+   ```
+
+4. Start the development server:
+
+   ```bash
+   npm run dev
+   ```
+
+   Open [http://localhost:3000](http://localhost:3000).
 
 ## Useful Commands
 
-```bash
-npm run lint
-npm run typecheck
-npm run build
-npm run db:generate
-npm run db:migrate
-npm run db:studio
-npm run db:seed
-```
+* `npm run lint` - Lint the codebase.
+* `npm run typecheck` - Run TypeScript compile-time checks.
+* `npm run build` - Build the production optimized bundle.
+* `npm run db:studio` - Open Drizzle Studio.
 
-## Notes
+## Production Deployment
 
-- Keep database access in server-only files.
-- Do not expose secrets with `NEXT_PUBLIC_`.
-- Drizzle schema lives in `src/db/schema.ts`.
-- The database client is lazily initialized in `src/db/client.ts` to keep Next.js builds safe.
-- CSV student import expects headings: `student name`, `student id`, `email address`, with optional `programme`, `level`, and `class group`.
-- Students imported by a lecturer receive a secure one-time activation link by email, confirm their student ID, then set a password.
-- Passkeys are validated by hash and stored encrypted only for authenticated first-version delivery.
-- More operational notes live in `PROJECT_INFORMATION.md`.
-
-## Current Product Scope
-
-- Admin-only lecturer account creation
-- Admin course catalogue management
-- Admin course-to-lecturer assignments
-- Secure imported student account activation
-- Lecturer class roster import
-- Lecturer course resource publishing
-- Attendance session creation with lecturer geolocation
-- Student-specific passkey generation
-- Student active-session check-in with location capture
-- Server-side passkey, time, enrolment, duplicate, accuracy, and geofence validation
-- Lecturer dashboard, session monitoring, manual review approval/rejection
-- Student class list, active sessions, and attendance history
-- CSV attendance report export
-
-## Deploy on Vercel
-
-Production is deployed on Vercel:
+Production builds are compiled and deployed to Vercel:
 
 ```bash
 vercel deploy --prod --force --yes --scope harry-atieku-boateng-s-projects
 ```
+
+Production URL:
+
+https://attendance-management-system-two-omega.vercel.app

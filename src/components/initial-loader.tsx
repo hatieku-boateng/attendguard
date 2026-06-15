@@ -1,18 +1,35 @@
 "use client";
 
-import * as React from "react";
+import { useEffect, useState } from "react";
 
 export function InitialLoader() {
-  const [mounted, setMounted] = React.useState(false);
+  const [loading, setLoading] = useState(true);
+  const [fade, setFade] = useState(false);
 
-  React.useEffect(() => {
-    setMounted(true);
+  useEffect(() => {
+    // Start fading out slightly before unmounting
+    const fadeTimer = setTimeout(() => {
+      setFade(true);
+    }, 500);
+
+    const unmountTimer = setTimeout(() => {
+      setLoading(false);
+    }, 800);
+
+    return () => {
+      clearTimeout(fadeTimer);
+      clearTimeout(unmountTimer);
+    };
   }, []);
 
-  if (mounted) return null;
+  if (!loading) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background/85 backdrop-blur-md">
+    <div 
+      className={`fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-background/95 backdrop-blur-md transition-opacity duration-300 ${
+        fade ? "opacity-0 pointer-events-none" : "opacity-100"
+      }`}
+    >
       <style dangerouslySetInnerHTML={{__html: `
         @keyframes progress {
           0% { transform: scaleX(0); }

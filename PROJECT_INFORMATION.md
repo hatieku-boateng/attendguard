@@ -2,7 +2,7 @@
 
 ## Live Services
 
-- Production app: https://omega.vercel.app (or https://attendguard.vercel.app)
+- Production app: https://attendance-management-system-two-omega.vercel.app
 - GitHub repository: https://github.com/hatieku-boateng/attendguard
 - Vercel project: `attendguard`
 - Vercel scope: `harry-atieku-boateng-s-projects`
@@ -10,9 +10,9 @@
 
 ## Admin Access
 
-- Admin console: /admin/dashboard
-- Admin email: `admin@pentvars.edu.gh`
-- Admin password: stored outside the repository
+- Admin console: `/admin/dashboard`
+- Admin account details must be stored outside the repository.
+- Do not commit administrator passwords, bypass credentials, or plaintext seed credentials.
 
 ## Environment Variables
 
@@ -54,8 +54,9 @@ Notes:
 - Lecturers import/enrol students into assigned courses.
 - Lecturers add course resources for students.
 - Lecturers create attendance sessions.
+- Lecturer session coordinates define the permitted check-in radius.
 - Students activate their account from an emailed link.
-- Students check in to open attendance sessions.
+- Students check in to open attendance sessions only after their device GPS falls within the configured session radius and accuracy limit.
 
 ## Useful Commands
 

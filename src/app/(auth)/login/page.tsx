@@ -60,7 +60,7 @@ export default async function LoginPage({
       eyebrow="Trusted workspace access"
       title="Sign in to your attendance console."
     >
-      <Card className="w-full max-w-md glass-panel rounded-3xl shadow-2xl relative overflow-hidden border-none text-left">
+      <Card className="w-full max-w-md bg-white dark:bg-zinc-900 border border-border/40 rounded-3xl shadow-2xl relative overflow-hidden backdrop-blur-none text-left">
         {/* Dynamic header highlight */}
         <div className="absolute inset-x-0 top-0 h-1 bg-[linear-gradient(90deg,var(--primary),oklch(0.64_0.16_145))]" />
 
@@ -112,7 +112,7 @@ export default async function LoginPage({
                     <Label
                       key={portal.value}
                       className={cn(
-                        "flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-border/70 bg-background/50 px-3 py-3 text-center text-[10px] font-black uppercase tracking-wide text-muted-foreground shadow-sm transition-all hover:border-primary/50 hover:bg-primary/5 has-checked:text-foreground min-[360px]:flex-col min-[360px]:px-2",
+                        "flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-border/80 bg-white dark:bg-zinc-950 px-3 py-3 text-center text-[10px] font-black uppercase tracking-wide text-muted-foreground shadow-sm transition-all hover:border-primary/50 hover:bg-primary/5 has-checked:text-foreground min-[360px]:flex-col min-[360px]:px-2",
                         portal.color,
                       )}
                     >
@@ -139,7 +139,7 @@ export default async function LoginPage({
                 type="email" 
                 required 
                 placeholder="name@example.com" 
-                className="rounded-2xl h-11 px-4 border-border/70 bg-background/50 shadow-sm"
+                className="rounded-2xl h-11 px-4 border-border/70 bg-white dark:bg-zinc-950 shadow-sm"
               />
             </div>
             
@@ -150,7 +150,7 @@ export default async function LoginPage({
                 name="password" 
                 required 
                 placeholder="••••••••" 
-                className="rounded-2xl h-11 px-4 border-border/70 bg-background/50 shadow-sm"
+                className="rounded-2xl h-11 px-4 border-border/70 bg-white dark:bg-zinc-950 shadow-sm"
               />
             </div>
 

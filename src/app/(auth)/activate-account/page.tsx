@@ -36,7 +36,7 @@ export default async function ActivateAccountPage({
       eyebrow="Secure student activation"
       title="Activate your student account."
     >
-      <Card className="w-full max-w-md glass-panel rounded-3xl shadow-2xl relative overflow-hidden border-none text-left">
+      <Card className="w-full max-w-md bg-white dark:bg-zinc-900 border border-border/40 rounded-3xl shadow-2xl relative overflow-hidden backdrop-blur-none text-left">
         {/* Dynamic header highlight */}
         <div className="absolute inset-x-0 top-0 h-1 bg-[linear-gradient(90deg,var(--primary),oklch(0.64_0.16_145))]" />
 
@@ -74,7 +74,7 @@ export default async function ActivateAccountPage({
             <div className="space-y-1.5">
               <Label htmlFor="studentIdNumber" className="text-xs font-extrabold tracking-tight text-muted-foreground uppercase tracking-widest leading-none">Confirm Student ID</Label>
               <Input 
-                className="uppercase-input rounded-2xl h-11 px-4 border-border/70 bg-background/50 shadow-sm" 
+                className="uppercase-input rounded-2xl h-11 px-4 border-border/70 bg-white dark:bg-zinc-950 shadow-sm" 
                 id="studentIdNumber" 
                 name="studentIdNumber" 
                 required 
@@ -89,7 +89,7 @@ export default async function ActivateAccountPage({
                 name="password" 
                 required 
                 placeholder="••••••••" 
-                className="rounded-2xl h-11 px-4 border-border/70 bg-background/50 shadow-sm"
+                className="rounded-2xl h-11 px-4 border-border/70 bg-white dark:bg-zinc-950 shadow-sm"
               />
             </div>
             

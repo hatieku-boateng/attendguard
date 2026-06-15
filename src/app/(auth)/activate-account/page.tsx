@@ -4,13 +4,6 @@ import { GraduationCap, Mail } from "lucide-react";
 import { activateAccountAction } from "@/app/(auth)/actions";
 import { AuthFrame } from "@/components/auth-frame";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { PasswordInput } from "@/components/password-input";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -36,24 +29,24 @@ export default async function ActivateAccountPage({
       eyebrow="Secure student activation"
       title="Activate your student account."
     >
-      <Card className="w-full max-w-md bg-white dark:bg-zinc-900 border border-border/40 rounded-3xl shadow-2xl relative overflow-hidden backdrop-blur-none text-left">
+      <div className="w-full max-w-md bg-white dark:bg-zinc-900 border border-border/40 rounded-3xl shadow-2xl relative overflow-hidden text-left flex flex-col">
         {/* Dynamic header highlight */}
         <div className="absolute inset-x-0 top-0 h-1 bg-[linear-gradient(90deg,var(--primary),oklch(0.64_0.16_145))]" />
 
-        <CardHeader className="pt-8 pb-4">
+        <div className="pt-8 pb-4 px-5 sm:px-6 flex flex-col">
           <div className="flex items-center gap-1.5 pb-2">
             <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full border text-[9px] font-black uppercase tracking-wider text-primary bg-primary/10 border-primary/20">
               <GraduationCap className="size-3.5" />
               Student Enrolment
             </span>
           </div>
-          <CardTitle className="text-2xl font-black tracking-tight text-foreground">Activate account</CardTitle>
-          <CardDescription className="text-xs font-semibold text-muted-foreground mt-1">
+          <h2 className="text-2xl font-black tracking-tight text-foreground">Activate account</h2>
+          <p className="text-xs font-semibold text-muted-foreground mt-1">
             Confirm your student ID and set up your device passkey password.
-          </CardDescription>
-        </CardHeader>
+          </p>
+        </div>
 
-        <CardContent className="space-y-6 pb-8">
+        <div className="space-y-6 pb-8 px-5 sm:px-6 flex flex-col">
           <form action={activateAccountAction} className="space-y-4">
             <input name="token" type="hidden" value={token} />
             {message ? (
@@ -104,8 +97,8 @@ export default async function ActivateAccountPage({
               Sign in
             </Link>
           </p>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </AuthFrame>
   );
 }

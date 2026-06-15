@@ -4,13 +4,6 @@ import { ShieldCheck, BookOpen, GraduationCap } from "lucide-react";
 import { loginAction } from "@/app/(auth)/actions";
 import { AuthFrame } from "@/components/auth-frame";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { PasswordInput } from "@/components/password-input";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -60,11 +53,11 @@ export default async function LoginPage({
       eyebrow="Trusted workspace access"
       title="Sign in to your attendance console."
     >
-      <Card className="w-full max-w-md glass-panel rounded-3xl shadow-2xl relative overflow-hidden border-none text-left">
+      <div className="w-full max-w-md bg-white dark:bg-zinc-900 border border-border/40 rounded-3xl shadow-2xl relative overflow-hidden text-left flex flex-col">
         {/* Dynamic header highlight */}
         <div className="absolute inset-x-0 top-0 h-1 bg-[linear-gradient(90deg,var(--primary),oklch(0.64_0.16_145))]" />
 
-        <CardHeader className="pt-7 pb-4 sm:pt-8">
+        <div className="pt-7 pb-4 sm:pt-8 px-5 sm:px-6 flex flex-col">
           <div className="hidden flex-wrap gap-2 pb-2 min-[360px]:flex">
             {[
               { role: "Admin", icon: ShieldCheck, color: "text-amber-600 bg-amber-500/10 border-amber-500/20 dark:text-amber-400" },
@@ -86,13 +79,13 @@ export default async function LoginPage({
               );
             })}
           </div>
-          <CardTitle className="text-2xl font-black tracking-tight text-foreground">Sign in</CardTitle>
-          <CardDescription className="text-xs font-semibold text-muted-foreground mt-1">
+          <h2 className="text-2xl font-black tracking-tight text-foreground">Sign in</h2>
+          <p className="text-xs font-semibold text-muted-foreground mt-1">
             Access your administrator, lecturer, or student attendance workspace.
-          </CardDescription>
-        </CardHeader>
+          </p>
+        </div>
 
-        <CardContent className="space-y-5 pb-6 sm:space-y-6 sm:pb-8">
+        <div className="space-y-5 pb-6 sm:space-y-6 sm:pb-8 px-5 sm:px-6 flex flex-col">
           <form action={loginAction} className="space-y-4">
             {message ? (
               <p className="rounded-2xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-xs font-semibold text-destructive leading-relaxed">
@@ -109,10 +102,10 @@ export default async function LoginPage({
                   const Icon = portal.icon;
 
                   return (
-                    <Label
+                    <label
                       key={portal.value}
                       className={cn(
-                        "flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-border/70 bg-background/50 px-3 py-3 text-center text-[10px] font-black uppercase tracking-wide text-muted-foreground shadow-sm transition-all hover:border-primary/50 hover:bg-primary/5 has-checked:text-foreground min-[360px]:flex-col min-[360px]:px-2",
+                        "flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-border/80 bg-white dark:bg-zinc-950 px-3 py-3 text-center text-[10px] font-black uppercase tracking-wide text-muted-foreground shadow-sm transition-all hover:border-primary/50 hover:bg-primary/5 has-checked:text-foreground min-[360px]:flex-col min-[360px]:px-2",
                         portal.color,
                       )}
                     >
@@ -125,7 +118,7 @@ export default async function LoginPage({
                       />
                       <Icon className="size-4" />
                       {portal.label}
-                    </Label>
+                    </label>
                   );
                 })}
               </div>
@@ -139,7 +132,7 @@ export default async function LoginPage({
                 type="email" 
                 required 
                 placeholder="name@example.com" 
-                className="rounded-2xl h-11 px-4 border-border/70 bg-background/50 shadow-sm"
+                className="rounded-2xl h-11 px-4 border-border/70 bg-white dark:bg-zinc-950 shadow-sm"
               />
             </div>
             
@@ -150,7 +143,7 @@ export default async function LoginPage({
                 name="password" 
                 required 
                 placeholder="••••••••" 
-                className="rounded-2xl h-11 px-4 border-border/70 bg-background/50 shadow-sm"
+                className="rounded-2xl h-11 px-4 border-border/70 bg-white dark:bg-zinc-950 shadow-sm"
               />
             </div>
 
@@ -165,8 +158,8 @@ export default async function LoginPage({
               Activate account
             </Link>
           </p>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </AuthFrame>
   );
 }

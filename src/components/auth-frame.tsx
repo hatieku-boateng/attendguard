@@ -19,11 +19,7 @@ export function AuthFrame({
   return (
     <main className="relative min-h-screen bg-background text-foreground overflow-x-hidden pb-16 transition-colors duration-500">
       
-      {/* Subtle background ambient lights */}
-      <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-[-10%] left-[-10%] w-[60rem] h-[60rem] rounded-full bg-primary/5 blur-[120px] dark:bg-primary/3" />
-        <div className="absolute bottom-[10%] right-[-15%] w-[50rem] h-[50rem] rounded-full bg-cyan-500/5 blur-[130px] dark:bg-cyan-500/3 animate-pulse" />
-      </div>
+
 
       {/* Structured Header - Aligns with Landing Page Header */}
       <header className="mx-auto flex w-full max-w-[85rem] items-center justify-between px-4 py-5 sm:px-8 sm:py-6 z-30 relative">

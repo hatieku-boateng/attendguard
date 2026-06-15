@@ -1,8 +1,8 @@
-# AttendGuard Project Information
+# Pentecost University Attendance System Project Information
 
 ## Live Services
 
-- Production app: https://attendguard.vercel.app
+- Production app: https://omega.vercel.app (or https://attendguard.vercel.app)
 - GitHub repository: https://github.com/hatieku-boateng/attendguard
 - Vercel project: `attendguard`
 - Vercel scope: `harry-atieku-boateng-s-projects`
@@ -10,8 +10,8 @@
 
 ## Admin Access
 
-- Admin console: https://attendguard.vercel.app/admin/dashboard
-- Admin email: `admin@attendguard.app`
+- Admin console: /admin/dashboard
+- Admin email: `admin@pentvars.edu.gh`
 - Admin password: stored outside the repository
 
 ## Environment Variables

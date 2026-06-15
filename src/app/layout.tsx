@@ -1,8 +1,14 @@
 import type { Metadata } from "next";
 import "./globals.css";
 
+const appUrl = process.env.APP_URL
+  ? process.env.APP_URL.replace(/\/$/, "")
+  : process.env.VERCEL_URL
+    ? `https://${process.env.VERCEL_URL}`
+    : "https://attendguard.vercel.app";
+
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.APP_URL || "https://attendguard.vercel.app"),
+  metadataBase: new URL(appUrl),
   title: "Pentecost University Attendance",
   description:
     "Secure attendance management system for Pentecost University.",
@@ -15,7 +21,7 @@ export const metadata: Metadata = {
     description: "Secure attendance management system for Pentecost University.",
     images: [
       {
-        url: "/puc-logo-full.png",
+        url: `${appUrl}/puc-logo-full.png`,
         width: 1200,
         height: 630,
         alt: "Pentecost University Logo",

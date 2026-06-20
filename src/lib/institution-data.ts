@@ -22,6 +22,25 @@ const defaultDepartment = {
 
 export async function ensureDefaultFacultyDepartment() {
   const db = getDb();
+
+  const [existingDepartmentByCode] = await db
+    .select()
+    .from(departments)
+    .where(eq(departments.code, defaultDepartment.code))
+    .limit(1);
+
+  if (existingDepartmentByCode) {
+    const [departmentFaculty] = await db
+      .select()
+      .from(faculties)
+      .where(eq(faculties.id, existingDepartmentByCode.facultyId))
+      .limit(1);
+
+    if (departmentFaculty) {
+      return { faculty: departmentFaculty, department: existingDepartmentByCode };
+    }
+  }
+
   const [existingFaculty] = await db
     .select()
     .from(faculties)

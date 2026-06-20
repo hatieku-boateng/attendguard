@@ -18,7 +18,7 @@ import { getDb } from "@/db/client";
 import { attendanceSessions, courses } from "@/db/schema";
 import { requireRole } from "@/lib/auth";
 import { FormModal } from "@/components/form-modal";
-import { LocationFields } from "@/components/location-fields";
+import { SessionLocationFields } from "@/components/session-location-fields";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { createAttendanceSessionAction } from "@/app/lecturer/sessions/actions";
@@ -64,6 +64,16 @@ export default async function CourseSessionsPage({
     .from(attendanceSessions)
     .where(eq(attendanceSessions.courseId, course.id))
     .orderBy(desc(attendanceSessions.opensAt));
+  const previousSessionLocations = sessions.map((session) => ({
+    id: session.id,
+    title: session.sessionTitle,
+    opensAtLabel: session.opensAt.toLocaleString(),
+    latitude: session.lecturerLatitude,
+    longitude: session.lecturerLongitude,
+    accuracy: session.lecturerLocationAccuracy ?? "",
+    radiusMeters: session.geofenceRadiusMeters,
+    maxAccuracyMeters: session.maxAcceptedAccuracyMeters,
+  }));
 
   return (
     <>
@@ -198,13 +208,13 @@ export default async function CourseSessionsPage({
           </div>
           <div className="space-y-1.5 sm:col-span-2">
             <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Lecturer location</Label>
-            <LocationFields
+            <SessionLocationFields
               accuracyName="lecturerLocationAccuracy"
-              allowManualEntry
               latitudeName="lecturerLatitude"
               longitudeName="lecturerLongitude"
               maxAccuracyInputId="maxAcceptedAccuracyMeters"
-              requireAcceptance
+              previousLocations={previousSessionLocations}
+              radiusInputId="geofenceRadiusMeters"
             />
           </div>
           <div className="sm:col-span-2 pt-2">

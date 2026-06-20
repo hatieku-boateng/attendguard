@@ -21,6 +21,7 @@ import { attendanceSessions, courses } from "@/db/schema";
 import { requireRole } from "@/lib/auth";
 import { FormModal } from "@/components/form-modal";
 import { LocationFields } from "@/components/location-fields";
+import { SessionLocationFields } from "@/components/session-location-fields";
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import {
   Select,
@@ -163,7 +164,7 @@ export default async function LecturerSessionsPage({
           ? [asc(attendanceSessions.status), desc(attendanceSessions.opensAt)]
           : [desc(attendanceSessions.opensAt)];
 
-  const [lecturerCourses, rows] = await Promise.all([
+  const [lecturerCourses, rows, reusableLocationRows] = await Promise.all([
     db
       .select({
         id: courses.id,
@@ -188,7 +189,34 @@ export default async function LecturerSessionsPage({
       .innerJoin(courses, eq(attendanceSessions.courseId, courses.id))
       .where(and(...filters))
       .orderBy(...sortOrder),
+    db
+      .select({
+        id: attendanceSessions.id,
+        title: attendanceSessions.sessionTitle,
+        opensAt: attendanceSessions.opensAt,
+        lecturerLatitude: attendanceSessions.lecturerLatitude,
+        lecturerLongitude: attendanceSessions.lecturerLongitude,
+        lecturerLocationAccuracy: attendanceSessions.lecturerLocationAccuracy,
+        geofenceRadiusMeters: attendanceSessions.geofenceRadiusMeters,
+        maxAcceptedAccuracyMeters: attendanceSessions.maxAcceptedAccuracyMeters,
+        courseCode: courses.courseCode,
+      })
+      .from(attendanceSessions)
+      .innerJoin(courses, eq(attendanceSessions.courseId, courses.id))
+      .where(eq(attendanceSessions.lecturerId, lecturerId))
+      .orderBy(desc(attendanceSessions.opensAt)),
   ]);
+  const previousSessionLocations = reusableLocationRows.map((session) => ({
+    id: session.id,
+    title: session.title,
+    opensAtLabel: session.opensAt.toLocaleString(),
+    latitude: session.lecturerLatitude,
+    longitude: session.lecturerLongitude,
+    accuracy: session.lecturerLocationAccuracy ?? "",
+    courseLabel: session.courseCode,
+    radiusMeters: session.geofenceRadiusMeters,
+    maxAccuracyMeters: session.maxAcceptedAccuracyMeters,
+  }));
 
   return (
     <>
@@ -460,13 +488,13 @@ export default async function LecturerSessionsPage({
           </div>
           <div className="space-y-1.5 sm:col-span-2">
             <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Lecturer location</Label>
-            <LocationFields
+            <SessionLocationFields
               accuracyName="lecturerLocationAccuracy"
-              allowManualEntry
               latitudeName="lecturerLatitude"
               longitudeName="lecturerLongitude"
               maxAccuracyInputId="maxAcceptedAccuracyMeters"
-              requireAcceptance
+              previousLocations={previousSessionLocations}
+              radiusInputId="geofenceRadiusMeters"
             />
           </div>
           <div className="sm:col-span-2 pt-2">

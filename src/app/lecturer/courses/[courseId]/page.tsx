@@ -39,7 +39,7 @@ import {
 } from "@/db/schema";
 import { requireRole } from "@/lib/auth";
 import { FormModal } from "@/components/form-modal";
-import { LocationFields } from "@/components/location-fields";
+import { SessionLocationFields } from "@/components/session-location-fields";
 import { createAttendanceSessionAction } from "@/app/lecturer/sessions/actions";
 
 export default async function CourseDetailPage({
@@ -98,10 +98,25 @@ export default async function CourseDetailPage({
       status: attendanceSessions.status,
       opensAt: attendanceSessions.opensAt,
       finalClosesAt: attendanceSessions.finalClosesAt,
+      lecturerLatitude: attendanceSessions.lecturerLatitude,
+      lecturerLongitude: attendanceSessions.lecturerLongitude,
+      lecturerLocationAccuracy: attendanceSessions.lecturerLocationAccuracy,
+      geofenceRadiusMeters: attendanceSessions.geofenceRadiusMeters,
+      maxAcceptedAccuracyMeters: attendanceSessions.maxAcceptedAccuracyMeters,
     })
     .from(attendanceSessions)
     .where(eq(attendanceSessions.courseId, course.id))
     .orderBy(desc(attendanceSessions.opensAt));
+  const previousSessionLocations = sessions.map((session) => ({
+    id: session.id,
+    title: session.title,
+    opensAtLabel: session.opensAt.toLocaleString(),
+    latitude: session.lecturerLatitude,
+    longitude: session.lecturerLongitude,
+    accuracy: session.lecturerLocationAccuracy ?? "",
+    radiusMeters: session.geofenceRadiusMeters,
+    maxAccuracyMeters: session.maxAcceptedAccuracyMeters,
+  }));
 
   return (
     <>
@@ -372,13 +387,13 @@ export default async function CourseDetailPage({
           </div>
           <div className="space-y-1.5 sm:col-span-2">
             <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Lecturer location</Label>
-            <LocationFields
+            <SessionLocationFields
               accuracyName="lecturerLocationAccuracy"
-              allowManualEntry
               latitudeName="lecturerLatitude"
               longitudeName="lecturerLongitude"
               maxAccuracyInputId="maxAcceptedAccuracyMeters"
-              requireAcceptance
+              previousLocations={previousSessionLocations}
+              radiusInputId="geofenceRadiusMeters"
             />
           </div>
           <div className="sm:col-span-2 pt-2">

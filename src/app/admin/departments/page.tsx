@@ -24,7 +24,14 @@ import {
 export default async function AdminDepartmentsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ modal?: string; id?: string; error?: string }>;
+  searchParams: Promise<{
+    modal?: string;
+    id?: string;
+    error?: string;
+    updated?: string;
+    deleted?: string;
+    archived?: string;
+  }>;
 }) {
   await requireRole("administrator");
   await ensureDefaultFacultyDepartment();
@@ -58,6 +65,11 @@ export default async function AdminDepartmentsPage({
       .limit(1);
   }
 
+  const errorMessages: Record<string, string> = {
+    missing: "Please complete all required fields.",
+    exists: "A department with that code already exists, or that faculty already has a department with this name.",
+  };
+
   return (
     <>
       <PageHeader
@@ -72,6 +84,15 @@ export default async function AdminDepartmentsPage({
           </Button>
         }
       />
+      {params.updated || params.deleted || params.archived ? (
+        <p className="mb-4 rounded-xl border border-primary/20 bg-primary/10 px-4 py-3 text-xs font-semibold text-primary leading-relaxed">
+          {params.updated
+            ? "Department details updated successfully."
+            : params.deleted
+              ? "Department deleted successfully."
+              : "Department has linked records, so it was marked inactive instead of permanently deleted."}
+        </p>
+      ) : null}
       <div className="grid gap-4 md:grid-cols-2">
         {rows.map((department) => (
           <Card key={department.id} className="glass-panel glass-panel-hover border-border/40 overflow-hidden relative shadow-sm hover:shadow-md transition-all duration-300 group hover:-translate-y-0.5">
@@ -115,9 +136,9 @@ export default async function AdminDepartmentsPage({
         className="sm:max-w-xl"
       >
         <form action={createDepartmentAction} className="grid gap-4 sm:grid-cols-2 pt-2">
-          {params.error === "missing" ? (
+          {params.error && errorMessages[params.error] ? (
             <p className="rounded-xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-xs font-semibold text-destructive leading-relaxed sm:col-span-2">
-              Please complete all required fields.
+              {errorMessages[params.error]}
             </p>
           ) : null}
           <div className="space-y-1.5 sm:col-span-2">
@@ -167,9 +188,9 @@ export default async function AdminDepartmentsPage({
           <div className="grid gap-6 pt-2 md:grid-cols-[1fr_200px]">
             <form action={updateDepartmentAction} className="grid gap-4 sm:grid-cols-2">
               <input name="departmentId" type="hidden" value={editDepartment.id} />
-              {params.error === "missing" ? (
+              {params.error && errorMessages[params.error] ? (
                 <p className="rounded-xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-xs font-semibold text-destructive leading-relaxed sm:col-span-2">
-                  Please complete all required fields.
+                  {errorMessages[params.error]}
                 </p>
               ) : null}
               <div className="space-y-1.5 sm:col-span-2">

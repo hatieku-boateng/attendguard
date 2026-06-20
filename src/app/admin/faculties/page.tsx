@@ -24,7 +24,14 @@ import {
 export default async function AdminFacultiesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ modal?: string; id?: string; error?: string }>;
+  searchParams: Promise<{
+    modal?: string;
+    id?: string;
+    error?: string;
+    updated?: string;
+    deleted?: string;
+    archived?: string;
+  }>;
 }) {
   await requireRole("administrator");
   await ensureDefaultFacultyDepartment();
@@ -69,6 +76,15 @@ export default async function AdminFacultiesPage({
           </Button>
         }
       />
+      {params.updated || params.deleted || params.archived ? (
+        <p className="mb-4 rounded-xl border border-primary/20 bg-primary/10 px-4 py-3 text-xs font-semibold text-primary leading-relaxed">
+          {params.updated
+            ? "Faculty details updated successfully."
+            : params.deleted
+              ? "Faculty deleted successfully."
+              : "Faculty has linked records, so it was marked inactive instead of permanently deleted."}
+        </p>
+      ) : null}
       <div className="grid gap-4">
         {facultyRows.map((faculty) => {
           const facultyDepartments = departmentRows.filter(

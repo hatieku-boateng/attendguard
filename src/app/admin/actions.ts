@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { and, count, eq, inArray } from "drizzle-orm";
+import { and, count, eq, inArray, ne, or } from "drizzle-orm";
 
 import { getDb } from "@/db/client";
 import {
@@ -79,7 +79,7 @@ export async function createFacultyAction(formData: FormData) {
   const [existing] = await db
     .select({ id: faculties.id })
     .from(faculties)
-    .where(eq(faculties.code, code))
+    .where(or(eq(faculties.code, code), eq(faculties.name, name)))
     .limit(1);
 
   if (existing) {
@@ -119,6 +119,21 @@ export async function updateFacultyAction(formData: FormData) {
   }
 
   const db = getDb();
+  const [existingFaculty] = await db
+    .select({ id: faculties.id })
+    .from(faculties)
+    .where(
+      and(
+        ne(faculties.id, facultyId),
+        or(eq(faculties.code, code), eq(faculties.name, name)),
+      ),
+    )
+    .limit(1);
+
+  if (existingFaculty) {
+    redirect(`/admin/faculties?modal=edit&id=${facultyId}&error=exists`);
+  }
+
   await db
     .update(faculties)
     .set({
@@ -139,7 +154,8 @@ export async function updateFacultyAction(formData: FormData) {
   });
 
   revalidatePath("/admin/faculties");
-  redirect("/admin/faculties");
+  revalidatePath("/admin/departments");
+  redirect("/admin/faculties?updated=1");
 }
 
 export async function deleteFacultyAction(formData: FormData) {
@@ -166,6 +182,20 @@ export async function deleteFacultyAction(formData: FormData) {
       .update(faculties)
       .set({ status: "inactive", updatedAt: new Date() })
       .where(eq(faculties.id, facultyId));
+    await db.insert(auditLogs).values({
+      userId: admin.id,
+      action: "faculty_marked_inactive",
+      entityType: "faculty",
+      entityId: facultyId,
+      newValue: {
+        linkedDepartments: departmentCount?.value ?? 0,
+        linkedStudents: studentCount?.value ?? 0,
+        linkedCatalogEntries: catalogCount?.value ?? 0,
+      },
+    });
+    revalidatePath("/admin/faculties");
+    revalidatePath("/admin/departments");
+    revalidatePath("/admin/catalog");
     redirect("/admin/faculties?archived=1");
   }
 
@@ -178,6 +208,7 @@ export async function deleteFacultyAction(formData: FormData) {
   });
 
   revalidatePath("/admin/faculties");
+  revalidatePath("/admin/departments");
   redirect("/admin/faculties?deleted=1");
 }
 
@@ -192,6 +223,21 @@ export async function createDepartmentAction(formData: FormData) {
   }
 
   const db = getDb();
+  const [existingDepartment] = await db
+    .select({ id: departments.id })
+    .from(departments)
+    .where(
+      or(
+        eq(departments.code, code),
+        and(eq(departments.facultyId, facultyId), eq(departments.name, name)),
+      ),
+    )
+    .limit(1);
+
+  if (existingDepartment) {
+    redirect("/admin/departments?modal=new&error=exists");
+  }
+
   const [department] = await db
     .insert(departments)
     .values({
@@ -228,6 +274,24 @@ export async function updateDepartmentAction(formData: FormData) {
   }
 
   const db = getDb();
+  const [existingDepartment] = await db
+    .select({ id: departments.id })
+    .from(departments)
+    .where(
+      and(
+        ne(departments.id, departmentId),
+        or(
+          eq(departments.code, code),
+          and(eq(departments.facultyId, facultyId), eq(departments.name, name)),
+        ),
+      ),
+    )
+    .limit(1);
+
+  if (existingDepartment) {
+    redirect(`/admin/departments?modal=edit&id=${departmentId}&error=exists`);
+  }
+
   await db
     .update(departments)
     .set({
@@ -250,7 +314,8 @@ export async function updateDepartmentAction(formData: FormData) {
 
   revalidatePath("/admin/departments");
   revalidatePath("/admin/faculties");
-  redirect("/admin/departments");
+  revalidatePath("/admin/catalog");
+  redirect("/admin/departments?updated=1");
 }
 
 export async function deleteDepartmentAction(formData: FormData) {
@@ -272,6 +337,19 @@ export async function deleteDepartmentAction(formData: FormData) {
       .update(departments)
       .set({ status: "inactive", updatedAt: new Date() })
       .where(eq(departments.id, departmentId));
+    await db.insert(auditLogs).values({
+      userId: admin.id,
+      action: "department_marked_inactive",
+      entityType: "department",
+      entityId: departmentId,
+      newValue: {
+        linkedStudents: studentCount?.value ?? 0,
+        linkedCatalogEntries: catalogCount?.value ?? 0,
+      },
+    });
+    revalidatePath("/admin/departments");
+    revalidatePath("/admin/faculties");
+    revalidatePath("/admin/catalog");
     redirect("/admin/departments?archived=1");
   }
 
@@ -285,6 +363,7 @@ export async function deleteDepartmentAction(formData: FormData) {
 
   revalidatePath("/admin/departments");
   revalidatePath("/admin/faculties");
+  revalidatePath("/admin/catalog");
   redirect("/admin/departments?deleted=1");
 }
 

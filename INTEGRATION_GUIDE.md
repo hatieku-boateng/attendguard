@@ -1,43 +1,44 @@
-# AttendGuard School Management System Integration Guide
+# AttendGuard Reporting Integration Guide
 
-This guide documents the neutral integration layer that allows a PHP-based school management system or any trusted SIS to synchronize institutional data with AttendGuard.
+This guide documents the preferred integration model for connecting AttendGuard to an existing PHP school management system.
+
+## Integration Direction
+
+AttendGuard should handle the attendance workflow:
+
+- Administrator setup for faculties, departments, lecturers, courses, lecture halls, and students.
+- Lecturer course management, student enrolment, attendance sessions, GPS checks, reviews, approvals, and corrections.
+- Student account activation and attendance submission.
+- Official attendance record storage.
+
+The PHP school management system should connect to AttendGuard only when it needs to pull reports.
+
+```text
+AttendGuard
+  Attendance operations
+  GPS verification
+  Reviews and approvals
+  Official attendance records
+
+        secure report API
+
+PHP School Management System
+  Pulls reports
+  Displays or stores summaries
+```
+
+This keeps the integration simpler and avoids both systems trying to manage the same operational workflow.
 
 ## Security
 
-All integration requests must include a shared bearer token:
+All report requests must include the shared bearer token:
 
 ```http
 Authorization: Bearer <INTEGRATION_API_SECRET>
 X-Source-System: php_sis
 ```
 
-`INTEGRATION_API_SECRET` must be configured in the deployed environment before these endpoints can be used. `X-Source-System` is optional, but recommended. It lets AttendGuard keep records from different external systems distinct.
-
-## Payload Shape
-
-Each sync endpoint accepts any of these shapes:
-
-```json
-{ "externalId": "FAC-001", "name": "Faculty of Engineering", "code": "FOE" }
-```
-
-```json
-[
-  { "externalId": "FAC-001", "name": "Faculty of Engineering", "code": "FOE" }
-]
-```
-
-```json
-{
-  "items": [
-    { "externalId": "FAC-001", "name": "Faculty of Engineering", "code": "FOE" }
-  ]
-}
-```
-
-The response reports the number of records received, created, updated, skipped, and failed.
-
-## Sync Endpoints
+`INTEGRATION_API_SECRET` is configured in Vercel and must not be committed to Git. `X-Source-System` is optional, but recommended for traceability.
 
 Base URL:
 
@@ -45,161 +46,166 @@ Base URL:
 https://attendance-management-system-two-omega.vercel.app
 ```
 
-### Faculties
+## Primary Report Endpoints
 
-`POST /api/integrations/faculties`
+### Full Attendance Report
 
-Required fields: `externalId`, `name`, `code`
+`GET /api/integrations/reports/attendance`
 
-```json
-{
-  "externalId": "FAC-IT",
-  "name": "Faculty of Information Technology",
-  "code": "FIT",
-  "description": "Information technology faculty",
-  "status": "active"
-}
-```
-
-### Departments
-
-`POST /api/integrations/departments`
-
-Required fields: `externalId`, `name`, `code`, plus either `facultyExternalId` or `facultyCode`
-
-```json
-{
-  "externalId": "DEP-CS",
-  "name": "Computer Science",
-  "code": "CS",
-  "facultyExternalId": "FAC-IT",
-  "status": "active"
-}
-```
-
-### Lecturers
-
-`POST /api/integrations/lecturers`
-
-Required fields: `externalId`, `name`, `email`
-
-```json
-{
-  "externalId": "STAFF-1001",
-  "name": "Jane Doe",
-  "email": "jane.doe@example.edu",
-  "staffId": "STAFF1001",
-  "department": "Computer Science",
-  "accountStatus": "active"
-}
-```
-
-### Students
-
-`POST /api/integrations/students`
-
-Required fields: `externalId`, `name`, `email`, `studentIdNumber`
-
-```json
-{
-  "externalId": "STU-2026-0001",
-  "name": "Kwame Mensah",
-  "email": "kwame.mensah@example.edu",
-  "studentIdNumber": "PUIT/260001",
-  "studentCategory": "regular",
-  "programmeLevel": "undergraduate",
-  "programme": "BSc Information Technology",
-  "level": "300",
-  "classGroup": "A",
-  "facultyExternalId": "FAC-IT",
-  "departmentExternalId": "DEP-CS",
-  "accountStatus": "pending"
-}
-```
-
-Students synchronized this way are created as pending accounts unless `accountStatus` is supplied. Activation emails remain controlled by the AttendGuard enrolment workflow.
-
-### Course Catalog
-
-`POST /api/integrations/course-catalog`
-
-Required fields: `externalId`, `courseCode`, `courseTitle`
-
-```json
-{
-  "externalId": "CAT-PUCIT307",
-  "courseCode": "PUCIT307",
-  "courseTitle": "Computer and Information Security",
-  "programme": "BSc Information Technology",
-  "level": "300",
-  "facultyExternalId": "FAC-IT",
-  "departmentExternalId": "DEP-CS",
-  "status": "active"
-}
-```
-
-### Course Offerings
-
-`POST /api/integrations/courses`
-
-Required fields: `externalId`, `courseCode`, `courseTitle`, `semester`, `academicYear`, and a lecturer reference.
-
-Lecturer reference can be `lecturerExternalId`, `staffId`, or `lecturerEmail`.
-
-```json
-{
-  "externalId": "OFFER-PUCIT307-2026-S1-A",
-  "catalogExternalId": "CAT-PUCIT307",
-  "courseCode": "PUCIT307",
-  "courseTitle": "Computer and Information Security",
-  "semester": "Semester 1",
-  "academicYear": "2026/2027",
-  "classGroup": "A",
-  "lecturerExternalId": "STAFF-1001",
-  "status": "active"
-}
-```
-
-### Enrolments
-
-`POST /api/integrations/enrolments`
-
-Required fields: `externalId`, `courseExternalId`, `studentExternalId`
-
-```json
-{
-  "externalId": "ENR-0001",
-  "courseExternalId": "OFFER-PUCIT307-2026-S1-A",
-  "studentExternalId": "STU-2026-0001",
-  "status": "active"
-}
-```
-
-## Attendance Export
-
-`GET /api/integrations/attendance/summary`
-
-Optional filters:
-
-```text
-courseExternalId=OFFER-PUCIT307-2026-S1-A
-studentExternalId=STU-2026-0001
-```
+Returns raw attendance records plus grouped summaries by course, student, and session.
 
 Example:
 
 ```http
-GET /api/integrations/attendance/summary?courseExternalId=OFFER-PUCIT307-2026-S1-A
+GET /api/integrations/reports/attendance?from=2026-06-01&to=2026-06-30
 Authorization: Bearer <INTEGRATION_API_SECRET>
 X-Source-System: php_sis
 ```
 
-The response includes raw attendance records and a grouped summary with credited attendance rate. Present, late, and manually approved attendance are all credited.
+### Course Attendance Summary
 
-## Integration Principles
+`GET /api/integrations/reports/courses`
 
-- The PHP system should remain the source of truth for official institutional records such as faculties, departments, programme structure, official courses, staff, and students.
-- AttendGuard should remain the source of truth for attendance sessions, GPS verification, attendance records, lecturer overrides, and review decisions.
-- Every record sent from the PHP system should have a stable `externalId`.
-- If a record changes in the PHP system, resend the same `externalId`; AttendGuard updates the matching local record.
-- Do not reuse an `externalId` for a different person, course, or department.
+Returns attendance performance grouped by course.
+
+Example:
+
+```http
+GET /api/integrations/reports/courses?courseCode=PUCIT307&from=2026-06-01&to=2026-06-30
+Authorization: Bearer <INTEGRATION_API_SECRET>
+```
+
+### Student Attendance Summary
+
+`GET /api/integrations/reports/students`
+
+Returns attendance performance grouped by student.
+
+Example:
+
+```http
+GET /api/integrations/reports/students?studentIdNumber=PUIT/260001
+Authorization: Bearer <INTEGRATION_API_SECRET>
+```
+
+### Session Attendance Summary
+
+`GET /api/integrations/reports/sessions`
+
+Returns attendance performance grouped by class session.
+
+Example:
+
+```http
+GET /api/integrations/reports/sessions?courseCode=PUCIT307
+Authorization: Bearer <INTEGRATION_API_SECRET>
+```
+
+## Supported Filters
+
+The report endpoints support these optional query parameters:
+
+| Filter | Description |
+| --- | --- |
+| `from` | Start date, for example `2026-06-01` |
+| `to` | End date, for example `2026-06-30` |
+| `courseId` | AttendGuard course UUID |
+| `courseCode` | Course code, for example `PUCIT307` |
+| `courseExternalId` | External course ID, if one exists |
+| `sessionId` | AttendGuard attendance session UUID |
+| `studentIdNumber` | Official student ID number |
+| `studentExternalId` | External student ID, if one exists |
+| `lecturerExternalId` | External lecturer ID, if one exists |
+| `lecturerEmail` | Lecturer email address |
+| `programme` | Course programme name |
+| `level` | Course level, for example `300` |
+| `facultyCode` | Faculty code |
+| `departmentCode` | Department code |
+
+Filters can be combined.
+
+Example:
+
+```http
+GET /api/integrations/reports/attendance?courseCode=PUCIT307&level=300&from=2026-06-01&to=2026-06-30
+Authorization: Bearer <INTEGRATION_API_SECRET>
+```
+
+## Response Structure
+
+The full attendance report returns this shape:
+
+```json
+{
+  "sourceSystem": "php_sis",
+  "reportType": "attendance",
+  "filters": {
+    "courseCode": "PUCIT307"
+  },
+  "generatedAt": "2026-06-21T07:30:00.000Z",
+  "totals": {
+    "records": 120,
+    "present": 100,
+    "late": 5,
+    "manuallyPresent": 3,
+    "excused": 2,
+    "absent": 10,
+    "credited": 108,
+    "attendanceRate": 90
+  },
+  "records": [],
+  "summaries": {
+    "byCourse": [],
+    "byStudent": [],
+    "bySession": []
+  }
+}
+```
+
+Credited attendance includes:
+
+- `present`
+- `late`
+- `manually_present`
+
+Non-credited attendance includes:
+
+- `absent`
+
+`excused` is reported separately and is not counted as credited unless the institution later decides to change that policy.
+
+## Legacy Compatibility Endpoint
+
+This endpoint remains available for compatibility:
+
+`GET /api/integrations/attendance/summary`
+
+It now uses the same report engine as the new endpoints.
+
+## Optional Sync Endpoints
+
+AttendGuard can still receive data from the PHP system if the school later wants that. For the current preferred direction, these endpoints are optional and should not be used unless there is a deliberate data-governance decision to let PHP push official records into AttendGuard.
+
+Optional sync endpoints:
+
+- `POST /api/integrations/faculties`
+- `POST /api/integrations/departments`
+- `POST /api/integrations/lecturers`
+- `POST /api/integrations/students`
+- `POST /api/integrations/course-catalog`
+- `POST /api/integrations/courses`
+- `POST /api/integrations/enrolments`
+
+Each sync endpoint accepts a single object, an array of objects, or `{ "items": [...] }`. Every synced record should include a stable `externalId`.
+
+## Recommended PHP Developer Contract
+
+Give the PHP developer:
+
+- The production base URL.
+- The shared bearer token.
+- The report endpoints above.
+- The filter list.
+- The expected response format.
+
+The PHP developer does not need to create lecturers, students, courses, or sessions inside AttendGuard for the report-only model.

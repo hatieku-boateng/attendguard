@@ -4,6 +4,7 @@ import { requireIntegrationRequest } from "@/lib/integration-auth";
 import {
   getAttendanceReport,
   summarizeByCourse,
+  summarizeBySession,
   summarizeByStudent,
 } from "@/lib/integration-reports";
 
@@ -15,12 +16,12 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.json({
     sourceSystem: auth.context.sourceSystem,
-    reportType: "attendance-summary",
-    filters: report.filters,
-    generatedAt: report.generatedAt,
-    totals: report.totals,
-    records: report.records,
-    summary: summarizeByStudent(report.records),
-    courseSummary: summarizeByCourse(report.records),
+    reportType: "attendance",
+    ...report,
+    summaries: {
+      byCourse: summarizeByCourse(report.records),
+      byStudent: summarizeByStudent(report.records),
+      bySession: summarizeBySession(report.records),
+    },
   });
 }

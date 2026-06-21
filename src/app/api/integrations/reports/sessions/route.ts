@@ -1,11 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { requireIntegrationRequest } from "@/lib/integration-auth";
-import {
-  getAttendanceReport,
-  summarizeByCourse,
-  summarizeByStudent,
-} from "@/lib/integration-reports";
+import { getAttendanceReport, summarizeBySession } from "@/lib/integration-reports";
 
 export async function GET(request: NextRequest) {
   const auth = requireIntegrationRequest(request);
@@ -15,12 +11,10 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.json({
     sourceSystem: auth.context.sourceSystem,
-    reportType: "attendance-summary",
+    reportType: "session-attendance-summary",
     filters: report.filters,
     generatedAt: report.generatedAt,
     totals: report.totals,
-    records: report.records,
-    summary: summarizeByStudent(report.records),
-    courseSummary: summarizeByCourse(report.records),
+    sessions: summarizeBySession(report.records),
   });
 }

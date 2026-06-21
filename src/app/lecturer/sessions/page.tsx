@@ -164,7 +164,7 @@ export default async function LecturerSessionsPage({
           ? [asc(attendanceSessions.status), desc(attendanceSessions.opensAt)]
           : [desc(attendanceSessions.opensAt)];
 
-  const [lecturerCourses, rows, reusableLocationRows, mappedLectureHalls] = await Promise.all([
+  const [lecturerCourses, rows, mappedLectureHalls] = await Promise.all([
     db
       .select({
         id: courses.id,
@@ -190,38 +190,11 @@ export default async function LecturerSessionsPage({
       .where(and(...filters))
       .orderBy(...sortOrder),
     db
-      .select({
-        id: attendanceSessions.id,
-        title: attendanceSessions.sessionTitle,
-        opensAt: attendanceSessions.opensAt,
-        lecturerLatitude: attendanceSessions.lecturerLatitude,
-        lecturerLongitude: attendanceSessions.lecturerLongitude,
-        lecturerLocationAccuracy: attendanceSessions.lecturerLocationAccuracy,
-        geofenceRadiusMeters: attendanceSessions.geofenceRadiusMeters,
-        maxAcceptedAccuracyMeters: attendanceSessions.maxAcceptedAccuracyMeters,
-        courseCode: courses.courseCode,
-      })
-      .from(attendanceSessions)
-      .innerJoin(courses, eq(attendanceSessions.courseId, courses.id))
-      .where(eq(attendanceSessions.lecturerId, lecturerId))
-      .orderBy(desc(attendanceSessions.opensAt)),
-    db
       .select()
       .from(lectureHalls)
       .where(eq(lectureHalls.status, "active"))
       .orderBy(lectureHalls.code),
   ]);
-  const previousSessionLocations = reusableLocationRows.map((session) => ({
-    id: session.id,
-    title: session.title,
-    opensAtLabel: session.opensAt.toLocaleString(),
-    latitude: session.lecturerLatitude,
-    longitude: session.lecturerLongitude,
-    accuracy: session.lecturerLocationAccuracy ?? "",
-    courseLabel: session.courseCode,
-    radiusMeters: session.geofenceRadiusMeters,
-    maxAccuracyMeters: session.maxAcceptedAccuracyMeters,
-  }));
   const mappedHallLocations = mappedLectureHalls.map((hall) => ({
     id: hall.id,
     label: `${hall.code}: ${hall.name}`,
@@ -509,7 +482,6 @@ export default async function LecturerSessionsPage({
               longitudeName="lecturerLongitude"
               mappedLectureHalls={mappedHallLocations}
               maxAccuracyInputId="maxAcceptedAccuracyMeters"
-              previousLocations={previousSessionLocations}
               radiusInputId="geofenceRadiusMeters"
             />
           </div>

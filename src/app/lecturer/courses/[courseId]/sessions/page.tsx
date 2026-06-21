@@ -69,16 +69,6 @@ export default async function CourseSessionsPage({
     .from(lectureHalls)
     .where(eq(lectureHalls.status, "active"))
     .orderBy(lectureHalls.code);
-  const previousSessionLocations = sessions.map((session) => ({
-    id: session.id,
-    title: session.sessionTitle,
-    opensAtLabel: session.opensAt.toLocaleString(),
-    latitude: session.lecturerLatitude,
-    longitude: session.lecturerLongitude,
-    accuracy: session.lecturerLocationAccuracy ?? "",
-    radiusMeters: session.geofenceRadiusMeters,
-    maxAccuracyMeters: session.maxAcceptedAccuracyMeters,
-  }));
   const mappedHallLocations = mappedLectureHalls.map((hall) => ({
     id: hall.id,
     label: `${hall.code}: ${hall.name}`,
@@ -229,7 +219,6 @@ export default async function CourseSessionsPage({
               longitudeName="lecturerLongitude"
               mappedLectureHalls={mappedHallLocations}
               maxAccuracyInputId="maxAcceptedAccuracyMeters"
-              previousLocations={previousSessionLocations}
               radiusInputId="geofenceRadiusMeters"
             />
           </div>

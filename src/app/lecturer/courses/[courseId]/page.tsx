@@ -99,11 +99,6 @@ export default async function CourseDetailPage({
       status: attendanceSessions.status,
       opensAt: attendanceSessions.opensAt,
       finalClosesAt: attendanceSessions.finalClosesAt,
-      lecturerLatitude: attendanceSessions.lecturerLatitude,
-      lecturerLongitude: attendanceSessions.lecturerLongitude,
-      lecturerLocationAccuracy: attendanceSessions.lecturerLocationAccuracy,
-      geofenceRadiusMeters: attendanceSessions.geofenceRadiusMeters,
-      maxAcceptedAccuracyMeters: attendanceSessions.maxAcceptedAccuracyMeters,
     })
     .from(attendanceSessions)
     .where(eq(attendanceSessions.courseId, course.id))
@@ -113,16 +108,6 @@ export default async function CourseDetailPage({
     .from(lectureHalls)
     .where(eq(lectureHalls.status, "active"))
     .orderBy(lectureHalls.code);
-  const previousSessionLocations = sessions.map((session) => ({
-    id: session.id,
-    title: session.title,
-    opensAtLabel: session.opensAt.toLocaleString(),
-    latitude: session.lecturerLatitude,
-    longitude: session.lecturerLongitude,
-    accuracy: session.lecturerLocationAccuracy ?? "",
-    radiusMeters: session.geofenceRadiusMeters,
-    maxAccuracyMeters: session.maxAcceptedAccuracyMeters,
-  }));
   const mappedHallLocations = mappedLectureHalls.map((hall) => ({
     id: hall.id,
     label: `${hall.code}: ${hall.name}`,
@@ -409,7 +394,6 @@ export default async function CourseDetailPage({
               longitudeName="lecturerLongitude"
               mappedLectureHalls={mappedHallLocations}
               maxAccuracyInputId="maxAcceptedAccuracyMeters"
-              previousLocations={previousSessionLocations}
               radiusInputId="geofenceRadiusMeters"
             />
           </div>

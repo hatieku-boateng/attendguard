@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { and, count, eq } from "drizzle-orm";
+import { and, count, eq, inArray } from "drizzle-orm";
 
 import { getDb } from "@/db/client";
 import {
@@ -40,8 +40,14 @@ const reviewableRejectionReasons = new Set([
   "invalid_passkey",
   "expired_passkey",
   "passkey_already_used",
-  "duplicate_attendance",
   "too_many_attempts",
+  "outside_permitted_area",
+  "poor_location_accuracy",
+  "session_closed",
+  "student_not_enrolled",
+  "location_permission_denied",
+  "account_mismatch",
+  "invalid_location",
 ]);
 
 export async function checkInAction(formData: FormData) {
@@ -122,6 +128,25 @@ export async function checkInAction(formData: FormData) {
     }
   }
 
+  async function submitForReview(
+    rejectionReason:
+      | "invalid_passkey"
+      | "expired_passkey"
+      | "passkey_already_used"
+      | "outside_permitted_area"
+      | "poor_location_accuracy"
+      | "session_closed"
+      | "student_not_enrolled"
+      | "location_permission_denied"
+      | "account_mismatch"
+      | "invalid_location"
+      | "too_many_attempts",
+    distance?: number,
+  ): Promise<never> {
+    await logAttempt("requires_review", rejectionReason, distance);
+    redirect(resultUrl(sessionId, "review"));
+  }
+
   if (!session) {
     redirect("/student/sessions");
   }
@@ -139,15 +164,13 @@ export async function checkInAction(formData: FormData) {
     .limit(1);
 
   if (!enrolment) {
-    await logAttempt("rejected", "student_not_enrolled");
-    redirect(resultUrl(sessionId, "not-enrolled"));
+    await submitForReview("student_not_enrolled");
   }
 
   const now = new Date();
 
   if (session.status !== "open" || now < session.opensAt || now > session.finalClosesAt) {
-    await logAttempt("rejected", "session_closed");
-    redirect(resultUrl(sessionId, "closed"));
+    await submitForReview("session_closed");
   }
 
   const [studentBlocked, ipBlocked] = await Promise.all([
@@ -174,8 +197,7 @@ export async function checkInAction(formData: FormData) {
       context: securityContext,
       metadata: { studentBlocked, ipBlocked },
     });
-    await logAttempt("rejected", "too_many_attempts");
-    redirect(resultUrl(sessionId, "review"));
+    await submitForReview("too_many_attempts");
   }
 
   const [failedAttempts] = await db
@@ -190,12 +212,11 @@ export async function checkInAction(formData: FormData) {
     );
 
   if (failedAttempts.value >= 5) {
-    await logAttempt("rejected", "too_many_attempts");
-    redirect(resultUrl(sessionId, "review"));
+    await submitForReview("too_many_attempts");
   }
 
   const [existingRecord] = await db
-    .select({ id: attendanceRecords.id })
+    .select({ id: attendanceRecords.id, status: attendanceRecords.status })
     .from(attendanceRecords)
     .where(
       and(
@@ -205,8 +226,28 @@ export async function checkInAction(formData: FormData) {
     )
     .limit(1);
 
-  if (existingRecord) {
+  if (
+    existingRecord &&
+    ["present", "late", "manually_present"].includes(existingRecord.status)
+  ) {
     await logAttempt("rejected", "duplicate_attendance");
+    redirect(resultUrl(sessionId, "duplicate"));
+  }
+
+  const [existingPendingAttempt] = await db
+    .select({ id: attendanceAttempts.id })
+    .from(attendanceAttempts)
+    .where(
+      and(
+        eq(attendanceAttempts.sessionId, sessionId),
+        eq(attendanceAttempts.studentId, studentId),
+        eq(attendanceAttempts.reviewStatus, "pending"),
+        inArray(attendanceAttempts.result, ["requires_review", "rejected"]),
+      ),
+    )
+    .limit(1);
+
+  if (existingPendingAttempt) {
     redirect(resultUrl(sessionId, "review"));
   }
 
@@ -222,18 +263,15 @@ export async function checkInAction(formData: FormData) {
     .limit(1);
 
   if (!passkey || !(await verifyPasskey(enteredPasskey, passkey.passkeyHash))) {
-    await logAttempt("rejected", "invalid_passkey");
-    redirect(resultUrl(sessionId, "review"));
+    await submitForReview("invalid_passkey");
   }
 
   if (passkey.used) {
-    await logAttempt("rejected", "passkey_already_used");
-    redirect(resultUrl(sessionId, "review"));
+    await submitForReview("passkey_already_used");
   }
 
   if (passkey.expiresAt < now) {
-    await logAttempt("rejected", "expired_passkey");
-    redirect(resultUrl(sessionId, "review"));
+    await submitForReview("expired_passkey");
   }
 
   if (
@@ -241,35 +279,34 @@ export async function checkInAction(formData: FormData) {
     studentLongitude === null ||
     locationAccuracyMeters === null
   ) {
-    await logAttempt("rejected", "location_permission_denied");
-    redirect(resultUrl(sessionId, "location-required"));
+    await submitForReview("location_permission_denied");
   }
 
-  if (!isValidCoordinate(studentLatitude, studentLongitude)) {
-    await logAttempt("rejected", "invalid_location");
-    redirect(resultUrl(sessionId, "invalid-location"));
+  const checkedStudentLatitude = studentLatitude as number;
+  const checkedStudentLongitude = studentLongitude as number;
+  const checkedLocationAccuracyMeters = locationAccuracyMeters as number;
+
+  if (!isValidCoordinate(checkedStudentLatitude, checkedStudentLongitude)) {
+    await submitForReview("invalid_location");
   }
 
   const distance = calculateDistanceMeters({
     fromLatitude: Number(session.lecturerLatitude),
     fromLongitude: Number(session.lecturerLongitude),
-    toLatitude: studentLatitude,
-    toLongitude: studentLongitude,
+    toLatitude: checkedStudentLatitude,
+    toLongitude: checkedStudentLongitude,
   });
 
-  if (locationAccuracyMeters > session.maxAcceptedAccuracyMeters) {
-    await logAttempt("rejected", "poor_location_accuracy", distance);
-    redirect(resultUrl(sessionId, "poor-accuracy"));
+  if (checkedLocationAccuracyMeters > session.maxAcceptedAccuracyMeters) {
+    await submitForReview("poor_location_accuracy", distance);
   }
 
-  if (distance > session.geofenceRadiusMeters + locationAccuracyMeters) {
-    await logAttempt("rejected", "outside_permitted_area", distance);
-    redirect(resultUrl(sessionId, "outside"));
+  if (distance > session.geofenceRadiusMeters + checkedLocationAccuracyMeters) {
+    await submitForReview("outside_permitted_area", distance);
   }
 
   if (distance > session.geofenceRadiusMeters) {
-    await logAttempt("rejected", "outside_permitted_area", distance);
-    redirect(resultUrl(sessionId, "outside"));
+    await submitForReview("outside_permitted_area", distance);
   }
 
   const status = now <= session.normalClosesAt ? "present" : "late";
@@ -280,9 +317,9 @@ export async function checkInAction(formData: FormData) {
       sessionId,
       studentId,
       checkInAt: now,
-      studentLatitude: String(studentLatitude),
-      studentLongitude: String(studentLongitude),
-      locationAccuracyMeters: String(locationAccuracyMeters),
+      studentLatitude: String(checkedStudentLatitude),
+      studentLongitude: String(checkedStudentLongitude),
+      locationAccuracyMeters: String(checkedLocationAccuracyMeters),
       calculatedDistanceMeters: String(distance.toFixed(2)),
       status,
       verificationMethod: "passkey_location",

@@ -3,7 +3,7 @@
 import { randomBytes } from "node:crypto";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { and, count, eq, inArray } from "drizzle-orm";
+import { and, count, eq, gt, inArray, isNull } from "drizzle-orm";
 import Papa from "papaparse";
 
 import { getDb } from "@/db/client";
@@ -245,6 +245,22 @@ async function enrolStudentWithActivation({
   let emailSkipped = false;
 
   if (shouldSendActivation && studentUserId) {
+    const [existingLiveToken] = await db
+      .select({ id: studentActivationTokens.id })
+      .from(studentActivationTokens)
+      .where(
+        and(
+          eq(studentActivationTokens.userId, studentUserId),
+          isNull(studentActivationTokens.usedAt),
+          gt(studentActivationTokens.expiresAt, new Date()),
+        ),
+      )
+      .limit(1);
+
+    if (existingLiveToken) {
+      return { ok: true, sent: false, emailSkipped: true };
+    }
+
     const token = createActivationToken();
     const tokenHash = hashActivationToken(token);
 

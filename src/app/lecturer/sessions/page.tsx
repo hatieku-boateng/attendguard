@@ -17,7 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { getDb } from "@/db/client";
-import { attendanceSessions, courses } from "@/db/schema";
+import { attendanceSessions, courses, lectureHalls } from "@/db/schema";
 import { requireRole } from "@/lib/auth";
 import { FormModal } from "@/components/form-modal";
 import { LocationFields } from "@/components/location-fields";
@@ -164,7 +164,7 @@ export default async function LecturerSessionsPage({
           ? [asc(attendanceSessions.status), desc(attendanceSessions.opensAt)]
           : [desc(attendanceSessions.opensAt)];
 
-  const [lecturerCourses, rows, reusableLocationRows] = await Promise.all([
+  const [lecturerCourses, rows, reusableLocationRows, mappedLectureHalls] = await Promise.all([
     db
       .select({
         id: courses.id,
@@ -205,6 +205,11 @@ export default async function LecturerSessionsPage({
       .innerJoin(courses, eq(attendanceSessions.courseId, courses.id))
       .where(eq(attendanceSessions.lecturerId, lecturerId))
       .orderBy(desc(attendanceSessions.opensAt)),
+    db
+      .select()
+      .from(lectureHalls)
+      .where(eq(lectureHalls.status, "active"))
+      .orderBy(lectureHalls.code),
   ]);
   const previousSessionLocations = reusableLocationRows.map((session) => ({
     id: session.id,
@@ -216,6 +221,15 @@ export default async function LecturerSessionsPage({
     courseLabel: session.courseCode,
     radiusMeters: session.geofenceRadiusMeters,
     maxAccuracyMeters: session.maxAcceptedAccuracyMeters,
+  }));
+  const mappedHallLocations = mappedLectureHalls.map((hall) => ({
+    id: hall.id,
+    label: `${hall.code}: ${hall.name}`,
+    latitude: hall.latitude,
+    longitude: hall.longitude,
+    accuracy: hall.locationAccuracyMeters ?? hall.maxAcceptedAccuracyMeters,
+    radiusMeters: hall.geofenceRadiusMeters,
+    maxAccuracyMeters: hall.maxAcceptedAccuracyMeters,
   }));
 
   return (
@@ -491,7 +505,9 @@ export default async function LecturerSessionsPage({
             <SessionLocationFields
               accuracyName="lecturerLocationAccuracy"
               latitudeName="lecturerLatitude"
+              lectureHallInputName="lectureHallId"
               longitudeName="lecturerLongitude"
+              mappedLectureHalls={mappedHallLocations}
               maxAccuracyInputId="maxAcceptedAccuracyMeters"
               previousLocations={previousSessionLocations}
               radiusInputId="geofenceRadiusMeters"

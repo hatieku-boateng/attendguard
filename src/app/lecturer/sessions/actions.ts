@@ -13,6 +13,7 @@ import {
   auditLogs,
   courses,
   enrolments,
+  lectureHalls,
   studentAbsenceWarnings,
   studentProfiles,
   users,
@@ -244,6 +245,7 @@ export async function createAttendanceSessionAction(formData: FormData) {
   const courseId = cleanString(formData.get("courseId"));
   const source = cleanString(formData.get("source"));
   const sessionTitle = cleanString(formData.get("sessionTitle"));
+  const lectureHallId = cleanString(formData.get("lectureHallId")) || null;
   const lecturerLatitude = parseNumber(formData.get("lecturerLatitude"));
   const lecturerLongitude = parseNumber(formData.get("lecturerLongitude"));
   const lecturerLocationAccuracy = parseNumber(formData.get("lecturerLocationAccuracy"));
@@ -301,9 +303,22 @@ export async function createAttendanceSessionAction(formData: FormData) {
     redirect("/lecturer/courses");
   }
 
+  if (lectureHallId) {
+    const [hall] = await db
+      .select({ id: lectureHalls.id })
+      .from(lectureHalls)
+      .where(and(eq(lectureHalls.id, lectureHallId), eq(lectureHalls.status, "active")))
+      .limit(1);
+
+    if (!hall) {
+      redirect(newSessionErrorUrl(courseId, "location", source));
+    }
+  }
+
   const [session] = await db
     .insert(attendanceSessions)
     .values({
+      lectureHallId,
       courseId,
       lecturerId: user.lecturerProfileId,
       sessionTitle,
@@ -328,6 +343,7 @@ export async function createAttendanceSessionAction(formData: FormData) {
     entityId: session.id,
     newValue: {
       courseId,
+      lectureHallId,
       sessionTitle,
       geofenceRadiusMeters,
       maxAcceptedAccuracyMeters,
@@ -898,4 +914,80 @@ export async function rejectAttemptAction(formData: FormData) {
     `/lecturer/courses/${attempt.courseId}/sessions/${attempt.sessionId}/reviews`,
   );
   revalidatePath("/lecturer/reviews");
+}
+
+export async function markAbsentRecordPresentAction(formData: FormData) {
+  const user = await requireRole("lecturer");
+  const recordId = cleanString(formData.get("recordId"));
+
+  if (!user.lecturerProfileId || !recordId) {
+    redirect("/lecturer/sessions");
+  }
+
+  const db = getDb();
+  const [record] = await db
+    .select({
+      id: attendanceRecords.id,
+      sessionId: attendanceRecords.sessionId,
+      studentId: attendanceRecords.studentId,
+      status: attendanceRecords.status,
+      courseId: attendanceSessions.courseId,
+      lecturerId: attendanceSessions.lecturerId,
+    })
+    .from(attendanceRecords)
+    .innerJoin(attendanceSessions, eq(attendanceRecords.sessionId, attendanceSessions.id))
+    .where(eq(attendanceRecords.id, recordId))
+    .limit(1);
+
+  if (
+    !record ||
+    record.lecturerId !== user.lecturerProfileId ||
+    record.status !== "absent"
+  ) {
+    redirect("/lecturer/sessions");
+  }
+
+  await db
+    .update(attendanceRecords)
+    .set({
+      status: "manually_present",
+      verificationMethod: "manual",
+      checkInAt: new Date(),
+      lecturerRemarks:
+        cleanString(formData.get("remarks")) ||
+        "Marked present by lecturer after session closure review.",
+      updatedAt: new Date(),
+    })
+    .where(eq(attendanceRecords.id, record.id));
+
+  await db
+    .update(attendanceAttempts)
+    .set({
+      reviewStatus: "approved",
+      reviewedByLecturerId: user.lecturerProfileId,
+      reviewedAt: new Date(),
+      lecturerRemarks:
+        "Cleared after lecturer marked the absent record present.",
+    })
+    .where(
+      and(
+        eq(attendanceAttempts.sessionId, record.sessionId),
+        eq(attendanceAttempts.studentId, record.studentId),
+        eq(attendanceAttempts.reviewStatus, "pending"),
+      ),
+    );
+
+  await db.insert(auditLogs).values({
+    userId: user.id,
+    action: "absent_record_marked_present",
+    entityType: "attendance_record",
+    entityId: record.id,
+    reason: cleanString(formData.get("remarks")) || null,
+  });
+
+  revalidatePath(`/lecturer/sessions/${record.sessionId}`);
+  revalidatePath(`/lecturer/courses/${record.courseId}`);
+  revalidatePath(`/lecturer/courses/${record.courseId}/sessions`);
+  revalidatePath(`/lecturer/courses/${record.courseId}/sessions/${record.sessionId}`);
+  revalidatePath(`/lecturer/courses/${record.courseId}/sessions/${record.sessionId}/reviews`);
 }

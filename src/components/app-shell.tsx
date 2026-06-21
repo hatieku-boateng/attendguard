@@ -12,6 +12,7 @@ import {
   GraduationCap,
   FileSpreadsheet,
   Clock,
+  MapPinned,
   History,
   User,
   LogOut,
@@ -23,6 +24,7 @@ import {
 } from "lucide-react";
 
 import { BrandMark } from "@/components/brand";
+import { IdleLogout } from "@/components/idle-logout";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import type { CurrentUser } from "@/lib/auth";
@@ -38,6 +40,7 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   "lecturers": GraduationCap,
   "faculties": Layers,
   "departments": Layers,
+  "lecture-halls": MapPinned,
   "academic-years": Calendar,
   "catalog": BookOpen,
   "courses": BookOpen,
@@ -75,6 +78,7 @@ export function AppShell({
 
   return (
     <div className="min-h-screen bg-background text-foreground flex lg:flex-row flex-col">
+      <IdleLogout />
       {/* Mobile Drawer Overlay */}
       {isOpen && (
         <div

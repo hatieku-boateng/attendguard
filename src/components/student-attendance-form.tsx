@@ -179,10 +179,11 @@ export function StudentAttendanceForm({
 
       <Button
         className="w-full py-5 rounded-xl font-bold shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 transition-all text-sm disabled:cursor-not-allowed disabled:opacity-60"
-        disabled={!locationReady}
         type="submit"
       >
-        {locationReady ? "Submit attendance check-in" : "Waiting for valid GPS location"}
+        {locationReady
+          ? "Submit attendance check-in"
+          : "Submit for lecturer review"}
       </Button>
     </form>
   );

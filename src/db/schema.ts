@@ -386,10 +386,48 @@ export const enrolments = pgTable(
   ],
 );
 
+export const lectureHalls = pgTable(
+  "lecture_halls",
+  {
+    id,
+    name: varchar("name", { length: 160 }).notNull(),
+    code: varchar("code", { length: 60 }).notNull(),
+    building: varchar("building", { length: 160 }),
+    roomNumber: varchar("room_number", { length: 80 }),
+    latitude: numeric("latitude", {
+      precision: 10,
+      scale: 7,
+    }).notNull(),
+    longitude: numeric("longitude", {
+      precision: 10,
+      scale: 7,
+    }).notNull(),
+    locationAccuracyMeters: numeric("location_accuracy_meters", {
+      precision: 8,
+      scale: 2,
+    }),
+    geofenceRadiusMeters: integer("geofence_radius_meters").notNull().default(30),
+    maxAcceptedAccuracyMeters: integer("max_accepted_accuracy_meters")
+      .notNull()
+      .default(50),
+    notes: text("notes"),
+    status: courseStatusEnum("status").notNull().default("active"),
+    createdAt,
+    updatedAt,
+  },
+  (table) => [
+    uniqueIndex("lecture_halls_code_unique").on(table.code),
+    index("lecture_halls_status_idx").on(table.status),
+  ],
+);
+
 export const attendanceSessions = pgTable(
   "attendance_sessions",
   {
     id,
+    lectureHallId: uuid("lecture_hall_id").references(() => lectureHalls.id, {
+      onDelete: "set null",
+    }),
     courseId: uuid("course_id")
       .notNull()
       .references(() => courses.id, { onDelete: "cascade" }),
@@ -427,6 +465,7 @@ export const attendanceSessions = pgTable(
   },
   (table) => [
     index("attendance_sessions_course_id_idx").on(table.courseId),
+    index("attendance_sessions_lecture_hall_id_idx").on(table.lectureHallId),
     index("attendance_sessions_lecturer_id_idx").on(table.lecturerId),
     index("attendance_sessions_status_idx").on(table.status),
     index("attendance_sessions_opens_at_idx").on(table.opensAt),
@@ -723,6 +762,10 @@ export const lecturerProfilesRelations = relations(
   }),
 );
 
+export const lectureHallsRelations = relations(lectureHalls, ({ many }) => ({
+  attendanceSessions: many(attendanceSessions),
+}));
+
 export const courseCatalogRelations = relations(courseCatalog, ({ one, many }) => ({
   faculty: one(faculties, {
     fields: [courseCatalog.facultyId],
@@ -785,6 +828,10 @@ export const attendanceSessionsRelations = relations(
     lecturer: one(lecturerProfiles, {
       fields: [attendanceSessions.lecturerId],
       references: [lecturerProfiles.id],
+    }),
+    lectureHall: one(lectureHalls, {
+      fields: [attendanceSessions.lectureHallId],
+      references: [lectureHalls.id],
     }),
     passkeys: many(attendancePasskeys),
     attendanceRecords: many(attendanceRecords),

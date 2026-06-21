@@ -16,12 +16,14 @@ import {
   departments,
   faculties,
   enrolments,
+  lectureHalls,
   lecturerProfiles,
   studentProfiles,
   users,
 } from "@/db/schema";
 import { hashPassword, requireRole } from "@/lib/auth";
 import { cleanString, fileToDataUrl } from "@/lib/form-utils";
+import { isValidCoordinate } from "@/lib/geo";
 import {
   normalizeProgrammeLevel,
   normalizeStudentCategory,
@@ -64,6 +66,201 @@ function cleanRecordStatus(value: FormDataEntryValue | null) {
   const status = cleanString(value, { uppercase: false });
 
   return status === "inactive" || status === "archived" ? status : "active";
+}
+
+function cleanCourseStatus(value: FormDataEntryValue | null) {
+  const status = cleanString(value, { uppercase: false });
+
+  return status === "draft" || status === "archived" ? status : "active";
+}
+
+function parsePositiveNumber(value: FormDataEntryValue | null) {
+  const number = Number(value);
+
+  return Number.isFinite(number) && number > 0 ? number : null;
+}
+
+function lectureHallErrorUrl(mode: "new" | "edit", error: string, id?: string) {
+  const params = new URLSearchParams({ modal: mode, error });
+
+  if (id) {
+    params.set("id", id);
+  }
+
+  return `/admin/lecture-halls?${params.toString()}`;
+}
+
+export async function createLectureHallAction(formData: FormData) {
+  const admin = await requireRole("administrator");
+  const name = cleanString(formData.get("name"));
+  const code = cleanString(formData.get("code")).toUpperCase();
+  const latitude = Number(formData.get("latitude"));
+  const longitude = Number(formData.get("longitude"));
+  const locationAccuracyMeters = parsePositiveNumber(formData.get("locationAccuracyMeters"));
+  const geofenceRadiusMeters = parsePositiveNumber(formData.get("geofenceRadiusMeters"));
+  const maxAcceptedAccuracyMeters = parsePositiveNumber(formData.get("maxAcceptedAccuracyMeters"));
+
+  if (
+    !name ||
+    !code ||
+    !Number.isFinite(latitude) ||
+    !Number.isFinite(longitude) ||
+    !isValidCoordinate(latitude, longitude) ||
+    !geofenceRadiusMeters ||
+    !maxAcceptedAccuracyMeters
+  ) {
+    redirect(lectureHallErrorUrl("new", "missing"));
+  }
+
+  const db = getDb();
+  const [existing] = await db
+    .select({ id: lectureHalls.id })
+    .from(lectureHalls)
+    .where(eq(lectureHalls.code, code))
+    .limit(1);
+
+  if (existing) {
+    redirect(lectureHallErrorUrl("new", "exists"));
+  }
+
+  const [hall] = await db
+    .insert(lectureHalls)
+    .values({
+      name,
+      code,
+      building: cleanString(formData.get("building")) || null,
+      roomNumber: cleanString(formData.get("roomNumber")) || null,
+      latitude: String(latitude),
+      longitude: String(longitude),
+      locationAccuracyMeters:
+        locationAccuracyMeters === null ? null : String(locationAccuracyMeters),
+      geofenceRadiusMeters,
+      maxAcceptedAccuracyMeters,
+      notes: cleanString(formData.get("notes")) || null,
+      status: "active",
+    })
+    .returning({ id: lectureHalls.id });
+
+  await db.insert(auditLogs).values({
+    userId: admin.id,
+    action: "lecture_hall_created",
+    entityType: "lecture_hall",
+    entityId: hall.id,
+    newValue: { name, code, latitude, longitude },
+  });
+
+  revalidatePath("/admin/lecture-halls");
+  redirect("/admin/lecture-halls?created=1");
+}
+
+export async function updateLectureHallAction(formData: FormData) {
+  const admin = await requireRole("administrator");
+  const lectureHallId = cleanId(formData.get("lectureHallId"));
+  const name = cleanString(formData.get("name"));
+  const code = cleanString(formData.get("code")).toUpperCase();
+  const latitude = Number(formData.get("latitude"));
+  const longitude = Number(formData.get("longitude"));
+  const locationAccuracyMeters = parsePositiveNumber(formData.get("locationAccuracyMeters"));
+  const geofenceRadiusMeters = parsePositiveNumber(formData.get("geofenceRadiusMeters"));
+  const maxAcceptedAccuracyMeters = parsePositiveNumber(formData.get("maxAcceptedAccuracyMeters"));
+
+  if (
+    !lectureHallId ||
+    !name ||
+    !code ||
+    !Number.isFinite(latitude) ||
+    !Number.isFinite(longitude) ||
+    !isValidCoordinate(latitude, longitude) ||
+    !geofenceRadiusMeters ||
+    !maxAcceptedAccuracyMeters
+  ) {
+    redirect(lectureHallErrorUrl("edit", "missing", lectureHallId));
+  }
+
+  const db = getDb();
+  const [existing] = await db
+    .select({ id: lectureHalls.id })
+    .from(lectureHalls)
+    .where(and(ne(lectureHalls.id, lectureHallId), eq(lectureHalls.code, code)))
+    .limit(1);
+
+  if (existing) {
+    redirect(lectureHallErrorUrl("edit", "exists", lectureHallId));
+  }
+
+  await db
+    .update(lectureHalls)
+    .set({
+      name,
+      code,
+      building: cleanString(formData.get("building")) || null,
+      roomNumber: cleanString(formData.get("roomNumber")) || null,
+      latitude: String(latitude),
+      longitude: String(longitude),
+      locationAccuracyMeters:
+        locationAccuracyMeters === null ? null : String(locationAccuracyMeters),
+      geofenceRadiusMeters,
+      maxAcceptedAccuracyMeters,
+      notes: cleanString(formData.get("notes")) || null,
+      status: cleanCourseStatus(formData.get("status")),
+      updatedAt: new Date(),
+    })
+    .where(eq(lectureHalls.id, lectureHallId));
+
+  await db.insert(auditLogs).values({
+    userId: admin.id,
+    action: "lecture_hall_updated",
+    entityType: "lecture_hall",
+    entityId: lectureHallId,
+    newValue: { name, code, latitude, longitude },
+  });
+
+  revalidatePath("/admin/lecture-halls");
+  redirect("/admin/lecture-halls?updated=1");
+}
+
+export async function deleteLectureHallAction(formData: FormData) {
+  const admin = await requireRole("administrator");
+  const lectureHallId = cleanId(formData.get("lectureHallId"));
+
+  if (!lectureHallId) {
+    redirect("/admin/lecture-halls");
+  }
+
+  const db = getDb();
+  const [sessionCount] = await db
+    .select({ value: count() })
+    .from(attendanceSessions)
+    .where(eq(attendanceSessions.lectureHallId, lectureHallId));
+
+  if ((sessionCount?.value ?? 0) > 0) {
+    await db
+      .update(lectureHalls)
+      .set({ status: "archived", updatedAt: new Date() })
+      .where(eq(lectureHalls.id, lectureHallId));
+
+    await db.insert(auditLogs).values({
+      userId: admin.id,
+      action: "lecture_hall_archived",
+      entityType: "lecture_hall",
+      entityId: lectureHallId,
+      newValue: { linkedSessions: sessionCount?.value ?? 0 },
+    });
+
+    revalidatePath("/admin/lecture-halls");
+    redirect("/admin/lecture-halls?archived=1");
+  }
+
+  await db.delete(lectureHalls).where(eq(lectureHalls.id, lectureHallId));
+  await db.insert(auditLogs).values({
+    userId: admin.id,
+    action: "lecture_hall_deleted",
+    entityType: "lecture_hall",
+    entityId: lectureHallId,
+  });
+
+  revalidatePath("/admin/lecture-halls");
+  redirect("/admin/lecture-halls?deleted=1");
 }
 
 export async function createFacultyAction(formData: FormData) {

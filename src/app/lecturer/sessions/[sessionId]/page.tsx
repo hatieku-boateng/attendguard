@@ -7,6 +7,7 @@ import {
   closeAttendanceSessionAction,
   deleteAttendanceSessionAction,
   generatePasskeysAction,
+  markAbsentRecordPresentAction,
   rejectAttemptAction,
   updateAttendanceSessionAction,
 } from "@/app/lecturer/sessions/actions";
@@ -241,6 +242,7 @@ export default async function LecturerSessionDetailPage({
                 <TableHead>Check-in</TableHead>
                 <TableHead>Distance</TableHead>
                 <TableHead>Accuracy</TableHead>
+                <TableHead className="text-right">Recovery</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -255,11 +257,27 @@ export default async function LecturerSessionDetailPage({
                   <TableCell>{record.checkInAt.toLocaleString()}</TableCell>
                   <TableCell>{record.distance ?? "-"}m</TableCell>
                   <TableCell>{record.accuracy ?? "-"}m</TableCell>
+                  <TableCell className="text-right">
+                    {session.status === "closed" && record.status === "absent" ? (
+                      <form action={markAbsentRecordPresentAction}>
+                        <input name="recordId" type="hidden" value={record.id} />
+                        <PendingSubmitButton
+                          pendingLabel="Updating..."
+                          size="sm"
+                          variant="outline"
+                        >
+                          Mark present
+                        </PendingSubmitButton>
+                      </form>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">-</span>
+                    )}
+                  </TableCell>
                 </TableRow>
               ))}
               {records.length === 0 ? (
                 <TableRow>
-                  <TableCell className="h-24 text-center text-muted-foreground" colSpan={5}>
+                  <TableCell className="h-24 text-center text-muted-foreground" colSpan={6}>
                     No accepted attendance yet.
                   </TableCell>
                 </TableRow>

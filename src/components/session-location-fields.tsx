@@ -17,6 +17,28 @@ export type PreviousSessionLocationOption = {
   maxAccuracyMeters?: number | null;
 };
 
+export type MappedLectureHallLocationOption = {
+  id: string;
+  label: string;
+  latitude: string | number;
+  longitude: string | number;
+  accuracy?: string | number | null;
+  radiusMeters?: number | null;
+  maxAccuracyMeters?: number | null;
+};
+
+type LocationChoice = {
+  id: string;
+  title: string;
+  source: "hall" | "session";
+  label: string;
+  latitude: string | number;
+  longitude: string | number;
+  accuracy: string | number;
+  radiusMeters?: number | null;
+  maxAccuracyMeters?: number | null;
+};
+
 function setNumberInputValue(inputId: string | undefined, value: number | null | undefined) {
   if (!inputId || value === null || value === undefined) {
     return;
@@ -35,24 +57,64 @@ function setNumberInputValue(inputId: string | undefined, value: number | null |
 
 export function SessionLocationFields({
   previousLocations,
+  mappedLectureHalls = [],
   latitudeName,
   longitudeName,
   accuracyName,
   maxAccuracyInputId,
   radiusInputId,
+  lectureHallInputName,
 }: {
   previousLocations: PreviousSessionLocationOption[];
+  mappedLectureHalls?: MappedLectureHallLocationOption[];
   latitudeName: string;
   longitudeName: string;
   accuracyName: string;
   maxAccuracyInputId: string;
   radiusInputId?: string;
+  lectureHallInputName?: string;
 }) {
   const [selectedId, setSelectedId] = useState("");
 
-  const safeLocations = useMemo(
+  const safeHallLocations = useMemo(
     () =>
-      previousLocations.filter(
+      mappedLectureHalls
+        .map<LocationChoice>((hall) => ({
+          id: `hall:${hall.id}`,
+          title: hall.label,
+          source: "hall",
+          label: `${hall.label} - mapped hall`,
+          latitude: hall.latitude,
+          longitude: hall.longitude,
+          accuracy: hall.accuracy ?? hall.maxAccuracyMeters ?? 10,
+          radiusMeters: hall.radiusMeters,
+          maxAccuracyMeters: hall.maxAccuracyMeters,
+        }))
+        .filter(
+          (location) =>
+            Number.isFinite(Number(location.latitude)) &&
+            Number.isFinite(Number(location.longitude)) &&
+            Number.isFinite(Number(location.accuracy)),
+        ),
+    [mappedLectureHalls],
+  );
+  const safePreviousLocations = useMemo(
+    () =>
+      previousLocations
+        .map<LocationChoice>((location) => ({
+          id: `session:${location.id}`,
+          title: location.title,
+          source: "session",
+          label: `${location.courseLabel ? `${location.courseLabel} - ` : ""}${
+            location.title
+          } (${location.opensAtLabel}) - ${Math.round(Number(location.accuracy))}m accuracy`,
+          latitude: location.latitude,
+          longitude: location.longitude,
+          accuracy: location.accuracy,
+          radiusMeters: location.radiusMeters,
+          maxAccuracyMeters: location.maxAccuracyMeters,
+        }))
+        .filter(
         (location) =>
           Number.isFinite(Number(location.latitude)) &&
           Number.isFinite(Number(location.longitude)) &&
@@ -60,8 +122,14 @@ export function SessionLocationFields({
       ),
     [previousLocations],
   );
+  const safeLocations = useMemo(
+    () => [...safeHallLocations, ...safePreviousLocations],
+    [safeHallLocations, safePreviousLocations],
+  );
   const selectedLocation =
     safeLocations.find((location) => location.id === selectedId) ?? null;
+  const selectedHallId =
+    selectedLocation?.source === "hall" ? selectedLocation.id.replace("hall:", "") : "";
 
   useEffect(() => {
     if (!selectedLocation) {
@@ -74,6 +142,9 @@ export function SessionLocationFields({
 
   return (
     <div className="space-y-3">
+      {lectureHallInputName ? (
+        <input name={lectureHallInputName} type="hidden" value={selectedHallId} />
+      ) : null}
       {safeLocations.length > 0 ? (
         <div className="space-y-2 rounded-md border bg-muted/30 p-4">
           <div className="space-y-1">
@@ -92,13 +163,24 @@ export function SessionLocationFields({
             value={selectedId}
           >
             <option value="">Capture a fresh location</option>
-            {safeLocations.map((location) => (
-              <option key={location.id} value={location.id}>
-                {location.courseLabel ? `${location.courseLabel} - ` : ""}
-                {location.title} ({location.opensAtLabel}) -{" "}
-                {Math.round(Number(location.accuracy))}m accuracy
-              </option>
-            ))}
+            {safeHallLocations.length > 0 ? (
+              <optgroup label="Mapped lecture halls">
+                {safeHallLocations.map((location) => (
+                  <option key={location.id} value={location.id}>
+                    {location.label}
+                  </option>
+                ))}
+              </optgroup>
+            ) : null}
+            {safePreviousLocations.length > 0 ? (
+              <optgroup label="Previous sessions">
+                {safePreviousLocations.map((location) => (
+                  <option key={location.id} value={location.id}>
+                    {location.label}
+                  </option>
+                ))}
+              </optgroup>
+            ) : null}
           </select>
         </div>
       ) : null}

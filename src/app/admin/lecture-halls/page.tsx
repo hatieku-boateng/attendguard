@@ -9,6 +9,7 @@ import {
 } from "@/app/admin/actions";
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { FormModal } from "@/components/form-modal";
+import { LocationFields } from "@/components/location-fields";
 import { PageHeader } from "@/components/page-header";
 import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
@@ -277,37 +278,6 @@ function LectureHallFields({
         <Input defaultValue={hall?.roomNumber ?? ""} id="roomNumber" name="roomNumber" />
       </div>
       <div className="space-y-1.5">
-        <Label htmlFor="latitude">Latitude</Label>
-        <Input
-          defaultValue={hall?.latitude ?? ""}
-          id="latitude"
-          inputMode="decimal"
-          name="latitude"
-          required
-        />
-      </div>
-      <div className="space-y-1.5">
-        <Label htmlFor="longitude">Longitude</Label>
-        <Input
-          defaultValue={hall?.longitude ?? ""}
-          id="longitude"
-          inputMode="decimal"
-          name="longitude"
-          required
-        />
-      </div>
-      <div className="space-y-1.5">
-        <Label htmlFor="locationAccuracyMeters">Captured accuracy</Label>
-        <Input
-          defaultValue={hall?.locationAccuracyMeters ?? ""}
-          id="locationAccuracyMeters"
-          min={1}
-          name="locationAccuracyMeters"
-          placeholder="10"
-          type="number"
-        />
-      </div>
-      <div className="space-y-1.5">
         <Label htmlFor="geofenceRadiusMeters">Attendance radius</Label>
         <Input
           defaultValue={hall?.geofenceRadiusMeters ?? 30}
@@ -318,7 +288,7 @@ function LectureHallFields({
           type="number"
         />
       </div>
-      <div className="space-y-1.5 sm:col-span-2">
+      <div className="space-y-1.5">
         <Label htmlFor="maxAcceptedAccuracyMeters">GPS accuracy limit</Label>
         <Input
           defaultValue={hall?.maxAcceptedAccuracyMeters ?? 50}
@@ -327,6 +297,25 @@ function LectureHallFields({
           name="maxAcceptedAccuracyMeters"
           required
           type="number"
+        />
+      </div>
+      <div className="space-y-1.5 sm:col-span-2">
+        <Label>Hall GPS capture</Label>
+        <LocationFields
+          accuracyName="locationAccuracyMeters"
+          allowManualEntry
+          initialAccuracy={hall?.locationAccuracyMeters}
+          initialLatitude={hall?.latitude}
+          initialLongitude={hall?.longitude}
+          initialMessage={
+            hall
+              ? "Saved lecture hall GPS is loaded. Capture again only if the hall marker needs to be updated."
+              : "Capture this device's GPS while standing inside the lecture hall, then accept the coordinate."
+          }
+          latitudeName="latitude"
+          longitudeName="longitude"
+          maxAccuracyInputId="maxAcceptedAccuracyMeters"
+          requireAcceptance
         />
       </div>
       <div className="space-y-1.5 sm:col-span-2">

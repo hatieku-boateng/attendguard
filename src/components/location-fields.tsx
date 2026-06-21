@@ -13,7 +13,14 @@ const highAccuracyOptions: PositionOptions = {
   timeout: 60000,
 };
 
+const freshReadingOptions: PositionOptions = {
+  enableHighAccuracy: true,
+  maximumAge: 0,
+  timeout: 15000,
+};
+
 const stalePositionGraceMs = 5000;
+const fastFreshPollMs = 1500;
 const lecturerFreshPollMs = 3500;
 const defaultAutoStopMs = 60000;
 
@@ -37,6 +44,10 @@ type AcceptedLocation = {
   lat: number;
   lng: number;
   accuracy: number;
+};
+
+type BestLocation = AcceptedLocation & {
+  timestamp: number;
 };
 
 type ProximityTarget = {
@@ -141,6 +152,9 @@ export function LocationFields({
         }),
   });
   const [isWatching, setIsWatching] = useState(false);
+  const [permissionState, setPermissionState] = useState<
+    "unknown" | "prompt" | "granted" | "denied" | "unsupported"
+  >("unknown");
   const [manualMode, setManualMode] = useState(false);
   const [manualLocation, setManualLocation] = useState({
     lat: "",
@@ -158,7 +172,36 @@ export function LocationFields({
   );
 
   useEffect(() => {
+    let permissionStatus: PermissionStatus | null = null;
+
+    async function readPermissionState() {
+      if (!navigator.permissions?.query) {
+        setPermissionState("unsupported");
+        return;
+      }
+
+      try {
+        permissionStatus = await navigator.permissions.query({
+          name: "geolocation" as PermissionName,
+        });
+        setPermissionState(permissionStatus.state);
+        permissionStatus.onchange = () => {
+          if (permissionStatus) {
+            setPermissionState(permissionStatus.state);
+          }
+        };
+      } catch {
+        setPermissionState("unsupported");
+      }
+    }
+
+    readPermissionState();
+
     return () => {
+      if (permissionStatus) {
+        permissionStatus.onchange = null;
+      }
+
       if (watchIdRef.current !== null) {
         navigator.geolocation.clearWatch(watchIdRef.current);
       }
@@ -204,6 +247,36 @@ export function LocationFields({
     const distance = getDistanceFromTarget(locationToCheck);
 
     return distance === null || distance <= proximityTarget!.radiusMeters;
+  }
+
+  function isUsablePosition(position: GeolocationPosition) {
+    const { latitude, longitude, accuracy } = position.coords;
+
+    return (
+      Number.isFinite(latitude) &&
+      Number.isFinite(longitude) &&
+      Number.isFinite(accuracy) &&
+      accuracy > 0 &&
+      latitude >= -90 &&
+      latitude <= 90 &&
+      longitude >= -180 &&
+      longitude <= 180
+    );
+  }
+
+  function shouldUseAsBest(
+    candidate: BestLocation,
+    currentBest: BestLocation | null,
+  ) {
+    if (!currentBest) {
+      return true;
+    }
+
+    if (candidate.accuracy < currentBest.accuracy) {
+      return true;
+    }
+
+    return candidate.accuracy === currentBest.accuracy && candidate.timestamp > currentBest.timestamp;
   }
 
   function buildMessage(
@@ -339,6 +412,15 @@ export function LocationFields({
       return;
     }
 
+    if (permissionState === "denied") {
+      setLocation({
+        status: "error",
+        message:
+          "Location permission is blocked for this browser. Open site settings, allow precise location access, then try again.",
+      });
+      return;
+    }
+
     if (!window.isSecureContext && window.location.hostname !== "localhost") {
       setLocation({
         status: "error",
@@ -358,13 +440,8 @@ export function LocationFields({
     setIsWatching(true);
     let samples = 0;
     let staleSamples = 0;
-    let best:
-      | {
-          lat: number;
-          lng: number;
-          accuracy: number;
-        }
-      | null = null;
+    let unusableSamples = 0;
+    let best: BestLocation | null = null;
 
     const maxAccuracy = getMaxAccuracy();
 
@@ -372,7 +449,7 @@ export function LocationFields({
       status: "idle",
       message: maxAccuracy
         ? `Capturing this device's live GPS readings. Keep the phone or laptop still until accuracy is within ${Math.round(maxAccuracy)}m.`
-        : "Capturing this device's live GPS readings. Keep the phone or laptop still at the class location.",
+        : "Capturing this device's live GPS readings. Keep the phone or laptop still at the class location. Phones usually lock faster with precise location enabled.",
     });
 
     const handlePosition = (position: GeolocationPosition) => {
@@ -395,23 +472,46 @@ export function LocationFields({
         return;
       }
 
+      if (!isUsablePosition(position)) {
+        unusableSamples += 1;
+
+        if (!best) {
+          setLocation({
+            status: "idle",
+            message: `Received ${unusableSamples} incomplete GPS reading${
+              unusableSamples === 1 ? "" : "s"
+            }. Waiting for latitude, longitude, and accuracy from the browser.`,
+          });
+        }
+
+        return;
+      }
+
       const capturedAccuracy = position.coords.accuracy;
       samples += 1;
+      const candidate: BestLocation = {
+        lat: position.coords.latitude,
+        lng: position.coords.longitude,
+        accuracy: capturedAccuracy,
+        timestamp: position.timestamp,
+      };
 
-      if (!best || capturedAccuracy < best.accuracy) {
-        best = {
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
-          accuracy: capturedAccuracy,
-        };
+      if (shouldUseAsBest(candidate, best)) {
+        best = candidate;
+      }
+
+      const currentBest = best;
+
+      if (!currentBest) {
+        return;
       }
 
       setLocation({
         status: "captured",
-        message: buildMessage(best.accuracy, samples, best),
-        lat: best.lat,
-        lng: best.lng,
-        accuracy: best.accuracy,
+        message: buildMessage(currentBest.accuracy, samples, currentBest),
+        lat: currentBest.lat,
+        lng: currentBest.lng,
+        accuracy: currentBest.accuracy,
         samples,
       });
 
@@ -419,8 +519,8 @@ export function LocationFields({
 
       if (
         maxAccuracy &&
-        best.accuracy <= maxAccuracy &&
-        isWithinProximity(best)
+        currentBest.accuracy <= maxAccuracy &&
+        isWithinProximity(currentBest)
       ) {
         stopLiveCapture();
       }
@@ -459,7 +559,7 @@ export function LocationFields({
           if (activeCaptureIdRef.current === captureId) {
             freshPollTimeoutRef.current = window.setTimeout(
               requestFreshReading,
-              lecturerFreshPollMs,
+              samples < 5 ? fastFreshPollMs : lecturerFreshPollMs,
             );
           }
         },
@@ -469,11 +569,11 @@ export function LocationFields({
           if (activeCaptureIdRef.current === captureId) {
             freshPollTimeoutRef.current = window.setTimeout(
               requestFreshReading,
-              lecturerFreshPollMs,
+              best ? lecturerFreshPollMs : fastFreshPollMs,
             );
           }
         },
-        highAccuracyOptions,
+        freshReadingOptions,
       );
     };
 
@@ -589,6 +689,14 @@ export function LocationFields({
     distanceFromTarget <= proximityTarget.radiusMeters;
   const locationReady =
     hasMapCoordinates && hasNumericValue(effectiveAccuracy) && accuracyOk && proximityOk;
+  const permissionMessage =
+    permissionState === "denied"
+      ? "Browser location access is blocked. Allow precise location for this site before capturing GPS."
+      : permissionState === "prompt"
+        ? "Your browser will ask for location permission when capture starts. Choose Allow and enable precise location if available."
+        : permissionState === "granted"
+          ? "Browser location access is enabled for this site."
+          : null;
 
   useEffect(() => {
     onLocationValidityChange?.({
@@ -623,6 +731,15 @@ export function LocationFields({
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
           <p className="text-sm text-muted-foreground">{location.message}</p>
+          {permissionMessage ? (
+            <p
+              className={`text-xs font-medium ${
+                permissionState === "denied" ? "text-destructive" : "text-muted-foreground"
+              }`}
+            >
+              {permissionMessage}
+            </p>
+          ) : null}
           {location.status === "captured" ? (
             <p className="text-xs text-muted-foreground">
               Lat {location.lat.toFixed(6)}, Lng {location.lng.toFixed(6)}

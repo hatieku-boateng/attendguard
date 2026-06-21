@@ -136,6 +136,8 @@ export const faculties = pgTable(
     id,
     name: varchar("name", { length: 200 }).notNull(),
     code: varchar("code", { length: 40 }).notNull(),
+    externalId: varchar("external_id", { length: 120 }),
+    sourceSystem: varchar("source_system", { length: 80 }),
     description: text("description"),
     status: varchar("status", { length: 40 }).notNull().default("active"),
     createdAt,
@@ -144,6 +146,10 @@ export const faculties = pgTable(
   (table) => [
     uniqueIndex("faculties_name_unique").on(table.name),
     uniqueIndex("faculties_code_unique").on(table.code),
+    uniqueIndex("faculties_source_external_unique").on(
+      table.sourceSystem,
+      table.externalId,
+    ),
     index("faculties_status_idx").on(table.status),
   ],
 );
@@ -157,6 +163,8 @@ export const departments = pgTable(
       .references(() => faculties.id, { onDelete: "restrict" }),
     name: varchar("name", { length: 200 }).notNull(),
     code: varchar("code", { length: 40 }).notNull(),
+    externalId: varchar("external_id", { length: 120 }),
+    sourceSystem: varchar("source_system", { length: 80 }),
     description: text("description"),
     status: varchar("status", { length: 40 }).notNull().default("active"),
     createdAt,
@@ -165,6 +173,10 @@ export const departments = pgTable(
   (table) => [
     uniqueIndex("departments_faculty_name_unique").on(table.facultyId, table.name),
     uniqueIndex("departments_code_unique").on(table.code),
+    uniqueIndex("departments_source_external_unique").on(
+      table.sourceSystem,
+      table.externalId,
+    ),
     index("departments_faculty_id_idx").on(table.facultyId),
     index("departments_status_idx").on(table.status),
   ],
@@ -177,6 +189,8 @@ export const academicYears = pgTable(
     startYear: integer("start_year").notNull(),
     endYear: integer("end_year").notNull(),
     displayName: varchar("display_name", { length: 20 }).notNull(),
+    externalId: varchar("external_id", { length: 120 }),
+    sourceSystem: varchar("source_system", { length: 80 }),
     isCurrent: boolean("is_current").notNull().default(false),
     status: varchar("status", { length: 40 }).notNull().default("active"),
     createdAt,
@@ -184,6 +198,10 @@ export const academicYears = pgTable(
   },
   (table) => [
     uniqueIndex("academic_years_display_name_unique").on(table.displayName),
+    uniqueIndex("academic_years_source_external_unique").on(
+      table.sourceSystem,
+      table.externalId,
+    ),
     index("academic_years_current_idx").on(table.isCurrent),
     index("academic_years_status_idx").on(table.status),
   ],
@@ -197,6 +215,8 @@ export const studentProfiles = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     studentIdNumber: varchar("student_id_number", { length: 80 }).notNull(),
+    externalId: varchar("external_id", { length: 120 }),
+    sourceSystem: varchar("source_system", { length: 80 }),
     studentCategory: studentCategoryEnum("student_category")
       .notNull()
       .default("regular"),
@@ -222,6 +242,10 @@ export const studentProfiles = pgTable(
     uniqueIndex("student_profiles_user_id_unique").on(table.userId),
     uniqueIndex("student_profiles_student_id_number_unique").on(
       table.studentIdNumber,
+    ),
+    uniqueIndex("student_profiles_source_external_unique").on(
+      table.sourceSystem,
+      table.externalId,
     ),
     index("student_profiles_programme_idx").on(table.programme),
     index("student_profiles_level_idx").on(table.level),
@@ -259,6 +283,8 @@ export const lecturerProfiles = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     staffId: varchar("staff_id", { length: 80 }),
+    externalId: varchar("external_id", { length: 120 }),
+    sourceSystem: varchar("source_system", { length: 80 }),
     department: varchar("department", { length: 160 }),
     createdAt,
     updatedAt,
@@ -266,6 +292,10 @@ export const lecturerProfiles = pgTable(
   (table) => [
     uniqueIndex("lecturer_profiles_user_id_unique").on(table.userId),
     uniqueIndex("lecturer_profiles_staff_id_unique").on(table.staffId),
+    uniqueIndex("lecturer_profiles_source_external_unique").on(
+      table.sourceSystem,
+      table.externalId,
+    ),
     index("lecturer_profiles_department_idx").on(table.department),
   ],
 );
@@ -276,6 +306,8 @@ export const courseCatalog = pgTable(
     id,
     courseCode: varchar("course_code", { length: 40 }).notNull(),
     courseTitle: varchar("course_title", { length: 200 }).notNull(),
+    externalId: varchar("external_id", { length: 120 }),
+    sourceSystem: varchar("source_system", { length: 80 }),
     programme: varchar("programme", { length: 160 }),
     level: varchar("level", { length: 50 }),
     academicYearId: uuid("academic_year_id").references(() => academicYears.id, {
@@ -294,6 +326,10 @@ export const courseCatalog = pgTable(
   },
   (table) => [
     uniqueIndex("course_catalog_code_unique").on(table.courseCode),
+    uniqueIndex("course_catalog_source_external_unique").on(
+      table.sourceSystem,
+      table.externalId,
+    ),
     index("course_catalog_status_idx").on(table.status),
     index("course_catalog_faculty_id_idx").on(table.facultyId),
     index("course_catalog_department_id_idx").on(table.departmentId),
@@ -310,6 +346,8 @@ export const courses = pgTable(
     }),
     courseCode: varchar("course_code", { length: 40 }).notNull(),
     courseTitle: varchar("course_title", { length: 200 }).notNull(),
+    externalId: varchar("external_id", { length: 120 }),
+    sourceSystem: varchar("source_system", { length: 80 }),
     programme: varchar("programme", { length: 160 }),
     level: varchar("level", { length: 50 }),
     semester: varchar("semester", { length: 60 }).notNull(),
@@ -328,6 +366,10 @@ export const courses = pgTable(
       table.academicYear,
       table.semester,
       table.classGroup,
+    ),
+    uniqueIndex("courses_source_external_unique").on(
+      table.sourceSystem,
+      table.externalId,
     ),
     index("courses_lecturer_id_idx").on(table.lecturerId),
     index("courses_status_idx").on(table.status),
@@ -369,6 +411,8 @@ export const enrolments = pgTable(
       .notNull()
       .references(() => studentProfiles.id, { onDelete: "cascade" }),
     status: enrolmentStatusEnum("status").notNull().default("active"),
+    externalId: varchar("external_id", { length: 120 }),
+    sourceSystem: varchar("source_system", { length: 80 }),
     enrolledAt: timestamp("enrolled_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -379,6 +423,10 @@ export const enrolments = pgTable(
     uniqueIndex("enrolments_course_student_unique").on(
       table.courseId,
       table.studentId,
+    ),
+    uniqueIndex("enrolments_source_external_unique").on(
+      table.sourceSystem,
+      table.externalId,
     ),
     index("enrolments_course_id_idx").on(table.courseId),
     index("enrolments_student_id_idx").on(table.studentId),

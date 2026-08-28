@@ -225,7 +225,7 @@ export default async function LecturerSessionDetailPage({
             <ScheduleRow label="Present until" value={session.normalClosesAt.toLocaleString()} />
             <ScheduleRow label="Final close" value={session.finalClosesAt.toLocaleString()} />
             <div className="border-t border-border pt-4 text-xs leading-relaxed text-muted-foreground">
-              The QR changes every five seconds. The current and immediately previous code are accepted to accommodate camera and network delay.
+              The QR changes every three seconds. The current and immediately previous code are accepted to accommodate camera and network delay.
             </div>
           </CardContent>
         </Card>
@@ -234,7 +234,7 @@ export default async function LecturerSessionDetailPage({
       <Card className="mt-6 overflow-hidden border-border/50">
         <CardHeader>
           <CardTitle className="text-base">Live attendance roster</CardTitle>
-          <CardDescription>Updates every five seconds while the QR is active.</CardDescription>
+          <CardDescription>Updates every three seconds while the QR is active.</CardDescription>
         </CardHeader>
         <CardContent className="px-0">
           <Table>

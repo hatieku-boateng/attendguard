@@ -86,7 +86,7 @@ export function RotatingAttendanceQr({ sessionId }: { sessionId: string }) {
             Live attendance code
           </div>
           <p className="mt-1 text-xs font-semibold text-muted-foreground">
-            Refreshes every {data?.rotationSeconds ?? 5} seconds
+            Refreshes every {data?.rotationSeconds ?? 3} seconds
           </p>
         </div>
         <Button
@@ -129,7 +129,7 @@ export function RotatingAttendanceQr({ sessionId }: { sessionId: string }) {
           <div
             className="h-full bg-primary transition-[width] duration-200"
             style={{
-              width: `${Math.min(100, Math.max(0, (secondsLeft / (data?.rotationSeconds ?? 5)) * 100))}%`,
+              width: `${Math.min(100, Math.max(0, (secondsLeft / (data?.rotationSeconds ?? 3)) * 100))}%`,
             }}
           />
         </div>

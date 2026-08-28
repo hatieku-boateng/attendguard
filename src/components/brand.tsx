@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ShieldCheck } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -17,17 +18,12 @@ export function BrandMark({
       )}
       href={href}
     >
-      <span className="relative flex size-11 items-center justify-center overflow-hidden rounded-xl border border-white/45 bg-white shadow-md shadow-primary/10 transition-all duration-300 group-hover:scale-105 group-hover:shadow-lg group-hover:shadow-primary/25 group-hover:-rotate-3 p-1 shrink-0">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img 
-          src="/puc-crest.jpg" 
-          alt="Pentecost University Crest"
-          className="size-full object-contain"
-        />
+      <span className="relative flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-primary/25 bg-primary text-primary-foreground shadow-md shadow-primary/15 transition-all duration-300 group-hover:scale-105 group-hover:shadow-lg group-hover:shadow-primary/25">
+        <ShieldCheck aria-hidden="true" className="size-6" />
       </span>
       <span data-brand-text className="hidden gap-0.5 sm:grid">
         <span className="text-[0.95rem] font-extrabold leading-none tracking-tight text-current transition-all duration-300 group-hover:translate-x-0.5">
-          Pentecost University
+          AttendGuard
         </span>
         <span className="text-[0.55rem] sm:text-[0.62rem] font-black uppercase tracking-[0.15em] text-secondary mt-0.5">
           <span className="inline sm:hidden">Attendance</span>

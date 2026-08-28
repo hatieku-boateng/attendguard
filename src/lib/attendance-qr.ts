@@ -4,7 +4,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 
 import { getAuthSecret } from "@/lib/server-secret";
 
-export const QR_ROTATION_SECONDS = 5;
+export const QR_ROTATION_SECONDS = 3;
 export const QR_ACCEPTED_WINDOWS = 2;
 
 type QrPayload = {

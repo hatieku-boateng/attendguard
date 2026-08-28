@@ -203,7 +203,7 @@ export function AppShell({
             {/* Page Title Context */}
             <div className="block">
               <h1 className="text-[10px] sm:text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5 sm:gap-2">
-                <span className="text-muted-foreground/60 truncate max-w-[80px] sm:max-w-none hidden sm:inline">PU Attendance</span>
+                <span className="text-muted-foreground/60 truncate max-w-[80px] sm:max-w-none hidden sm:inline">AttendGuard</span>
                 <ChevronRight className="size-2.5 sm:size-3 text-muted-foreground/40 shrink-0 hidden sm:block" />
                 <span className="text-primary truncate">{user.role} Portal</span>
               </h1>

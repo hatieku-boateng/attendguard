@@ -20,15 +20,19 @@ import { BrandMark } from "@/components/brand";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 
+const demoRotationMilliseconds = 3000;
+
 export default function Home() {
   const [windowNumber, setWindowNumber] = useState(0);
-  const [secondsLeft, setSecondsLeft] = useState(5);
+  const [secondsLeft, setSecondsLeft] = useState(3);
 
   useEffect(() => {
     const updateDemo = () => {
       const now = Date.now();
-      setWindowNumber(Math.floor(now / 5000));
-      setSecondsLeft(Math.max(1, Math.ceil((5000 - (now % 5000)) / 1000)));
+      setWindowNumber(Math.floor(now / demoRotationMilliseconds));
+      setSecondsLeft(
+        Math.max(1, Math.ceil((demoRotationMilliseconds - (now % demoRotationMilliseconds)) / 1000)),
+      );
     };
     updateDemo();
     const timer = setInterval(updateDemo, 200);
@@ -55,7 +59,7 @@ export default function Home() {
             level="M"
             marginSize={1}
             size={900}
-            value={`pu-attendance-demonstration-${windowNumber}`}
+            value={`attendguard-demonstration-${windowNumber}`}
           />
         </div>
         <div className="relative z-10 mx-auto grid min-h-[calc(88vh-5rem)] max-w-[86rem] content-center px-5 py-14 sm:px-8">
@@ -65,7 +69,7 @@ export default function Home() {
               Rotating QR attendance
             </div>
             <h1 className="mt-6 max-w-3xl text-4xl font-black leading-tight sm:text-6xl">
-              Pentecost University Attendance
+              AttendGuard
             </h1>
             <p className="mt-5 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
               Open a class, display a secure live QR code, and watch authenticated student check-ins appear in the lecturer roster.
@@ -80,8 +84,8 @@ export default function Home() {
 
       <section className="border-b border-border bg-background">
         <div className="mx-auto grid max-w-[86rem] divide-y divide-border px-5 sm:grid-cols-3 sm:divide-x sm:divide-y-0 sm:px-8">
-          <Metric label="QR rotation" value="5 seconds" />
-          <Metric label="Scan tolerance" value="10 seconds" />
+          <Metric label="QR rotation" value="3 seconds" />
+          <Metric label="Scan tolerance" value="6 seconds" />
           <Metric label="Roster updates" value="Live" />
         </div>
       </section>
@@ -105,7 +109,7 @@ export default function Home() {
           <div>
             <p className="text-xs font-bold uppercase text-primary">Live demonstration</p>
             <h2 className="mt-3 text-3xl font-extrabold">Built for the classroom screen</h2>
-            <p className="mt-4 max-w-xl text-sm leading-relaxed text-muted-foreground">The QR stays large and stable while its signed payload changes every five seconds. The immediately previous code remains valid long enough for camera focus and ordinary network delay.</p>
+            <p className="mt-4 max-w-xl text-sm leading-relaxed text-muted-foreground">The QR stays large and stable while its signed payload changes every three seconds. The immediately previous code remains valid long enough for camera focus and ordinary network delay.</p>
             <div className="mt-7 grid gap-3 text-sm font-semibold">
               <FeatureLine icon={ShieldCheck} text="Cryptographically signed server tokens" />
               <FeatureLine icon={Users} text="Enrolment and account validation" />
@@ -122,7 +126,7 @@ export default function Home() {
               marginSize={2}
               size={520}
               title="Demonstration rotating QR code"
-              value={`pu-attendance-demonstration-${windowNumber}`}
+              value={`attendguard-demonstration-${windowNumber}`}
             />
             <div className="mt-5 flex items-center justify-between border-t border-slate-200 pt-4 text-xs font-bold">
               <span>Next code</span>
@@ -149,7 +153,7 @@ export default function Home() {
 
       <footer className="mx-auto flex max-w-[86rem] flex-col gap-5 px-5 py-10 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-8">
         <BrandMark />
-        <p>(c) 2026 Pentecost University. Secure QR attendance management.</p>
+        <p>(c) 2026 AttendGuard. Secure QR attendance management.</p>
       </footer>
     </main>
   );

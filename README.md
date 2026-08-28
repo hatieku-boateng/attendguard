@@ -1,7 +1,7 @@
-# Pentecost University Attendance System
+# AttendGuard
 
-A secure digital attendance management platform for Pentecost
-University. It transitions paper-based registers into verified, auditable
+A secure, reusable digital attendance management platform. It transitions
+paper-based registers into verified, auditable
 attendance records with administrator-managed lecturers, course assignments,
 student enrolment, account activation, and continuously rotating QR verification.
 
@@ -20,7 +20,7 @@ student enrolment, account activation, and continuously rotating QR verification
 ### Secure Verification Architecture
 
 * **Rotating QR Check-ins**: Each open session displays a signed QR code that
-  changes every five seconds. The server accepts only the current or immediately
+  changes every three seconds. The server accepts only the current or immediately
   previous code to tolerate normal camera and network delay.
 * **Account-Bound Attendance**: A successful scan is credited only to the signed-in
   student when they are enrolled in the course and have not already checked in.
@@ -37,6 +37,15 @@ student enrolment, account activation, and continuously rotating QR verification
 * **Database and ORM**: Drizzle ORM with Neon PostgreSQL
 * **Mail and SMTP**: Gmail SMTP configured with Nodemailer
 
+## Reuse and Branding
+
+AttendGuard is institution-neutral and can be cloned for another school or
+organization. Configure the deployment, email sender, administrator account,
+and institutional data through environment variables and the administrator
+workspace. Do not commit real credentials or local environment files.
+
+This project is available under the MIT License. See [LICENSE](LICENSE).
+
 ## Local Development Setup
 
 1. Install dependencies:
@@ -52,7 +61,7 @@ student enrolment, account activation, and continuously rotating QR verification
    AUTH_SECRET="your-long-random-secret"
    APP_URL="http://localhost:3000"
    EMAIL_SENDER="sender@gmail.com"
-   EMAIL_SENDER_NAME="PU Attendance"
+   EMAIL_SENDER_NAME="AttendGuard"
    GMAIL_APP_PASSWORD="your-gmail-app-password"
    ```
 

@@ -10,24 +10,11 @@ const appUrl = process.env.APP_URL
 
 export const metadata: Metadata = {
   metadataBase: new URL(appUrl),
-  title: "Pentecost University Attendance",
-  description:
-    "Secure attendance management system for Pentecost University.",
-  icons: {
-    icon: "/puc-crest.jpg",
-    apple: "/puc-crest.jpg",
-  },
+  title: "AttendGuard",
+  description: "Secure, reusable QR attendance management.",
   openGraph: {
-    title: "Pentecost University Attendance",
-    description: "Secure attendance management system for Pentecost University.",
-    images: [
-      {
-        url: `${appUrl}/puc-logo-full.png`,
-        width: 1200,
-        height: 630,
-        alt: "Pentecost University Logo",
-      },
-    ],
+    title: "AttendGuard",
+    description: "Secure, reusable QR attendance management.",
   },
 };
 

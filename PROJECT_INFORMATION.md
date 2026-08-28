@@ -1,4 +1,4 @@
-# Pentecost University Attendance System Project Information
+# AttendGuard Project Information
 
 ## Live Services
 

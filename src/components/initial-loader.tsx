@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ShieldCheck } from "lucide-react";
 
 export function InitialLoader() {
   const [loading, setLoading] = useState(true);
@@ -53,20 +54,14 @@ export function InitialLoader() {
           {/* Subtle pulsing outer border */}
           <div className="absolute -inset-1.5 rounded-2xl border border-primary/20 animate-pulse" />
           
-          {/* The Crest itself */}
-          <div className="relative flex size-16 items-center justify-center overflow-hidden rounded-2xl border border-border bg-white shadow-xl p-2 z-10">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img 
-              src="/puc-crest.jpg" 
-              alt="Pentecost University Crest"
-              className="size-full object-contain"
-            />
+          <div className="relative z-10 flex size-16 items-center justify-center overflow-hidden rounded-2xl border border-primary/25 bg-primary text-primary-foreground shadow-xl">
+            <ShieldCheck aria-hidden="true" className="size-9" />
           </div>
         </div>
 
         {/* Brand Text */}
         <h2 className="text-[11px] font-black uppercase tracking-[0.25em] text-foreground">
-          Pentecost University
+          AttendGuard
         </h2>
         <p className="mt-1 text-[9px] font-bold uppercase tracking-[0.15em] text-muted-foreground/85">
           Attendance System

@@ -1,7 +1,14 @@
 {
   "name": "attendguard",
   "version": "0.1.0",
+  "description": "Institution-neutral rotating QR attendance management.",
+  "author": "Harry Atieku-Boateng",
+  "license": "MIT",
   "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hatieku-boateng/attendguard.git"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",

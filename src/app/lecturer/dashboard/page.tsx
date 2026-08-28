@@ -283,7 +283,7 @@ export default async function LecturerDashboardPage() {
     <>
       <PageHeader
         title="Lecturer Dashboard"
-        description="Monitor your assigned courses, audit live student enrolment metrics, check geofenced session states, and review checks."
+        description="Monitor assigned courses, live QR attendance sessions, student enrolment, and recent check-ins."
       />
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-5">
         <StatCard label="Courses" value={lecturerCourses.length} tone="info" />

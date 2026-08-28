@@ -95,7 +95,7 @@ export default async function AdminDashboardPage() {
                 Student Enrolment
               </h3>
               <p className="text-xs font-semibold text-muted-foreground/75 leading-relaxed mt-2">
-                Lecturers enrol active students into their assigned course perimeters, managing locations and check-in verifications.
+                Lecturers enrol active students into assigned courses, schedule sessions, and manage QR check-in verification.
               </p>
             </div>
           </div>

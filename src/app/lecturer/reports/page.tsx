@@ -49,7 +49,7 @@ export default async function LecturerReportsPage() {
         <CardHeader className="border-b border-border/30 bg-slate-950/[0.01] dark:bg-white/[0.01] pb-4">
           <CardTitle className="text-base font-bold text-foreground">Course Registers Export</CardTitle>
           <CardDescription className="text-xs text-muted-foreground mt-1">
-            CSV download includes student names, ID numbers, coordinate metrics, check-in accuracy, and geofence distance offsets.
+            CSV downloads include student names, ID numbers, attendance status, verification method, and check-in time.
           </CardDescription>
         </CardHeader>
         <CardContent className="pt-4 px-0">

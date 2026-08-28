@@ -1,20 +1,18 @@
 "use server";
 
-import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { and, count, eq, inArray } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 
 import { getDb } from "@/db/client";
 import {
   attendanceAttempts,
-  attendancePasskeys,
   attendanceRecords,
   attendanceSessions,
+  courses,
   enrolments,
 } from "@/db/schema";
-import { calculateDistanceMeters, isValidCoordinate } from "@/lib/geo";
+import { verifyAttendanceQrToken } from "@/lib/attendance-qr";
 import { requireRole } from "@/lib/auth";
-import { verifyPasskey } from "@/lib/passkeys";
 import {
   getSecurityRequestContext,
   isSecurityRateLimited,
@@ -22,133 +20,173 @@ import {
   securityWindows,
 } from "@/lib/security";
 
-function cleanString(value: FormDataEntryValue | null) {
-  return String(value ?? "").trim();
-}
+export type QrCheckInResult = {
+  ok: boolean;
+  status:
+    | "present"
+    | "late"
+    | "duplicate"
+    | "invalid"
+    | "expired"
+    | "closed"
+    | "not_enrolled"
+    | "rate_limited"
+    | "unavailable";
+  message: string;
+  sessionLabel?: string;
+};
 
-function parseNumber(value: FormDataEntryValue | null) {
-  const number = Number(value);
-
-  return Number.isFinite(number) ? number : null;
-}
-
-function resultUrl(sessionId: string, result: string) {
-  return `/student/check-in/${sessionId}?result=${result}`;
-}
-
-const reviewableRejectionReasons = new Set([
-  "invalid_passkey",
-  "expired_passkey",
-  "passkey_already_used",
-  "too_many_attempts",
-  "outside_permitted_area",
-  "poor_location_accuracy",
-  "session_closed",
-  "student_not_enrolled",
-  "location_permission_denied",
-  "account_mismatch",
-  "invalid_location",
-]);
-
-export async function checkInAction(formData: FormData) {
+export async function checkInWithQrAction(
+  token: string,
+): Promise<QrCheckInResult> {
   const user = await requireRole("student");
   const studentId = user.studentProfileId;
-  const sessionId = cleanString(formData.get("sessionId"));
-  const enteredPasskey = cleanString(formData.get("passkey"));
-  const studentLatitude = parseNumber(formData.get("studentLatitude"));
-  const studentLongitude = parseNumber(formData.get("studentLongitude"));
-  const locationAccuracyMeters = parseNumber(formData.get("locationAccuracy"));
   const securityContext = await getSecurityRequestContext();
 
-  if (!studentId || !sessionId) {
-    redirect("/student/sessions");
+  if (!studentId) {
+    return {
+      ok: false,
+      status: "unavailable",
+      message: "Your student profile is not ready for attendance.",
+    };
   }
 
+  const verification = verifyAttendanceQrToken(token);
+
+  if (!verification.valid) {
+    await recordSecurityEvent({
+      eventType: "attendance_qr_rejected",
+      identifier: `qr-attendance:${studentId}`,
+      context: securityContext,
+      metadata: { reason: verification.reason },
+    });
+
+    return verification.reason === "expired_qr"
+      ? {
+          ok: false,
+          status: "expired",
+          message: "That QR code has expired. Scan the newly displayed code.",
+        }
+      : {
+          ok: false,
+          status: "invalid",
+          message: "This is not a valid attendance QR code.",
+        };
+  }
+
+  const sessionId = verification.sessionId;
   const db = getDb();
   const [session] = await db
-    .select()
+    .select({
+      id: attendanceSessions.id,
+      courseId: attendanceSessions.courseId,
+      status: attendanceSessions.status,
+      opensAt: attendanceSessions.opensAt,
+      normalClosesAt: attendanceSessions.normalClosesAt,
+      finalClosesAt: attendanceSessions.finalClosesAt,
+      sessionTitle: attendanceSessions.sessionTitle,
+      courseCode: courses.courseCode,
+    })
     .from(attendanceSessions)
+    .innerJoin(courses, eq(attendanceSessions.courseId, courses.id))
     .where(eq(attendanceSessions.id, sessionId))
     .limit(1);
 
+  if (!session) {
+    return {
+      ok: false,
+      status: "invalid",
+      message: "This attendance session no longer exists.",
+    };
+  }
+
+  const sessionLabel = `${session.courseCode}: ${session.sessionTitle}`;
+
   async function logAttempt(
-    result: "accepted" | "late" | "rejected" | "requires_review",
+    result: "accepted" | "late" | "rejected",
     rejectionReason:
-      | "invalid_passkey"
-      | "expired_passkey"
-      | "passkey_already_used"
-      | "outside_permitted_area"
-      | "poor_location_accuracy"
+      | "invalid_qr"
+      | "expired_qr"
       | "session_closed"
       | "student_not_enrolled"
       | "duplicate_attendance"
-      | "location_permission_denied"
-      | "account_mismatch"
-      | "invalid_location"
       | "too_many_attempts"
       | null,
-    distance?: number,
   ) {
-    const shouldRequireReview =
-      result === "requires_review" ||
-      (result === "rejected" &&
-        rejectionReason !== null &&
-        reviewableRejectionReasons.has(rejectionReason));
-
     await db.insert(attendanceAttempts).values({
       sessionId,
       studentId,
-      studentLatitude: studentLatitude === null ? null : String(studentLatitude),
-      studentLongitude: studentLongitude === null ? null : String(studentLongitude),
-      locationAccuracyMeters:
-        locationAccuracyMeters === null ? null : String(locationAccuracyMeters),
-      calculatedDistanceMeters: distance === undefined ? null : String(distance.toFixed(2)),
       result,
       rejectionReason,
-      reviewStatus: shouldRequireReview ? "pending" : "not_required",
+      reviewStatus: "not_required",
       ipAddress: securityContext.ipAddress,
       userAgent: securityContext.userAgent,
     });
 
     if (result === "rejected") {
-      await Promise.all([
+      const events = [
         recordSecurityEvent({
-          eventType: "attendance_check_in_rejected",
-          identifier: `attendance:${sessionId}:${studentId}`,
+          eventType: "attendance_qr_rejected",
+          identifier: `qr-attendance:${sessionId}:${studentId}`,
           context: securityContext,
           metadata: { rejectionReason },
         }),
-        recordSecurityEvent({
-          eventType: "attendance_check_in_rejected",
-          identifier: `attendance-ip:${securityContext.ipAddress ?? "unknown"}`,
-          context: securityContext,
-          metadata: { rejectionReason },
-        }),
-      ]);
+      ];
+
+      if (securityContext.ipAddress) {
+        events.push(
+          recordSecurityEvent({
+            eventType: "attendance_qr_rejected",
+            identifier: `qr-attendance-ip:${securityContext.ipAddress}`,
+            context: securityContext,
+            metadata: { rejectionReason },
+          }),
+        );
+      }
+
+      await Promise.all(events);
     }
   }
 
-  async function submitForReview(
-    rejectionReason:
-      | "invalid_passkey"
-      | "expired_passkey"
-      | "passkey_already_used"
-      | "outside_permitted_area"
-      | "poor_location_accuracy"
-      | "session_closed"
-      | "student_not_enrolled"
-      | "location_permission_denied"
-      | "account_mismatch"
-      | "invalid_location"
-      | "too_many_attempts",
-    distance?: number,
-  ): Promise<never> {
-    await logAttempt("requires_review", rejectionReason, distance);
-    redirect(resultUrl(sessionId, "review"));
+  const [studentBlocked, ipBlocked] = await Promise.all([
+    isSecurityRateLimited({
+      eventType: "attendance_qr_rejected",
+      identifier: `qr-attendance:${sessionId}:${studentId}`,
+      limit: 8,
+      windowMs: securityWindows.standard,
+    }),
+    isSecurityRateLimited({
+      eventType: "attendance_qr_rejected",
+      identifier: `qr-attendance-ip:${securityContext.ipAddress ?? "unknown"}`,
+      limit: 60,
+      windowMs: securityWindows.standard,
+    }),
+  ]);
+
+  if (studentBlocked || ipBlocked) {
+    await logAttempt("rejected", "too_many_attempts");
+    return {
+      ok: false,
+      status: "rate_limited",
+      message: "Too many unsuccessful scans. Wait briefly and try again.",
+      sessionLabel,
+    };
   }
 
-  if (!session) {
-    redirect("/student/sessions");
+  const now = new Date();
+
+  if (
+    session.status !== "open" ||
+    now < session.opensAt ||
+    now > session.finalClosesAt
+  ) {
+    await logAttempt("rejected", "session_closed");
+    return {
+      ok: false,
+      status: "closed",
+      message: "This attendance session is not open.",
+      sessionLabel,
+    };
   }
 
   const [enrolment] = await db
@@ -164,59 +202,17 @@ export async function checkInAction(formData: FormData) {
     .limit(1);
 
   if (!enrolment) {
-    await submitForReview("student_not_enrolled");
-  }
-
-  const now = new Date();
-
-  if (session.status !== "open" || now < session.opensAt || now > session.finalClosesAt) {
-    await submitForReview("session_closed");
-  }
-
-  const [studentBlocked, ipBlocked] = await Promise.all([
-    isSecurityRateLimited({
-      eventType: "attendance_check_in_rejected",
-      identifier: `attendance:${sessionId}:${studentId}`,
-      limit: 8,
-      windowMs: securityWindows.standard,
-    }),
-    isSecurityRateLimited({
-      eventType: "attendance_check_in_rejected",
-      identifier: `attendance-ip:${securityContext.ipAddress ?? "unknown"}`,
-      limit: 50,
-      windowMs: securityWindows.standard,
-    }),
-  ]);
-
-  if (studentBlocked || ipBlocked) {
-    await recordSecurityEvent({
-      eventType: "attendance_check_in_blocked",
-      identifier: studentBlocked
-        ? `attendance:${sessionId}:${studentId}`
-        : `attendance-ip:${securityContext.ipAddress ?? "unknown"}`,
-      context: securityContext,
-      metadata: { studentBlocked, ipBlocked },
-    });
-    await submitForReview("too_many_attempts");
-  }
-
-  const [failedAttempts] = await db
-    .select({ value: count() })
-    .from(attendanceAttempts)
-    .where(
-      and(
-        eq(attendanceAttempts.sessionId, sessionId),
-        eq(attendanceAttempts.studentId, studentId),
-        eq(attendanceAttempts.result, "rejected"),
-      ),
-    );
-
-  if (failedAttempts.value >= 5) {
-    await submitForReview("too_many_attempts");
+    await logAttempt("rejected", "student_not_enrolled");
+    return {
+      ok: false,
+      status: "not_enrolled",
+      message: "You are not enrolled in the course for this QR code.",
+      sessionLabel,
+    };
   }
 
   const [existingRecord] = await db
-    .select({ id: attendanceRecords.id, status: attendanceRecords.status })
+    .select({ id: attendanceRecords.id })
     .from(attendanceRecords)
     .where(
       and(
@@ -226,146 +222,65 @@ export async function checkInAction(formData: FormData) {
     )
     .limit(1);
 
-  if (
-    existingRecord &&
-    ["present", "late", "manually_present"].includes(existingRecord.status)
-  ) {
+  if (existingRecord) {
     await logAttempt("rejected", "duplicate_attendance");
-    redirect(resultUrl(sessionId, "duplicate"));
-  }
-
-  const [existingPendingAttempt] = await db
-    .select({ id: attendanceAttempts.id })
-    .from(attendanceAttempts)
-    .where(
-      and(
-        eq(attendanceAttempts.sessionId, sessionId),
-        eq(attendanceAttempts.studentId, studentId),
-        eq(attendanceAttempts.reviewStatus, "pending"),
-        inArray(attendanceAttempts.result, ["requires_review", "rejected"]),
-      ),
-    )
-    .limit(1);
-
-  if (existingPendingAttempt) {
-    redirect(resultUrl(sessionId, "review"));
-  }
-
-  const [passkey] = await db
-    .select()
-    .from(attendancePasskeys)
-    .where(
-      and(
-        eq(attendancePasskeys.sessionId, sessionId),
-        eq(attendancePasskeys.studentId, studentId),
-      ),
-    )
-    .limit(1);
-
-  if (!passkey || !(await verifyPasskey(enteredPasskey, passkey.passkeyHash))) {
-    await submitForReview("invalid_passkey");
-  }
-
-  if (passkey.used) {
-    await submitForReview("passkey_already_used");
-  }
-
-  if (passkey.expiresAt < now) {
-    await submitForReview("expired_passkey");
-  }
-
-  if (
-    studentLatitude === null ||
-    studentLongitude === null ||
-    locationAccuracyMeters === null
-  ) {
-    await submitForReview("location_permission_denied");
-  }
-
-  const checkedStudentLatitude = studentLatitude as number;
-  const checkedStudentLongitude = studentLongitude as number;
-  const checkedLocationAccuracyMeters = locationAccuracyMeters as number;
-
-  if (!isValidCoordinate(checkedStudentLatitude, checkedStudentLongitude)) {
-    await submitForReview("invalid_location");
-  }
-
-  const distance = calculateDistanceMeters({
-    fromLatitude: Number(session.lecturerLatitude),
-    fromLongitude: Number(session.lecturerLongitude),
-    toLatitude: checkedStudentLatitude,
-    toLongitude: checkedStudentLongitude,
-  });
-
-  if (checkedLocationAccuracyMeters > session.maxAcceptedAccuracyMeters) {
-    await submitForReview("poor_location_accuracy", distance);
-  }
-
-  if (distance > session.geofenceRadiusMeters + checkedLocationAccuracyMeters) {
-    await submitForReview("outside_permitted_area", distance);
-  }
-
-  if (distance > session.geofenceRadiusMeters) {
-    await submitForReview("outside_permitted_area", distance);
+    return {
+      ok: false,
+      status: "duplicate",
+      message: "Your attendance has already been recorded for this session.",
+      sessionLabel,
+    };
   }
 
   const status = now <= session.normalClosesAt ? "present" : "late";
-
-  const [insertedRecord] = await db
+  const [record] = await db
     .insert(attendanceRecords)
     .values({
       sessionId,
       studentId,
       checkInAt: now,
-      studentLatitude: String(checkedStudentLatitude),
-      studentLongitude: String(checkedStudentLongitude),
-      locationAccuracyMeters: String(checkedLocationAccuracyMeters),
-      calculatedDistanceMeters: String(distance.toFixed(2)),
       status,
-      verificationMethod: "passkey_location",
+      verificationMethod: "rotating_qr",
     })
     .onConflictDoNothing({
       target: [attendanceRecords.sessionId, attendanceRecords.studentId],
     })
     .returning({ id: attendanceRecords.id });
 
-  if (!insertedRecord) {
-    await logAttempt("rejected", "duplicate_attendance", distance);
-    redirect(resultUrl(sessionId, "duplicate"));
+  if (!record) {
+    await logAttempt("rejected", "duplicate_attendance");
+    return {
+      ok: false,
+      status: "duplicate",
+      message: "Your attendance has already been recorded for this session.",
+      sessionLabel,
+    };
   }
 
-  await db
-    .update(attendancePasskeys)
-    .set({ used: true, usedAt: now, updatedAt: now })
-    .where(eq(attendancePasskeys.id, passkey.id));
+  await Promise.all([
+    logAttempt(status === "present" ? "accepted" : "late", null),
+    recordSecurityEvent({
+      eventType: "attendance_qr_success",
+      identifier: `qr-attendance:${sessionId}:${studentId}`,
+      context: securityContext,
+      success: true,
+      metadata: { status },
+    }),
+  ]);
 
-  await logAttempt(status === "present" ? "accepted" : "late", null, distance);
-
-  await db
-    .update(attendanceAttempts)
-    .set({
-      reviewStatus: "approved",
-      reviewedAt: new Date(),
-      lecturerRemarks:
-        "Cleared automatically after successful attendance submission.",
-    })
-    .where(
-      and(
-        eq(attendanceAttempts.sessionId, sessionId),
-        eq(attendanceAttempts.studentId, studentId),
-        eq(attendanceAttempts.reviewStatus, "pending"),
-      ),
-    );
-
-  await recordSecurityEvent({
-    eventType: "attendance_check_in_success",
-    identifier: `attendance:${sessionId}:${studentId}`,
-    context: securityContext,
-    success: true,
-    metadata: { status },
-  });
-
+  revalidatePath("/student/dashboard");
   revalidatePath("/student/sessions");
   revalidatePath("/student/attendance-history");
-  redirect(resultUrl(sessionId, status));
+  revalidatePath(`/lecturer/sessions/${sessionId}`);
+  revalidatePath(`/lecturer/courses/${session.courseId}/sessions/${sessionId}`);
+
+  return {
+    ok: true,
+    status,
+    message:
+      status === "present"
+        ? "Attendance recorded successfully."
+        : "Attendance recorded as late.",
+    sessionLabel,
+  };
 }

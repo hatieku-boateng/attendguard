@@ -40,23 +40,16 @@ type ReviewAttempt = {
   studentIdNumber: string | null;
   result: "accepted" | "late" | "rejected" | "requires_review";
   reason:
-    | "invalid_passkey"
-    | "expired_passkey"
-    | "passkey_already_used"
-    | "outside_permitted_area"
-    | "poor_location_accuracy"
+    | "invalid_qr"
+    | "expired_qr"
     | "session_closed"
     | "student_not_enrolled"
     | "duplicate_attendance"
-    | "location_permission_denied"
     | "account_mismatch"
-    | "invalid_location"
     | "too_many_attempts"
     | null;
   reviewStatus: "not_required" | "pending" | "approved" | "rejected";
   attemptedAt: Date;
-  distance: string | null;
-  accuracy: string | null;
 };
 
 function AttemptsTable({
@@ -72,7 +65,7 @@ function AttemptsTable({
         <TableRow>
           <TableHead>Student</TableHead>
           <TableHead>Flag</TableHead>
-          <TableHead>GPS</TableHead>
+          <TableHead>Method</TableHead>
           <TableHead>Review status</TableHead>
           <TableHead>Attempted</TableHead>
           {showActions ? <TableHead className="text-right">Decision</TableHead> : null}
@@ -90,10 +83,7 @@ function AttemptsTable({
             <TableCell>
               <StatusBadge status={attempt.reason ?? attempt.result} />
             </TableCell>
-            <TableCell className="text-sm text-muted-foreground">
-              <p>Distance: {attempt.distance ?? "-"}m</p>
-              <p>Accuracy: {attempt.accuracy ?? "-"}m</p>
-            </TableCell>
+            <TableCell className="text-sm text-muted-foreground">QR scan</TableCell>
             <TableCell>
               <StatusBadge status={attempt.reviewStatus} />
             </TableCell>
@@ -177,8 +167,6 @@ export default async function SessionReviewsPage({
     reason: attendanceAttempts.rejectionReason,
     reviewStatus: attendanceAttempts.reviewStatus,
     attemptedAt: attendanceAttempts.attemptedAt,
-    distance: attendanceAttempts.calculatedDistanceMeters,
-    accuracy: attendanceAttempts.locationAccuracyMeters,
   };
 
   const [pendingAttempts, reviewedAttempts] = await Promise.all([

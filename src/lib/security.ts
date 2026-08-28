@@ -6,7 +6,7 @@ import { and, count, eq, gt } from "drizzle-orm";
 
 import { getDb } from "@/db/client";
 import { securityEvents } from "@/db/schema";
-import { getAuthSecret } from "@/lib/auth";
+import { getAuthSecret } from "@/lib/server-secret";
 
 export type SecurityRequestContext = {
   ipAddress: string | null;

@@ -60,13 +60,13 @@ export function AuthFrame({
               {[
                 {
                   icon: MapPin,
-                  title: "Geofenced checks",
-                  desc: "Location perimeters validate device coordinates within lecture bounds.",
+                  title: "Rotating QR checks",
+                  desc: "Signed QR codes refresh continuously during every open lecture.",
                   color: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20",
                 },
                 {
                   icon: KeyRound,
-                  title: "Enrolment passkeys",
+                  title: "Secure QR check-ins",
                   desc: "Device identities are securely bound during activation, preventing proxies.",
                   color: "text-cyan-500 bg-cyan-500/10 border-cyan-500/20",
                 },

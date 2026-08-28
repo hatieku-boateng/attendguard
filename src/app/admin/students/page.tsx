@@ -443,12 +443,12 @@ export default async function AdminStudentsPage({
               id="admin-student-bulk-form"
             >
               <div className="text-xs text-muted-foreground leading-relaxed font-semibold max-w-xl">
-                Delete selected student accounts. This completely removes their profiles, course assignments, check-in records, geofence tokens, and security keys.
+                Delete selected student accounts and their profiles, course assignments, attendance records, activation tokens, and security events.
               </div>
               <ConfirmSubmitButton
                 className="sm:w-auto h-9.5 rounded-xl font-bold shadow-sm text-xs"
                 formAction={bulkDeleteStudentAccountsAction}
-                message="Delete all selected student accounts? This removes their profiles, course enrolments, attendance records, activation tokens, and passkeys."
+                message="Delete all selected student accounts? This removes their profiles, course enrolments, attendance records, and activation tokens."
               >
                 <Trash2 className="size-4" />
                 <span>Delete Selected</span>
@@ -554,7 +554,7 @@ export default async function AdminStudentsPage({
                           <input name="studentId" type="hidden" value={student.studentId} />
                           <ConfirmSubmitButton
                             className="w-auto h-8.5 rounded-lg text-xs font-bold shadow-sm"
-                            message={`Delete ${student.studentName}'s student account? This removes their profile, course enrolments, attendance records, activation tokens, and passkeys.`}
+                            message={`Delete ${student.studentName}'s student account? This removes their profile, course enrolments, attendance records, and activation tokens.`}
                             size="sm"
                           >
                             <Trash2 className="size-3.5" />
@@ -671,7 +671,7 @@ export default async function AdminStudentsPage({
                     <input name="studentId" type="hidden" value={student.studentId} />
                     <ConfirmSubmitButton
                       className="w-full h-8.5 rounded-lg text-xs font-bold shadow-sm"
-                      message={`Delete ${student.studentName}'s student account? This removes their profile, course enrolments, attendance records, activation tokens, and passkeys.`}
+                      message={`Delete ${student.studentName}'s student account? This removes their profile, course enrolments, attendance records, and activation tokens.`}
                       size="sm"
                     >
                       <Trash2 className="size-3.5" />
@@ -923,11 +923,11 @@ export default async function AdminStudentsPage({
                 <CardContent className="space-y-4 text-xs text-muted-foreground">
                   <p className="leading-relaxed">
                     This removes the student account, profile, course enrolments, attendance
-                    records, activation tokens, and passkeys.
+                    records and activation tokens.
                   </p>
                   <form action={deleteStudentAccountAction}>
                     <input name="studentId" type="hidden" value={editStudent.studentId} />
-                    <ConfirmSubmitButton message="Delete this student account? This removes the profile, course enrolments, attendance records, activation tokens, and passkeys." className="w-full bg-destructive text-destructive-foreground hover:bg-destructive/90 h-8.5 rounded-lg flex items-center justify-center gap-1.5 font-bold">
+                    <ConfirmSubmitButton message="Delete this student account? This removes the profile, course enrolments, attendance records, and activation tokens." className="w-full bg-destructive text-destructive-foreground hover:bg-destructive/90 h-8.5 rounded-lg flex items-center justify-center gap-1.5 font-bold">
                       <Trash2 className="size-3.5" />
                       Delete student account
                     </ConfirmSubmitButton>

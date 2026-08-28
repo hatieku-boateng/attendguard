@@ -47,7 +47,7 @@ export default async function LecturerCoursesPage() {
         <CardHeader className="border-b border-border/30 bg-slate-950/[0.01] dark:bg-white/[0.01] pb-4">
           <CardTitle className="text-base font-bold text-foreground">Course List</CardTitle>
           <CardDescription className="text-xs text-muted-foreground mt-1">
-            Each course can have its own class group, geofenced sessions, and resource lists.
+            Each course has its own class group, rotating QR sessions, and resource lists.
           </CardDescription>
         </CardHeader>
         <CardContent className="pt-4 px-0">

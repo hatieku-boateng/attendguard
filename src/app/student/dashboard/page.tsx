@@ -1,371 +1,152 @@
 import Link from "next/link";
 import { and, count, desc, eq, inArray } from "drizzle-orm";
-import { ArrowRight, Calendar, CheckCircle, Clock, Shield } from "lucide-react";
+import { ArrowRight, CheckCircle2, QrCode, ScanLine } from "lucide-react";
 
 import { PageHeader } from "@/components/page-header";
 import { StatCard } from "@/components/stat-card";
 import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { getDb } from "@/db/client";
 import {
-  attendancePasskeys,
-  attendanceRecords,
-  attendanceSessions,
-  courses,
-  enrolments,
-} from "@/db/schema";
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { getDb } from "@/db/client";
+import { attendanceRecords, attendanceSessions, courses, enrolments } from "@/db/schema";
 import { requireRole } from "@/lib/auth";
-import { decryptPasskey } from "@/lib/passkeys";
 
 export default async function StudentDashboardPage() {
   const user = await requireRole("student");
-  const db = getDb();
   const studentId = user.studentProfileId ?? "";
-
-  // 1. Get student enrolments
-  const studentEnrolments = await db
+  const db = getDb();
+  const activeEnrolments = await db
     .select({ courseId: enrolments.courseId })
     .from(enrolments)
-    .where(
-      and(eq(enrolments.studentId, studentId), eq(enrolments.status, "active")),
-    );
-  const courseIds = studentEnrolments.map((enrolment) => enrolment.courseId);
+    .where(and(eq(enrolments.studentId, studentId), eq(enrolments.status, "active")));
+  const courseIds = activeEnrolments.map((item) => item.courseId);
 
-  // Stats queries
-  const [
-    [classCount],
-    [activeSessionCount],
-    [attendanceCount]
-  ] = await Promise.all([
+  const [[attendanceCount], activeSessions, recentAttendance] = await Promise.all([
+    db.select({ value: count() }).from(attendanceRecords).where(eq(attendanceRecords.studentId, studentId)),
     courseIds.length
       ? db
-          .select({ value: count() })
-          .from(courses)
-          .where(inArray(courses.id, courseIds))
-      : Promise.resolve([{ value: 0 }]),
-    courseIds.length
-      ? db
-          .select({ value: count() })
+          .select({
+            id: attendanceSessions.id,
+            title: attendanceSessions.sessionTitle,
+            courseCode: courses.courseCode,
+            finalClosesAt: attendanceSessions.finalClosesAt,
+          })
           .from(attendanceSessions)
+          .innerJoin(courses, eq(attendanceSessions.courseId, courses.id))
           .where(
             and(
               inArray(attendanceSessions.courseId, courseIds),
               eq(attendanceSessions.status, "open"),
             ),
           )
-      : Promise.resolve([{ value: 0 }]),
+          .limit(5)
+      : Promise.resolve([]),
     db
-      .select({ value: count() })
+      .select({
+        id: attendanceRecords.id,
+        checkInAt: attendanceRecords.checkInAt,
+        status: attendanceRecords.status,
+        sessionTitle: attendanceSessions.sessionTitle,
+        courseCode: courses.courseCode,
+      })
       .from(attendanceRecords)
-      .where(eq(attendanceRecords.studentId, studentId)),
+      .innerJoin(attendanceSessions, eq(attendanceRecords.sessionId, attendanceSessions.id))
+      .innerJoin(courses, eq(attendanceSessions.courseId, courses.id))
+      .where(eq(attendanceRecords.studentId, studentId))
+      .orderBy(desc(attendanceRecords.checkInAt))
+      .limit(5),
   ]);
-
-  // 2. Query active sessions (limit 5)
-  const activeSessionsList = courseIds.length
-    ? await db
-        .select({
-          id: attendanceSessions.id,
-          title: attendanceSessions.sessionTitle,
-          opensAt: attendanceSessions.opensAt,
-          finalClosesAt: attendanceSessions.finalClosesAt,
-          status: attendanceSessions.status,
-          courseCode: courses.courseCode,
-          courseTitle: courses.courseTitle,
-          passkeyCiphertext: attendancePasskeys.passkeyCiphertext,
-          recordId: attendanceRecords.id,
-        })
-        .from(attendanceSessions)
-        .innerJoin(courses, eq(attendanceSessions.courseId, courses.id))
-        .leftJoin(
-          attendancePasskeys,
-          and(
-            eq(attendancePasskeys.sessionId, attendanceSessions.id),
-            eq(attendancePasskeys.studentId, studentId),
-          ),
-        )
-        .leftJoin(
-          attendanceRecords,
-          and(
-            eq(attendanceRecords.sessionId, attendanceSessions.id),
-            eq(attendanceRecords.studentId, studentId),
-          ),
-        )
-        .where(
-          and(
-            inArray(attendanceSessions.courseId, courseIds),
-            eq(attendanceSessions.status, "open"),
-          ),
-        )
-        .limit(5)
-    : [];
-
-  // 3. Query recent attendance records (limit 5)
-  const recentAttendance = await db
-    .select({
-      id: attendanceRecords.id,
-      checkInAt: attendanceRecords.checkInAt,
-      status: attendanceRecords.status,
-      sessionTitle: attendanceSessions.sessionTitle,
-      courseCode: courses.courseCode,
-      courseTitle: courses.courseTitle,
-    })
-    .from(attendanceRecords)
-    .innerJoin(attendanceSessions, eq(attendanceRecords.sessionId, attendanceSessions.id))
-    .innerJoin(courses, eq(attendanceSessions.courseId, courses.id))
-    .where(eq(attendanceRecords.studentId, studentId))
-    .orderBy(desc(attendanceRecords.checkInAt))
-    .limit(5);
 
   return (
     <>
       <PageHeader
-        title="Student Dashboard"
-        description="Monitor your enrolled courses, perform real-time class check-ins, and review your historical logs."
+        actions={
+          <Button asChild className="gap-2">
+            <Link href="/student/scan">
+              <ScanLine className="size-4" />
+              Scan QR
+            </Link>
+          </Button>
+        }
+        description="Scan live attendance codes and review your verified class history."
+        title="Student dashboard"
       />
-      
-      {/* Quick stats grid */}
-      <div className="grid gap-5 sm:grid-cols-3 mb-8">
-        <StatCard label="Registered classes" value={classCount.value} tone="info" />
-        <StatCard label="Active sessions" value={activeSessionCount.value} tone="success" />
-        <StatCard label="Recorded attendance" value={attendanceCount.value} />
+
+      <div className="grid gap-4 sm:grid-cols-3">
+        <StatCard label="Registered classes" tone="info" value={courseIds.length} />
+        <StatCard label="Active sessions" tone="success" value={activeSessions.length} />
+        <StatCard label="Attendance records" value={attendanceCount.value} />
       </div>
 
-      {/* Main dashboard widgets grid */}
-      <div className="grid gap-6 lg:grid-cols-12">
-        {/* Active sessions widget */}
-        <Card className="lg:col-span-7 overflow-hidden relative glass-panel glass-panel-hover border-border/40">
-          <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-emerald-500 to-teal-500" />
-          <CardHeader className="flex flex-row items-center justify-between pb-4 border-b border-border/30 bg-slate-950/[0.01] dark:bg-white/[0.01]">
+      <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
+        <section className="flex min-h-72 flex-col justify-between border border-primary/20 bg-primary/5 p-6 sm:p-8">
+          <div>
+            <span className="flex size-12 items-center justify-center border border-primary/20 bg-background text-primary">
+              <QrCode className="size-6" />
+            </span>
+            <h2 className="mt-6 text-xl font-extrabold text-foreground">Ready to check in?</h2>
+            <p className="mt-3 max-w-md text-sm leading-relaxed text-muted-foreground">
+              Open the scanner and point your camera at the rotating QR code displayed by your lecturer.
+            </p>
+          </div>
+          <Button asChild className="mt-8 w-full gap-2 sm:w-fit">
+            <Link href="/student/scan">
+              <ScanLine className="size-4" />
+              Open scanner
+            </Link>
+          </Button>
+        </section>
+
+        <Card className="overflow-hidden border-border/50">
+          <CardHeader className="flex flex-row items-start justify-between gap-4">
             <div>
-              <CardTitle className="flex items-center gap-2.5 text-base font-bold text-foreground">
-                <span className="flex size-7 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-500 border border-emerald-500/15">
-                  <Clock className="size-4 animate-pulse" />
-                </span>
-                Active Sessions
-              </CardTitle>
-              <CardDescription className="text-xs text-muted-foreground mt-1">
-                Attendance sessions currently open for your courses.
-              </CardDescription>
+              <CardTitle className="text-base">Active sessions</CardTitle>
+              <CardDescription>Open attendance windows in your registered classes.</CardDescription>
             </div>
-            {activeSessionCount.value > 5 && (
-              <Button asChild size="sm" variant="ghost" className="text-xs font-semibold text-primary hover:text-primary/80">
-                <Link href="/student/sessions" className="flex items-center gap-1">
-                  View all <ArrowRight className="size-3.5" />
-                </Link>
-              </Button>
-            )}
+            <Button asChild size="sm" variant="ghost"><Link href="/student/sessions">View all <ArrowRight className="size-3.5" /></Link></Button>
           </CardHeader>
-          <CardContent className="pt-4 px-0">
-            {/* Desktop Table */}
-            <div className="hidden md:block overflow-x-auto">
-              <Table>
-                <TableHeader className="bg-slate-950/[0.02] dark:bg-white/[0.01]">
-                  <TableRow className="hover:bg-transparent border-b border-border/30">
-                    <TableHead className="px-6 py-3 font-semibold text-muted-foreground text-xs">Session</TableHead>
-                    <TableHead className="px-4 py-3 font-semibold text-muted-foreground text-xs">Passkey</TableHead>
-                    <TableHead className="px-4 py-3 font-semibold text-muted-foreground text-xs">Status</TableHead>
-                    <TableHead className="px-6 py-3 text-right" />
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {activeSessionsList.map((session) => {
-                    const passkey = decryptPasskey(session.passkeyCiphertext);
-                    const isRecorded = Boolean(session.recordId);
-
-                    return (
-                      <TableRow key={session.id} className="hover:bg-muted/30 border-b border-border/20 transition-colors">
-                        <TableCell className="px-6 py-4.5">
-                          <p className="text-sm font-extrabold text-foreground">{session.title}</p>
-                          <p className="text-[0.68rem] text-muted-foreground font-semibold mt-1 uppercase tracking-wider">{session.courseCode}</p>
-                        </TableCell>
-                        <TableCell className="px-4 py-4.5">
-                          {passkey ? (
-                            <code className="px-2 py-1 rounded bg-muted font-mono text-xs text-foreground font-bold border border-border/40">
-                              {passkey}
-                            </code>
-                          ) : (
-                            <span className="text-xs text-muted-foreground/50 font-medium">Pending</span>
-                          )}
-                        </TableCell>
-                        <TableCell className="px-4 py-4.5">
-                          <StatusBadge status={isRecorded ? "present" : session.status} />
-                        </TableCell>
-                        <TableCell className="px-6 py-4.5 text-right">
-                          <Button asChild size="sm" disabled={!passkey || isRecorded} className="h-9 rounded-xl text-xs font-bold shadow-sm">
-                            <Link href={`/student/check-in/${session.id}`}>Check in</Link>
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                  {activeSessionsList.length === 0 && (
-                    <TableRow>
-                      <TableCell className="h-44 text-center text-muted-foreground text-xs" colSpan={4}>
-                        <div className="flex flex-col items-center justify-center gap-3 py-6">
-                          <span className="flex size-12 items-center justify-center rounded-2xl bg-muted/60 border border-border/40 text-muted-foreground/35">
-                            <Calendar className="size-6" />
-                          </span>
-                          <p className="font-semibold text-muted-foreground/60 text-sm">No open sessions right now.</p>
-                          <p className="text-[0.68rem] text-muted-foreground/40 max-w-xs leading-relaxed">When a lecturer broadcasts a geofence passkey, it will appear here instantly.</p>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-
-            {/* Mobile Cards */}
-            <div className="md:hidden divide-y divide-border/20">
-              {activeSessionsList.map((session) => {
-                const passkey = decryptPasskey(session.passkeyCiphertext);
-                const isRecorded = Boolean(session.recordId);
-
-                return (
-                  <div key={session.id} className="p-5 flex flex-col gap-3.5">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="min-w-0 flex-1">
-                        <span className="text-sm font-extrabold text-foreground leading-snug">{session.title}</span>
-                        <p className="text-[10px] text-muted-foreground font-semibold mt-0.5 uppercase tracking-wider">{session.courseCode}</p>
-                      </div>
-                      <StatusBadge status={isRecorded ? "present" : session.status} />
-                    </div>
-
-                    <div className="flex items-center justify-between gap-3 bg-slate-950/[0.015] dark:bg-white/[0.015] p-3 rounded-xl border border-border/25 text-xs">
-                      <span className="text-[10px] text-muted-foreground/60 font-semibold uppercase tracking-wider">Passkey</span>
-                      {passkey ? (
-                        <code className="px-2.5 py-1 rounded bg-muted font-mono text-xs text-foreground font-extrabold border border-border/40">
-                          {passkey}
-                        </code>
-                      ) : (
-                        <span className="text-xs text-muted-foreground/50 font-medium">Pending</span>
-                      )}
-                    </div>
-
-                    <div className="flex justify-end pt-1">
-                      <Button asChild size="sm" disabled={!passkey || isRecorded} className="h-9 rounded-xl text-xs font-bold shadow-sm w-full">
-                        <Link href={`/student/check-in/${session.id}`} className="justify-center">Check in</Link>
-                      </Button>
-                    </div>
-                  </div>
-                );
-              })}
-              {activeSessionsList.length === 0 && (
-                <div className="flex flex-col items-center justify-center gap-3 py-12 px-6">
-                  <span className="flex size-12 items-center justify-center rounded-2xl bg-muted/60 border border-border/40 text-muted-foreground/35">
-                    <Calendar className="size-6" />
-                  </span>
-                  <p className="font-semibold text-muted-foreground/60 text-sm">No open sessions right now.</p>
-                  <p className="text-[0.68rem] text-muted-foreground/40 max-w-xs leading-relaxed text-center">When a lecturer broadcasts a geofence passkey, it will appear here instantly.</p>
+          <CardContent className="space-y-2">
+            {activeSessions.map((session) => (
+              <div className="flex items-center justify-between gap-4 border-b border-border/50 py-3 last:border-0" key={session.id}>
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-bold text-foreground">{session.title}</p>
+                  <p className="mt-1 text-xs font-semibold text-muted-foreground">{session.courseCode} / closes {session.finalClosesAt.toLocaleTimeString()}</p>
                 </div>
-              )}
-            </div>
+                <StatusBadge status="open" />
+              </div>
+            ))}
+            {activeSessions.length === 0 ? (
+              <div className="grid min-h-36 place-items-center text-center text-sm font-semibold text-muted-foreground">No attendance sessions are open.</div>
+            ) : null}
           </CardContent>
         </Card>
+      </div>
 
-        {/* Recent history widget */}
-        <Card className="lg:col-span-5 overflow-hidden relative glass-panel glass-panel-hover border-border/40">
-          <div className="absolute inset-x-0 top-0 h-1 bg-[linear-gradient(90deg,var(--primary),oklch(0.52_0.14_200))]" />
-          <CardHeader className="flex flex-row items-center justify-between pb-4 border-b border-border/30 bg-slate-950/[0.01] dark:bg-white/[0.01]">
-            <div>
-              <CardTitle className="flex items-center gap-2.5 text-base font-bold text-foreground">
-                <span className="flex size-7 items-center justify-center rounded-lg bg-primary/10 text-primary border border-primary/15">
-                  <CheckCircle className="size-4" />
-                </span>
-                Recent Check-ins
-              </CardTitle>
-              <CardDescription className="text-xs text-muted-foreground mt-1">
-                Your latest recorded attendance verifications.
-              </CardDescription>
-            </div>
-            {attendanceCount.value > 5 && (
-              <Button asChild size="sm" variant="ghost" className="text-xs font-semibold text-primary hover:text-primary/80">
-                <Link href="/student/attendance-history" className="flex items-center gap-1">
-                  History <ArrowRight className="size-3.5" />
-                </Link>
-              </Button>
-            )}
-          </CardHeader>
-          <CardContent className="pt-4 px-0">
-            {/* Desktop Table */}
-            <div className="hidden md:block overflow-x-auto">
-              <Table>
-                <TableHeader className="bg-slate-950/[0.02] dark:bg-white/[0.01]">
-                  <TableRow className="hover:bg-transparent border-b border-border/30">
-                    <TableHead className="px-6 py-3 font-semibold text-muted-foreground text-xs">Course</TableHead>
-                    <TableHead className="px-4 py-3 font-semibold text-muted-foreground text-xs">Date</TableHead>
-                    <TableHead className="px-6 py-3 text-right font-semibold text-muted-foreground text-xs">Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {recentAttendance.map((record) => (
-                    <TableRow key={record.id} className="hover:bg-muted/30 border-b border-border/20 transition-colors">
-                      <TableCell className="px-6 py-4">
-                        <p className="text-xs font-extrabold text-foreground">{record.courseCode}</p>
-                        <p className="text-[0.68rem] text-muted-foreground truncate max-w-[150px] font-semibold mt-1">
-                          {record.sessionTitle}
-                        </p>
-                      </TableCell>
-                      <TableCell className="px-4 py-4 text-[0.75rem] text-muted-foreground font-semibold">
-                        {record.checkInAt.toLocaleDateString()}
-                      </TableCell>
-                      <TableCell className="px-6 py-4 text-right">
-                        <StatusBadge status={record.status} />
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {recentAttendance.length === 0 && (
-                    <TableRow>
-                      <TableCell className="h-44 text-center text-muted-foreground text-xs" colSpan={3}>
-                        <div className="flex flex-col items-center justify-center gap-3 py-6">
-                          <span className="flex size-12 items-center justify-center rounded-2xl bg-muted/60 border border-border/40 text-muted-foreground/35">
-                            <Shield className="size-6" />
-                          </span>
-                          <p className="font-semibold text-muted-foreground/60 text-sm">No logs recorded yet.</p>
-                          <p className="text-[0.68rem] text-muted-foreground/40 max-w-xs leading-relaxed">Your coordinate check-ins will build an auditable timeline here.</p>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-
-            {/* Mobile Cards */}
-            <div className="md:hidden divide-y divide-border/20">
+      <Card className="mt-6 overflow-hidden border-border/50">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base"><CheckCircle2 className="size-4 text-primary" />Recent attendance</CardTitle>
+          <CardDescription>Your latest recorded attendance results.</CardDescription>
+        </CardHeader>
+        <CardContent className="px-0">
+          <Table>
+            <TableHeader><TableRow><TableHead className="px-6">Course</TableHead><TableHead>Session</TableHead><TableHead>Recorded</TableHead><TableHead className="px-6 text-right">Status</TableHead></TableRow></TableHeader>
+            <TableBody>
               {recentAttendance.map((record) => (
-                <div key={record.id} className="p-5 flex flex-col gap-3">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="min-w-0 flex-1">
-                      <span className="text-xs font-extrabold text-foreground">{record.courseCode}</span>
-                      <p className="text-[10px] text-muted-foreground font-semibold mt-0.5 truncate leading-relaxed">
-                        {record.sessionTitle}
-                      </p>
-                    </div>
-                    <StatusBadge status={record.status} />
-                  </div>
-                  
-                  <div className="flex items-center justify-between text-xs pt-2 border-t border-border/15">
-                    <span className="text-[9px] text-muted-foreground/50 font-black uppercase tracking-wider">Checked in on</span>
-                    <span className="font-bold text-foreground/80">{record.checkInAt.toLocaleDateString()}</span>
-                  </div>
-                </div>
+                <TableRow key={record.id}><TableCell className="px-6 font-bold">{record.courseCode}</TableCell><TableCell>{record.sessionTitle}</TableCell><TableCell>{record.checkInAt.toLocaleString()}</TableCell><TableCell className="px-6 text-right"><StatusBadge status={record.status} /></TableCell></TableRow>
               ))}
-              {recentAttendance.length === 0 && (
-                <div className="flex flex-col items-center justify-center gap-3 py-12 px-6">
-                  <span className="flex size-12 items-center justify-center rounded-2xl bg-muted/60 border border-border/40 text-muted-foreground/35">
-                    <Shield className="size-6" />
-                  </span>
-                  <p className="font-semibold text-muted-foreground/60 text-sm text-center">No logs recorded yet.</p>
-                  <p className="text-[0.68rem] text-muted-foreground/40 max-w-xs leading-relaxed text-center">Your coordinate check-ins will build an auditable timeline here.</p>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+              {recentAttendance.length === 0 ? <TableRow><TableCell className="h-24 text-center text-muted-foreground" colSpan={4}>No attendance has been recorded yet.</TableCell></TableRow> : null}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </>
   );
 }

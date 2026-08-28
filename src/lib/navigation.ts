@@ -27,6 +27,7 @@ export function getWorkspaceNavItems(role: UserRole) {
 
   return [
     { href: "/student/dashboard", label: "Dashboard" },
+    { href: "/student/scan", label: "Scan QR" },
     { href: "/student/classes", label: "Classes" },
     { href: "/student/sessions", label: "Sessions" },
     { href: "/student/attendance-history", label: "History" },

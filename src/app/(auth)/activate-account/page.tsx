@@ -42,7 +42,7 @@ export default async function ActivateAccountPage({
           </div>
           <h2 className="text-2xl font-black tracking-tight text-foreground">Activate account</h2>
           <p className="text-xs font-semibold text-muted-foreground mt-1">
-            Confirm your student ID and set up your device passkey password.
+            Confirm your student ID and create your account password.
           </p>
         </div>
 

@@ -7,7 +7,6 @@ import { and, desc, eq, inArray, lte } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import {
   attendanceAttempts,
-  attendancePasskeys,
   attendanceRecords,
   attendanceSessions,
   auditLogs,
@@ -20,17 +19,9 @@ import {
 } from "@/db/schema";
 import { requireRole } from "@/lib/auth";
 import { sendAbsenceWarningEmail } from "@/lib/email";
-import { isValidCoordinate } from "@/lib/geo";
-import { encryptPasskey, generatePasskey, hashPasskey } from "@/lib/passkeys";
 
 function cleanString(value: FormDataEntryValue | null) {
   return String(value ?? "").trim();
-}
-
-function parseNumber(value: FormDataEntryValue | null) {
-  const number = Number(value);
-
-  return Number.isFinite(number) ? number : null;
 }
 
 function parseDate(value: FormDataEntryValue | null) {
@@ -246,11 +237,6 @@ export async function createAttendanceSessionAction(formData: FormData) {
   const source = cleanString(formData.get("source"));
   const sessionTitle = cleanString(formData.get("sessionTitle"));
   const lectureHallId = cleanString(formData.get("lectureHallId")) || null;
-  const lecturerLatitude = parseNumber(formData.get("lecturerLatitude"));
-  const lecturerLongitude = parseNumber(formData.get("lecturerLongitude"));
-  const lecturerLocationAccuracy = parseNumber(formData.get("lecturerLocationAccuracy"));
-  const geofenceRadiusMeters = parseNumber(formData.get("geofenceRadiusMeters"));
-  const maxAcceptedAccuracyMeters = parseNumber(formData.get("maxAcceptedAccuracyMeters"));
   const opensAt = parseDate(formData.get("opensAt"));
   const normalClosesAt = parseDate(formData.get("normalClosesAt"));
   const finalClosesAt = parseDate(formData.get("finalClosesAt"));
@@ -259,28 +245,11 @@ export async function createAttendanceSessionAction(formData: FormData) {
     !user.lecturerProfileId ||
     !courseId ||
     !sessionTitle ||
-    lecturerLatitude === null ||
-    lecturerLongitude === null ||
-    lecturerLocationAccuracy === null ||
-    !geofenceRadiusMeters ||
-    !maxAcceptedAccuracyMeters ||
     !opensAt ||
     !normalClosesAt ||
     !finalClosesAt
   ) {
     redirect(newSessionErrorUrl(courseId, "missing", source));
-  }
-
-  if (geofenceRadiusMeters < 10 || maxAcceptedAccuracyMeters < 10) {
-    redirect(newSessionErrorUrl(courseId, "missing", source));
-  }
-
-  if (!isValidCoordinate(lecturerLatitude, lecturerLongitude)) {
-    redirect(newSessionErrorUrl(courseId, "location", source));
-  }
-
-  if (lecturerLocationAccuracy > maxAcceptedAccuracyMeters) {
-    redirect(newSessionErrorUrl(courseId, "lecturer-accuracy", source));
   }
 
   if (!(opensAt < normalClosesAt && normalClosesAt <= finalClosesAt)) {
@@ -311,7 +280,7 @@ export async function createAttendanceSessionAction(formData: FormData) {
       .limit(1);
 
     if (!hall) {
-      redirect(newSessionErrorUrl(courseId, "location", source));
+      redirect(newSessionErrorUrl(courseId, "venue", source));
     }
   }
 
@@ -323,12 +292,6 @@ export async function createAttendanceSessionAction(formData: FormData) {
       lecturerId: user.lecturerProfileId,
       sessionTitle,
       sessionDate: opensAt,
-      lecturerLatitude: String(lecturerLatitude),
-      lecturerLongitude: String(lecturerLongitude),
-      lecturerLocationAccuracy:
-        lecturerLocationAccuracy === null ? null : String(lecturerLocationAccuracy),
-      geofenceRadiusMeters,
-      maxAcceptedAccuracyMeters,
       opensAt,
       normalClosesAt,
       finalClosesAt,
@@ -345,9 +308,7 @@ export async function createAttendanceSessionAction(formData: FormData) {
       courseId,
       lectureHallId,
       sessionTitle,
-      geofenceRadiusMeters,
-      maxAcceptedAccuracyMeters,
-      lecturerLocationAccuracy,
+      verificationMethod: "rotating_qr",
     },
   });
 
@@ -362,11 +323,7 @@ export async function updateAttendanceSessionAction(formData: FormData) {
   const sessionId = cleanString(formData.get("sessionId"));
   const source = cleanString(formData.get("source"));
   const sessionTitle = cleanString(formData.get("sessionTitle"));
-  const lecturerLatitude = parseNumber(formData.get("lecturerLatitude"));
-  const lecturerLongitude = parseNumber(formData.get("lecturerLongitude"));
-  const lecturerLocationAccuracy = parseNumber(formData.get("lecturerLocationAccuracy"));
-  const geofenceRadiusMeters = parseNumber(formData.get("geofenceRadiusMeters"));
-  const maxAcceptedAccuracyMeters = parseNumber(formData.get("maxAcceptedAccuracyMeters"));
+  const lectureHallId = cleanString(formData.get("lectureHallId")) || null;
   const opensAt = parseDate(formData.get("opensAt"));
   const normalClosesAt = parseDate(formData.get("normalClosesAt"));
   const finalClosesAt = parseDate(formData.get("finalClosesAt"));
@@ -375,28 +332,11 @@ export async function updateAttendanceSessionAction(formData: FormData) {
     !user.lecturerProfileId ||
     !sessionId ||
     !sessionTitle ||
-    lecturerLatitude === null ||
-    lecturerLongitude === null ||
-    lecturerLocationAccuracy === null ||
-    !geofenceRadiusMeters ||
-    !maxAcceptedAccuracyMeters ||
     !opensAt ||
     !normalClosesAt ||
     !finalClosesAt
   ) {
     redirect(sessionId ? editSessionErrorUrl(sessionId, "missing", source) : "/lecturer/sessions");
-  }
-
-  if (geofenceRadiusMeters < 10 || maxAcceptedAccuracyMeters < 10) {
-    redirect(editSessionErrorUrl(sessionId, "missing", source));
-  }
-
-  if (!isValidCoordinate(lecturerLatitude, lecturerLongitude)) {
-    redirect(editSessionErrorUrl(sessionId, "location", source));
-  }
-
-  if (lecturerLocationAccuracy > maxAcceptedAccuracyMeters) {
-    redirect(editSessionErrorUrl(sessionId, "lecturer-accuracy", source));
   }
 
   if (!(opensAt < normalClosesAt && normalClosesAt <= finalClosesAt)) {
@@ -408,7 +348,6 @@ export async function updateAttendanceSessionAction(formData: FormData) {
     .select({
       id: attendanceSessions.id,
       courseId: attendanceSessions.courseId,
-      finalClosesAt: attendanceSessions.finalClosesAt,
     })
     .from(attendanceSessions)
     .where(
@@ -423,16 +362,24 @@ export async function updateAttendanceSessionAction(formData: FormData) {
     redirect("/lecturer/sessions");
   }
 
+  if (lectureHallId) {
+    const [hall] = await db
+      .select({ id: lectureHalls.id })
+      .from(lectureHalls)
+      .where(and(eq(lectureHalls.id, lectureHallId), eq(lectureHalls.status, "active")))
+      .limit(1);
+
+    if (!hall) {
+      redirect(editSessionErrorUrl(sessionId, "venue", source));
+    }
+  }
+
   await db
     .update(attendanceSessions)
     .set({
       sessionTitle,
       sessionDate: opensAt,
-      lecturerLatitude: String(lecturerLatitude),
-      lecturerLongitude: String(lecturerLongitude),
-      lecturerLocationAccuracy: String(lecturerLocationAccuracy),
-      geofenceRadiusMeters,
-      maxAcceptedAccuracyMeters,
+      lectureHallId,
       opensAt,
       normalClosesAt,
       finalClosesAt,
@@ -445,13 +392,6 @@ export async function updateAttendanceSessionAction(formData: FormData) {
       ),
     );
 
-  if (session.finalClosesAt.getTime() !== finalClosesAt.getTime()) {
-    await db
-      .update(attendancePasskeys)
-      .set({ expiresAt: finalClosesAt, updatedAt: new Date() })
-      .where(eq(attendancePasskeys.sessionId, sessionId));
-  }
-
   await db.insert(auditLogs).values({
     userId: user.id,
     action: "attendance_session_updated",
@@ -459,9 +399,8 @@ export async function updateAttendanceSessionAction(formData: FormData) {
     entityId: sessionId,
     newValue: {
       sessionTitle,
-      geofenceRadiusMeters,
-      maxAcceptedAccuracyMeters,
-      lecturerLocationAccuracy,
+      lectureHallId,
+      verificationMethod: "rotating_qr",
       opensAt,
       normalClosesAt,
       finalClosesAt,
@@ -669,84 +608,6 @@ export async function deleteAttendanceSessionAction(formData: FormData) {
   redirect(`/lecturer/courses/${session.courseId}`);
 }
 
-export async function generatePasskeysAction(formData: FormData) {
-  const user = await requireRole("lecturer");
-  const sessionId = cleanString(formData.get("sessionId"));
-
-  if (!user.lecturerProfileId || !sessionId) {
-    redirect("/lecturer/sessions");
-  }
-
-  const db = getDb();
-  const [session] = await db
-    .select()
-    .from(attendanceSessions)
-    .where(
-      and(
-        eq(attendanceSessions.id, sessionId),
-        eq(attendanceSessions.lecturerId, user.lecturerProfileId),
-      ),
-    )
-    .limit(1);
-
-  if (!session) {
-    redirect("/lecturer/sessions");
-  }
-
-  const students = await db
-    .select({ studentId: enrolments.studentId })
-    .from(enrolments)
-    .where(
-      and(
-        eq(enrolments.courseId, session.courseId),
-        eq(enrolments.status, "active"),
-      ),
-    );
-
-  for (const student of students) {
-    const passkey = generatePasskey();
-
-    await db
-      .insert(attendancePasskeys)
-      .values({
-        sessionId: session.id,
-        studentId: student.studentId,
-        passkeyHash: await hashPasskey(passkey),
-        passkeyCiphertext: encryptPasskey(passkey),
-        expiresAt: session.finalClosesAt,
-        used: false,
-      })
-      .onConflictDoUpdate({
-        target: [attendancePasskeys.sessionId, attendancePasskeys.studentId],
-        set: {
-          passkeyHash: await hashPasskey(passkey),
-          passkeyCiphertext: encryptPasskey(passkey),
-          expiresAt: session.finalClosesAt,
-          used: false,
-          usedAt: null,
-          regeneratedAt: new Date(),
-          updatedAt: new Date(),
-        },
-      });
-  }
-
-  await db.insert(auditLogs).values({
-    userId: user.id,
-    action: "passkeys_generated",
-    entityType: "attendance_session",
-    entityId: session.id,
-    newValue: { count: students.length },
-  });
-
-  revalidatePath(`/lecturer/sessions/${session.id}`);
-  revalidatePath(`/lecturer/courses/${session.courseId}`);
-  revalidatePath(`/lecturer/courses/${session.courseId}/sessions`);
-  revalidatePath(`/lecturer/courses/${session.courseId}/sessions/${session.id}`);
-  redirect(
-    `/lecturer/courses/${session.courseId}/sessions/${session.id}?passkeys=${students.length}`,
-  );
-}
-
 export async function approveAttemptAction(formData: FormData) {
   const user = await requireRole("lecturer");
   const attemptId = cleanString(formData.get("attemptId"));
@@ -762,10 +623,6 @@ export async function approveAttemptAction(formData: FormData) {
       sessionId: attendanceAttempts.sessionId,
       studentId: attendanceAttempts.studentId,
       courseId: attendanceSessions.courseId,
-      studentLatitude: attendanceAttempts.studentLatitude,
-      studentLongitude: attendanceAttempts.studentLongitude,
-      locationAccuracyMeters: attendanceAttempts.locationAccuracyMeters,
-      calculatedDistanceMeters: attendanceAttempts.calculatedDistanceMeters,
       lecturerId: attendanceSessions.lecturerId,
     })
     .from(attendanceAttempts)
@@ -788,10 +645,6 @@ export async function approveAttemptAction(formData: FormData) {
       sessionId: attempt.sessionId,
       studentId: attempt.studentId,
       checkInAt: new Date(),
-      studentLatitude: attempt.studentLatitude,
-      studentLongitude: attempt.studentLongitude,
-      locationAccuracyMeters: attempt.locationAccuracyMeters,
-      calculatedDistanceMeters: attempt.calculatedDistanceMeters,
       status: "manually_present",
       verificationMethod: "manual",
       lecturerRemarks: remarks,

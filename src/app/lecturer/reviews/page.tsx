@@ -50,8 +50,6 @@ export default async function LecturerReviewsPage() {
       result: attendanceAttempts.result,
       reason: attendanceAttempts.rejectionReason,
       attemptedAt: attendanceAttempts.attemptedAt,
-      distance: attendanceAttempts.calculatedDistanceMeters,
-      accuracy: attendanceAttempts.locationAccuracyMeters,
     })
     .from(attendanceAttempts)
     .innerJoin(
@@ -80,7 +78,7 @@ export default async function LecturerReviewsPage() {
         <CardHeader className="border-b border-border/30 bg-slate-950/[0.01] dark:bg-white/[0.01] pb-4">
           <CardTitle className="text-base font-bold text-foreground">Pending review queue</CardTitle>
           <CardDescription className="text-xs text-muted-foreground mt-1">
-            Attempts appear here when passkey, location, duplicate, or repeated
+            Attempts appear here when QR, enrolment, duplicate, or repeated
             submission safeguards require lecturer judgement.
           </CardDescription>
         </CardHeader>
@@ -91,7 +89,7 @@ export default async function LecturerReviewsPage() {
                 <TableHead className="px-6 py-3 font-semibold text-muted-foreground text-xs">Student</TableHead>
                 <TableHead className="px-4 py-3 font-semibold text-muted-foreground text-xs">Course / session</TableHead>
                 <TableHead className="px-4 py-3 font-semibold text-muted-foreground text-xs">Flag</TableHead>
-                <TableHead className="px-4 py-3 font-semibold text-muted-foreground text-xs">GPS</TableHead>
+                <TableHead className="px-4 py-3 font-semibold text-muted-foreground text-xs">Method</TableHead>
                 <TableHead className="px-4 py-3 font-semibold text-muted-foreground text-xs">Attempted</TableHead>
                 <TableHead className="px-6 py-3 text-right font-semibold text-muted-foreground text-xs">Decision</TableHead>
               </TableRow>
@@ -121,10 +119,7 @@ export default async function LecturerReviewsPage() {
                   <TableCell className="px-4 py-4.5">
                     <StatusBadge status={attempt.reason ?? attempt.result} />
                   </TableCell>
-                  <TableCell className="px-4 py-4.5 text-xs font-semibold text-muted-foreground">
-                    <p>Distance: {attempt.distance ?? "-"}m</p>
-                    <p className="mt-0.5">Accuracy: {attempt.accuracy ?? "-"}m</p>
-                  </TableCell>
+                  <TableCell className="px-4 py-4.5 text-xs font-semibold text-muted-foreground">QR scan</TableCell>
                   <TableCell className="px-4 py-4.5 text-xs font-semibold text-muted-foreground">{attempt.attemptedAt.toLocaleString()}</TableCell>
                   <TableCell className="px-6 py-4.5 text-right">
                     <div className="flex flex-wrap justify-end gap-2">

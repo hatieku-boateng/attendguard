@@ -20,7 +20,8 @@ import {
   X,
   ChevronRight,
   Layers,
-  HelpCircle
+  HelpCircle,
+  ScanLine,
 } from "lucide-react";
 
 import { BrandMark } from "@/components/brand";
@@ -48,6 +49,7 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   "reports": FileSpreadsheet,
   "classes": Layers,
   "sessions": Clock,
+  "scan": ScanLine,
   "attendance-history": History,
   "profile": User,
 };

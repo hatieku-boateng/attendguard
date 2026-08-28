@@ -5,7 +5,7 @@ export default function NestedLecturerSessionDetailPage({
   searchParams,
 }: {
   params: Promise<{ courseId: string; sessionId: string }>;
-  searchParams: Promise<{ passkeys?: string }>;
+  searchParams: Promise<{ modal?: string; error?: string }>;
 }) {
   const sessionParams = params.then(({ sessionId }) => ({ sessionId }));
 

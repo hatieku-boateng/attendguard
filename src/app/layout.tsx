@@ -40,6 +40,7 @@ export default function RootLayout({
     <html
       lang="en"
       className="h-full antialiased"
+      data-scroll-behavior="smooth"
       style={{ fontFamily: "system-ui, -apple-system, sans-serif" }}
       suppressHydrationWarning
     >

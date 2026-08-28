@@ -49,7 +49,7 @@ export default async function LoginPage({
 
   return (
     <AuthFrame
-      description="Move from paper registers to verified, auditable attendance records with automated device activation, location validation, and session logs."
+      description="Move from paper registers to verified, auditable attendance records with account activation, rotating QR check-ins, and session logs."
       eyebrow="Trusted workspace access"
       title="Sign in to your attendance console."
     >

@@ -7,7 +7,6 @@ import { and, count, eq, inArray, ne, or } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import {
   academicYears,
-  attendancePasskeys,
   attendanceRecords,
   attendanceSessions,
   auditLogs,
@@ -23,7 +22,6 @@ import {
 } from "@/db/schema";
 import { hashPassword, requireRole } from "@/lib/auth";
 import { cleanString, fileToDataUrl } from "@/lib/form-utils";
-import { isValidCoordinate } from "@/lib/geo";
 import {
   normalizeProgrammeLevel,
   normalizeStudentCategory,
@@ -74,12 +72,6 @@ function cleanCourseStatus(value: FormDataEntryValue | null) {
   return status === "draft" || status === "archived" ? status : "active";
 }
 
-function parsePositiveNumber(value: FormDataEntryValue | null) {
-  const number = Number(value);
-
-  return Number.isFinite(number) && number > 0 ? number : null;
-}
-
 function lectureHallErrorUrl(mode: "new" | "edit", error: string, id?: string) {
   const params = new URLSearchParams({ modal: mode, error });
 
@@ -94,21 +86,8 @@ export async function createLectureHallAction(formData: FormData) {
   const admin = await requireRole("administrator");
   const name = cleanString(formData.get("name"));
   const code = cleanString(formData.get("code")).toUpperCase();
-  const latitude = Number(formData.get("latitude"));
-  const longitude = Number(formData.get("longitude"));
-  const locationAccuracyMeters = parsePositiveNumber(formData.get("locationAccuracyMeters"));
-  const geofenceRadiusMeters = parsePositiveNumber(formData.get("geofenceRadiusMeters"));
-  const maxAcceptedAccuracyMeters = parsePositiveNumber(formData.get("maxAcceptedAccuracyMeters"));
 
-  if (
-    !name ||
-    !code ||
-    !Number.isFinite(latitude) ||
-    !Number.isFinite(longitude) ||
-    !isValidCoordinate(latitude, longitude) ||
-    !geofenceRadiusMeters ||
-    !maxAcceptedAccuracyMeters
-  ) {
+  if (!name || !code) {
     redirect(lectureHallErrorUrl("new", "missing"));
   }
 
@@ -130,12 +109,6 @@ export async function createLectureHallAction(formData: FormData) {
       code,
       building: cleanString(formData.get("building")) || null,
       roomNumber: cleanString(formData.get("roomNumber")) || null,
-      latitude: String(latitude),
-      longitude: String(longitude),
-      locationAccuracyMeters:
-        locationAccuracyMeters === null ? null : String(locationAccuracyMeters),
-      geofenceRadiusMeters,
-      maxAcceptedAccuracyMeters,
       notes: cleanString(formData.get("notes")) || null,
       status: "active",
     })
@@ -146,7 +119,7 @@ export async function createLectureHallAction(formData: FormData) {
     action: "lecture_hall_created",
     entityType: "lecture_hall",
     entityId: hall.id,
-    newValue: { name, code, latitude, longitude },
+    newValue: { name, code },
   });
 
   revalidatePath("/admin/lecture-halls");
@@ -158,22 +131,8 @@ export async function updateLectureHallAction(formData: FormData) {
   const lectureHallId = cleanId(formData.get("lectureHallId"));
   const name = cleanString(formData.get("name"));
   const code = cleanString(formData.get("code")).toUpperCase();
-  const latitude = Number(formData.get("latitude"));
-  const longitude = Number(formData.get("longitude"));
-  const locationAccuracyMeters = parsePositiveNumber(formData.get("locationAccuracyMeters"));
-  const geofenceRadiusMeters = parsePositiveNumber(formData.get("geofenceRadiusMeters"));
-  const maxAcceptedAccuracyMeters = parsePositiveNumber(formData.get("maxAcceptedAccuracyMeters"));
 
-  if (
-    !lectureHallId ||
-    !name ||
-    !code ||
-    !Number.isFinite(latitude) ||
-    !Number.isFinite(longitude) ||
-    !isValidCoordinate(latitude, longitude) ||
-    !geofenceRadiusMeters ||
-    !maxAcceptedAccuracyMeters
-  ) {
+  if (!lectureHallId || !name || !code) {
     redirect(lectureHallErrorUrl("edit", "missing", lectureHallId));
   }
 
@@ -195,12 +154,6 @@ export async function updateLectureHallAction(formData: FormData) {
       code,
       building: cleanString(formData.get("building")) || null,
       roomNumber: cleanString(formData.get("roomNumber")) || null,
-      latitude: String(latitude),
-      longitude: String(longitude),
-      locationAccuracyMeters:
-        locationAccuracyMeters === null ? null : String(locationAccuracyMeters),
-      geofenceRadiusMeters,
-      maxAcceptedAccuracyMeters,
       notes: cleanString(formData.get("notes")) || null,
       status: cleanCourseStatus(formData.get("status")),
       updatedAt: new Date(),
@@ -212,7 +165,7 @@ export async function updateLectureHallAction(formData: FormData) {
     action: "lecture_hall_updated",
     entityType: "lecture_hall",
     entityId: lectureHallId,
-    newValue: { name, code, latitude, longitude },
+    newValue: { name, code },
   });
 
   revalidatePath("/admin/lecture-halls");
@@ -688,46 +641,6 @@ async function countCourseAttendanceRecords(
     );
 
   return recordCount?.value ?? 0;
-}
-
-async function removeAttendancePasskeysForTargets(
-  db: AdminDb,
-  targets: Array<{ courseId: string; studentId: string }>,
-) {
-  const courseIds = Array.from(new Set(targets.map((target) => target.courseId)));
-
-  if (courseIds.length === 0) {
-    return;
-  }
-
-  const sessions = await db
-    .select({ id: attendanceSessions.id, courseId: attendanceSessions.courseId })
-    .from(attendanceSessions)
-    .where(inArray(attendanceSessions.courseId, courseIds));
-  const sessionIdsByCourse = new Map<string, string[]>();
-
-  for (const session of sessions) {
-    const courseSessionIds = sessionIdsByCourse.get(session.courseId) ?? [];
-    courseSessionIds.push(session.id);
-    sessionIdsByCourse.set(session.courseId, courseSessionIds);
-  }
-
-  for (const target of targets) {
-    const sessionIds = sessionIdsByCourse.get(target.courseId) ?? [];
-
-    if (sessionIds.length === 0) {
-      continue;
-    }
-
-    await db
-      .delete(attendancePasskeys)
-      .where(
-        and(
-          eq(attendancePasskeys.studentId, target.studentId),
-          inArray(attendancePasskeys.sessionId, sessionIds),
-        ),
-      );
-  }
 }
 
 export async function createLecturerAction(formData: FormData) {
@@ -1555,15 +1468,6 @@ export async function updateEnrolledStudentAction(formData: FormData) {
       redirect(`/admin/students/${enrolmentId}/edit?error=courseHistory`);
     }
 
-    await removeAttendancePasskeysForTargets(db, [
-      { courseId: target.courseId, studentId: target.studentId },
-    ]);
-  }
-
-  if (status !== "active") {
-    await removeAttendancePasskeysForTargets(db, [
-      { courseId, studentId: target.studentId },
-    ]);
   }
 
   await db
@@ -1651,10 +1555,6 @@ export async function deleteEnrolledStudentAction(formData: FormData) {
     redirect("/admin/students?error=missing");
   }
 
-  await removeAttendancePasskeysForTargets(db, [
-    { courseId: target.courseId, studentId: target.studentId },
-  ]);
-
   await db.delete(enrolments).where(eq(enrolments.id, target.enrolmentId));
 
   await db.insert(auditLogs).values({
@@ -1701,10 +1601,6 @@ export async function bulkUpdateEnrolledStudentsAction(formData: FormData) {
   }
 
   const targetIds = targets.map((target) => target.enrolmentId);
-
-  if (status !== "active") {
-    await removeAttendancePasskeysForTargets(db, targets);
-  }
 
   await db
     .update(enrolments)
@@ -1765,7 +1661,6 @@ export async function bulkDeleteEnrolledStudentsAction(formData: FormData) {
 
   const targetIds = targets.map((target) => target.enrolmentId);
 
-  await removeAttendancePasskeysForTargets(db, targets);
   await db.delete(enrolments).where(inArray(enrolments.id, targetIds));
 
   await db.insert(auditLogs).values({

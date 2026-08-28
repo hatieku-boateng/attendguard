@@ -122,8 +122,6 @@ export default async function AttendanceHistoryPage({
           id: attendanceRecords.id,
           status: attendanceRecords.status,
           checkInAt: attendanceRecords.checkInAt,
-          distance: attendanceRecords.calculatedDistanceMeters,
-          accuracy: attendanceRecords.locationAccuracyMeters,
           verificationMethod: attendanceRecords.verificationMethod,
           remarks: attendanceRecords.lecturerRemarks,
           courseId: courses.id,
@@ -415,7 +413,7 @@ export default async function AttendanceHistoryPage({
                   <TableHead className="px-4 py-3 font-semibold text-muted-foreground text-xs">Date</TableHead>
                   <TableHead className="px-4 py-3 font-semibold text-muted-foreground text-xs">Status</TableHead>
                   <TableHead className="px-4 py-3 font-semibold text-muted-foreground text-xs">Check-in</TableHead>
-                  <TableHead className="px-6 py-3 text-right font-semibold text-muted-foreground text-xs">GPS</TableHead>
+                  <TableHead className="px-6 py-3 text-right font-semibold text-muted-foreground text-xs">Verification</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -435,14 +433,8 @@ export default async function AttendanceHistoryPage({
                     <TableCell className="px-4 py-4.5 text-xs font-semibold text-muted-foreground">
                       {formatDateTime(record.checkInAt)}
                     </TableCell>
-                    <TableCell className="px-6 py-4.5 text-right font-mono text-xs text-foreground font-bold">
-                      {record.distance !== null && record.distance !== undefined ? (
-                        <span className="px-2 py-0.5 rounded bg-muted border border-border/40 text-muted-foreground">
-                          {parseFloat(record.distance).toFixed(1)}m
-                        </span>
-                      ) : (
-                        <span className="text-muted-foreground/40 font-medium">-</span>
-                      )}
+                    <TableCell className="px-6 py-4.5 text-right text-xs font-bold capitalize text-muted-foreground">
+                      {record.verificationMethod.replaceAll("_", " ")}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -481,15 +473,9 @@ export default async function AttendanceHistoryPage({
                     <span className="font-bold text-foreground/80 mt-0.5 block truncate">{record.sessionTitle}</span>
                   </div>
                   <div>
-                    <span className="text-[9px] text-muted-foreground/50 block font-black uppercase tracking-wider">GPS Offset</span>
-                    <div className="mt-0.5 font-mono text-xs text-foreground font-bold">
-                      {record.distance !== null && record.distance !== undefined ? (
-                        <span className="px-2 py-0.5 rounded bg-muted border border-border/40 text-muted-foreground">
-                          {parseFloat(record.distance).toFixed(1)}m
-                        </span>
-                      ) : (
-                        <span className="text-muted-foreground/45 font-medium">-</span>
-                      )}
+                    <span className="text-[9px] text-muted-foreground/50 block font-black uppercase tracking-wider">Verification</span>
+                    <div className="mt-0.5 text-xs font-bold capitalize text-foreground">
+                      {record.verificationMethod.replaceAll("_", " ")}
                     </div>
                   </div>
                 </div>

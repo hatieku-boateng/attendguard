@@ -53,10 +53,9 @@ Notes:
 - Administrators assign catalogue courses to lecturers.
 - Lecturers import/enrol students into assigned courses.
 - Lecturers add course resources for students.
-- Lecturers create attendance sessions.
-- Lecturer session coordinates define the permitted check-in radius.
+- Lecturers create attendance sessions and display the session's rotating QR code.
 - Students activate their account from an emailed link.
-- Students check in to open attendance sessions only after their device GPS falls within the configured session radius and accuracy limit.
+- Students scan the current classroom QR code while signed in to record attendance.
 
 ## Useful Commands
 

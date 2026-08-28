@@ -1,10 +1,9 @@
 # Pentecost University Attendance System
 
-A secure, location-aware digital attendance management platform for Pentecost
+A secure digital attendance management platform for Pentecost
 University. It transitions paper-based registers into verified, auditable
 attendance records with administrator-managed lecturers, course assignments,
-student enrolment, account activation, passkeys, and geofenced coordinate
-verification.
+student enrolment, account activation, and continuously rotating QR verification.
 
 ## Core Features
 
@@ -13,18 +12,18 @@ verification.
 * **Administrator Console**: Manage lecturers, students, academic years,
   faculties, departments, course catalogues, and course-to-lecturer assignments.
 * **Lecturer Workspace**: Enrol students manually or by CSV, publish course
-  resources, create geofenced attendance sessions, manage passkeys, review
-  exceptional attempts, and export registers.
-* **Student Interface**: Activate an imported account, check in to active
-  lectures, and view personal attendance history.
+  resources, create attendance sessions, display the live QR code, monitor the
+  roster, and export registers.
+* **Student Interface**: Activate an imported account, scan the current classroom
+  QR code, and view personal attendance history.
 
 ### Secure Verification Architecture
 
-* **Geofenced Check-ins**: Lecturer session coordinates define the permitted
-  attendance radius. Student GPS capture continues until the device is within
-  the configured radius and accuracy limit.
-* **Passkey Validation**: Student-specific passkeys are hashed for verification
-  and used with location checks during attendance submission.
+* **Rotating QR Check-ins**: Each open session displays a signed QR code that
+  changes every five seconds. The server accepts only the current or immediately
+  previous code to tolerate normal camera and network delay.
+* **Account-Bound Attendance**: A successful scan is credited only to the signed-in
+  student when they are enrolled in the course and have not already checked in.
 * **Student Activation Flow**: Imported students receive secure activation links,
   confirm their student ID, and create their password.
 * **Audit Trail**: Attendance records, rejected attempts, manual approvals, and

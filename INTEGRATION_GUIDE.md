@@ -7,7 +7,7 @@ This guide documents the preferred integration model for connecting AttendGuard 
 AttendGuard should handle the attendance workflow:
 
 - Administrator setup for faculties, departments, lecturers, courses, lecture halls, and students.
-- Lecturer course management, student enrolment, attendance sessions, GPS checks, reviews, approvals, and corrections.
+- Lecturer course management, student enrolment, rotating QR attendance sessions, reviews, approvals, and corrections.
 - Student account activation and attendance submission.
 - Official attendance record storage.
 
@@ -16,7 +16,7 @@ The PHP school management system should connect to AttendGuard only when it need
 ```text
 AttendGuard
   Attendance operations
-  GPS verification
+  Rotating QR verification
   Reviews and approvals
   Official attendance records
 

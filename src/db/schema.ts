@@ -4,7 +4,6 @@ import {
   index,
   integer,
   jsonb,
-  numeric,
   pgEnum,
   pgTable,
   text,
@@ -55,7 +54,7 @@ export const attendanceStatusEnum = pgEnum("attendance_status", [
 ]);
 
 export const verificationMethodEnum = pgEnum("verification_method", [
-  "passkey_location",
+  "rotating_qr",
   "manual",
   "system",
 ]);
@@ -68,17 +67,12 @@ export const attendanceAttemptResultEnum = pgEnum("attendance_attempt_result", [
 ]);
 
 export const rejectionReasonEnum = pgEnum("rejection_reason", [
-  "invalid_passkey",
-  "expired_passkey",
-  "passkey_already_used",
-  "outside_permitted_area",
-  "poor_location_accuracy",
+  "invalid_qr",
+  "expired_qr",
   "session_closed",
   "student_not_enrolled",
   "duplicate_attendance",
-  "location_permission_denied",
   "account_mismatch",
-  "invalid_location",
   "too_many_attempts",
 ]);
 
@@ -442,22 +436,6 @@ export const lectureHalls = pgTable(
     code: varchar("code", { length: 60 }).notNull(),
     building: varchar("building", { length: 160 }),
     roomNumber: varchar("room_number", { length: 80 }),
-    latitude: numeric("latitude", {
-      precision: 10,
-      scale: 7,
-    }).notNull(),
-    longitude: numeric("longitude", {
-      precision: 10,
-      scale: 7,
-    }).notNull(),
-    locationAccuracyMeters: numeric("location_accuracy_meters", {
-      precision: 8,
-      scale: 2,
-    }),
-    geofenceRadiusMeters: integer("geofence_radius_meters").notNull().default(30),
-    maxAcceptedAccuracyMeters: integer("max_accepted_accuracy_meters")
-      .notNull()
-      .default(50),
     notes: text("notes"),
     status: courseStatusEnum("status").notNull().default("active"),
     createdAt,
@@ -484,22 +462,6 @@ export const attendanceSessions = pgTable(
       .references(() => lecturerProfiles.id, { onDelete: "restrict" }),
     sessionTitle: varchar("session_title", { length: 200 }).notNull(),
     sessionDate: timestamp("session_date", { withTimezone: true }).notNull(),
-    lecturerLatitude: numeric("lecturer_latitude", {
-      precision: 10,
-      scale: 7,
-    }).notNull(),
-    lecturerLongitude: numeric("lecturer_longitude", {
-      precision: 10,
-      scale: 7,
-    }).notNull(),
-    lecturerLocationAccuracy: numeric("lecturer_location_accuracy", {
-      precision: 8,
-      scale: 2,
-    }),
-    geofenceRadiusMeters: integer("geofence_radius_meters").notNull(),
-    maxAcceptedAccuracyMeters: integer("max_accepted_accuracy_meters")
-      .notNull()
-      .default(50),
     opensAt: timestamp("opens_at", { withTimezone: true }).notNull(),
     normalClosesAt: timestamp("normal_closes_at", {
       withTimezone: true,
@@ -521,37 +483,6 @@ export const attendanceSessions = pgTable(
   ],
 );
 
-export const attendancePasskeys = pgTable(
-  "attendance_passkeys",
-  {
-    id,
-    sessionId: uuid("session_id")
-      .notNull()
-      .references(() => attendanceSessions.id, { onDelete: "cascade" }),
-    studentId: uuid("student_id")
-      .notNull()
-      .references(() => studentProfiles.id, { onDelete: "cascade" }),
-    passkeyHash: text("passkey_hash").notNull(),
-    passkeyCiphertext: text("passkey_ciphertext"),
-    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
-    used: boolean("used").notNull().default(false),
-    usedAt: timestamp("used_at", { withTimezone: true }),
-    regeneratedAt: timestamp("regenerated_at", { withTimezone: true }),
-    createdAt,
-    updatedAt,
-  },
-  (table) => [
-    uniqueIndex("attendance_passkeys_session_student_unique").on(
-      table.sessionId,
-      table.studentId,
-    ),
-    index("attendance_passkeys_session_id_idx").on(table.sessionId),
-    index("attendance_passkeys_student_id_idx").on(table.studentId),
-    index("attendance_passkeys_used_idx").on(table.used),
-    index("attendance_passkeys_expires_at_idx").on(table.expiresAt),
-  ],
-);
-
 export const attendanceRecords = pgTable(
   "attendance_records",
   {
@@ -563,22 +494,6 @@ export const attendanceRecords = pgTable(
       .notNull()
       .references(() => studentProfiles.id, { onDelete: "cascade" }),
     checkInAt: timestamp("check_in_at", { withTimezone: true }).notNull(),
-    studentLatitude: numeric("student_latitude", {
-      precision: 10,
-      scale: 7,
-    }),
-    studentLongitude: numeric("student_longitude", {
-      precision: 10,
-      scale: 7,
-    }),
-    locationAccuracyMeters: numeric("location_accuracy_meters", {
-      precision: 8,
-      scale: 2,
-    }),
-    calculatedDistanceMeters: numeric("calculated_distance_meters", {
-      precision: 8,
-      scale: 2,
-    }),
     status: attendanceStatusEnum("status").notNull(),
     verificationMethod: verificationMethodEnum("verification_method").notNull(),
     lecturerRemarks: text("lecturer_remarks"),
@@ -610,22 +525,6 @@ export const attendanceAttempts = pgTable(
     attemptedAt: timestamp("attempted_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
-    studentLatitude: numeric("student_latitude", {
-      precision: 10,
-      scale: 7,
-    }),
-    studentLongitude: numeric("student_longitude", {
-      precision: 10,
-      scale: 7,
-    }),
-    locationAccuracyMeters: numeric("location_accuracy_meters", {
-      precision: 8,
-      scale: 2,
-    }),
-    calculatedDistanceMeters: numeric("calculated_distance_meters", {
-      precision: 8,
-      scale: 2,
-    }),
     result: attendanceAttemptResultEnum("result").notNull(),
     rejectionReason: rejectionReasonEnum("rejection_reason"),
     reviewStatus: reviewStatusEnum("review_status")
@@ -780,7 +679,6 @@ export const studentProfilesRelations = relations(
       references: [academicYears.id],
     }),
     enrolments: many(enrolments),
-    passkeys: many(attendancePasskeys),
     attendanceRecords: many(attendanceRecords),
     attendanceAttempts: many(attendanceAttempts),
   }),
@@ -881,23 +779,8 @@ export const attendanceSessionsRelations = relations(
       fields: [attendanceSessions.lectureHallId],
       references: [lectureHalls.id],
     }),
-    passkeys: many(attendancePasskeys),
     attendanceRecords: many(attendanceRecords),
     attendanceAttempts: many(attendanceAttempts),
-  }),
-);
-
-export const attendancePasskeysRelations = relations(
-  attendancePasskeys,
-  ({ one }) => ({
-    session: one(attendanceSessions, {
-      fields: [attendancePasskeys.sessionId],
-      references: [attendanceSessions.id],
-    }),
-    student: one(studentProfiles, {
-      fields: [attendancePasskeys.studentId],
-      references: [studentProfiles.id],
-    }),
   }),
 );
 

@@ -8,6 +8,9 @@ import { eq } from "drizzle-orm";
 
 import { getDb } from "@/db/client";
 import { auditLogs, lecturerProfiles, studentProfiles, users } from "@/db/schema";
+import { getAuthSecret } from "@/lib/server-secret";
+
+export { getAuthSecret } from "@/lib/server-secret";
 
 export type UserRole = "administrator" | "lecturer" | "student";
 
@@ -24,18 +27,6 @@ export type CurrentUser = {
 
 const sessionCookieName = "ams_session";
 const sessionMaxAgeSeconds = 60 * 60 * 24 * 7;
-
-export function getAuthSecret() {
-  if (process.env.AUTH_SECRET) {
-    return process.env.AUTH_SECRET;
-  }
-
-  if (process.env.NODE_ENV !== "production") {
-    return "development-only-attendance-management-secret";
-  }
-
-  throw new Error("AUTH_SECRET is not configured.");
-}
 
 function encodeBase64Url(value: string) {
   return Buffer.from(value).toString("base64url");

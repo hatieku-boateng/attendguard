@@ -8,7 +8,6 @@ import Papa from "papaparse";
 
 import { getDb } from "@/db/client";
 import {
-  attendancePasskeys,
   attendanceRecords,
   attendanceSessions,
   auditLogs,
@@ -559,17 +558,6 @@ export async function removeStudentFromCourseAction(formData: FormData) {
         )
     : [{ value: 0 }];
 
-  if (sessionIds.length > 0) {
-    await db
-      .delete(attendancePasskeys)
-      .where(
-        and(
-          eq(attendancePasskeys.studentId, target.studentId),
-          inArray(attendancePasskeys.sessionId, sessionIds),
-        ),
-      );
-  }
-
   const removalMode = recordCount.value > 0 ? "withdrawn" : "deleted";
 
   if (removalMode === "withdrawn") {
@@ -597,7 +585,6 @@ export async function removeStudentFromCourseAction(formData: FormData) {
     },
     newValue: {
       removalMode,
-      passkeysRemoved: sessionIds.length > 0,
     },
   });
 

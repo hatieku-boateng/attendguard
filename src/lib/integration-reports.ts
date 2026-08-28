@@ -93,8 +93,6 @@ export async function getAttendanceReport(searchParams: URLSearchParams) {
       opensAt: attendanceSessions.opensAt,
       normalClosesAt: attendanceSessions.normalClosesAt,
       finalClosesAt: attendanceSessions.finalClosesAt,
-      geofenceRadiusMeters: attendanceSessions.geofenceRadiusMeters,
-      maxAcceptedAccuracyMeters: attendanceSessions.maxAcceptedAccuracyMeters,
       lectureHallName: lectureHalls.name,
       lectureHallCode: lectureHalls.code,
       studentId: studentProfiles.id,
@@ -112,8 +110,6 @@ export async function getAttendanceReport(searchParams: URLSearchParams) {
       checkInAt: attendanceRecords.checkInAt,
       status: attendanceRecords.status,
       verificationMethod: attendanceRecords.verificationMethod,
-      distanceMeters: attendanceRecords.calculatedDistanceMeters,
-      accuracyMeters: attendanceRecords.locationAccuracyMeters,
       lecturerRemarks: attendanceRecords.lecturerRemarks,
     })
     .from(attendanceRecords)

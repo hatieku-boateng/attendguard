@@ -1,15 +1,20 @@
 import Link from "next/link";
 import { asc, eq } from "drizzle-orm";
-import { Pencil, Search, Trash2, UserCheck, UsersRound } from "lucide-react";
+import { Pencil, Plus, Search, Trash2, Upload, UserCheck, UsersRound } from "lucide-react";
 
 import {
   bulkDeleteStudentAccountsAction,
   deleteStudentAccountAction,
   updateStudentAccountAction,
 } from "@/app/admin/actions";
+import {
+  createStudentEnrolmentAction,
+  importStudentEnrolmentsAction,
+} from "@/app/admin/students/actions";
 import { BulkSelectionToggle } from "@/components/bulk-selection-toggle";
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { PageHeader } from "@/components/page-header";
+import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { StatusBadge } from "@/components/status-badge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -91,8 +96,21 @@ function noticeFor(query: {
   accountUpdated?: string;
   accountDeleted?: string;
   bulkAccountsDeleted?: string;
+  enrolled?: string;
+  imported?: string;
+  skipped?: string;
+  errors?: string;
+  sent?: string;
   error?: string;
 }) {
+  if (query.enrolled) {
+    return `Student enrolled. Activation emails sent: ${query.sent ?? "0"}.`;
+  }
+
+  if (query.imported) {
+    return `Imported ${query.imported} student(s), skipped ${query.skipped ?? "0"}, errors ${query.errors ?? "0"}.`;
+  }
+
   if (query.accountUpdated) {
     return "Student account updated.";
   }
@@ -126,6 +144,14 @@ export default async function AdminStudentsPage({
     accountUpdated?: string;
     accountDeleted?: string;
     bulkAccountsDeleted?: string;
+    enrolled?: string;
+    imported?: string;
+    skipped?: string;
+    errors?: string;
+    sent?: string;
+    pendingEmail?: string;
+    enrolError?: string;
+    importError?: string;
     error?: string;
     modal?: string;
     id?: string;
@@ -324,6 +350,14 @@ export default async function AdminStudentsPage({
       <PageHeader
         title="Student Registry"
         description="Supervise every registered student account, configure course enrolments, and track activation states."
+        actions={
+          <Button asChild>
+            <Link href="/admin/students?modal=enrol">
+              <Plus className="size-4" />
+              Enrol students
+            </Link>
+          </Button>
+        }
       />
 
       <div className="grid gap-5 sm:grid-cols-3">
@@ -693,6 +727,129 @@ export default async function AdminStudentsPage({
         </CardContent>
       </Card>
 
+      <FormModal
+        className="sm:max-w-4xl"
+        description="Create or assign student accounts to an administrator-approved course."
+        isOpen={query.modal === "enrol"}
+        title="Enrol students"
+      >
+        <div className="grid gap-6 pt-2 lg:grid-cols-2">
+          <form action={createStudentEnrolmentAction} className="grid content-start gap-4 sm:grid-cols-2">
+            <div className="sm:col-span-2">
+              <h3 className="text-sm font-extrabold">Add one student</h3>
+              <p className="mt-1 text-xs text-muted-foreground">
+                The student inherits the faculty and department of the selected course.
+              </p>
+            </div>
+            {query.enrolError ? (
+              <p className="border border-destructive/25 bg-destructive/5 px-4 py-3 text-xs font-semibold text-destructive sm:col-span-2">
+                {query.enrolError === "course"
+                  ? "Select a course with a valid faculty and department."
+                  : query.enrolError === "conflict"
+                    ? "The email or student ID conflicts with an existing account."
+                    : "Complete the required student and course fields."}
+              </p>
+            ) : null}
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label htmlFor="enrolCourseId">Course assignment</Label>
+              <select
+                className="h-10 w-full rounded-lg border border-input bg-card px-3 text-sm"
+                defaultValue={selectedCourseId === "all" ? "" : selectedCourseId}
+                id="enrolCourseId"
+                name="courseId"
+                required
+              >
+                <option value="">Select course</option>
+                {courseOptions.map((course) => (
+                  <option key={course.id} value={course.id}>
+                    {course.courseCode}: {course.courseTitle} ({course.classGroup})
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label htmlFor="enrolName">Student name</Label>
+              <Input id="enrolName" name="name" required />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="enrolStudentId">Student ID</Label>
+              <Input className="uppercase-input" id="enrolStudentId" name="studentIdNumber" required />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="enrolEmail">Email address</Label>
+              <Input id="enrolEmail" name="email" required type="email" />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="enrolCategory">Student category</Label>
+              <select className="h-10 w-full rounded-lg border border-input bg-card px-3 text-sm" defaultValue="regular" id="enrolCategory" name="studentCategory">
+                {studentCategories.map((category) => <option key={category.value} value={category.value}>{category.label}</option>)}
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="enrolProgrammeLevel">Programme level</Label>
+              <select className="h-10 w-full rounded-lg border border-input bg-card px-3 text-sm" defaultValue="undergraduate" id="enrolProgrammeLevel" name="programmeLevel">
+                {programmeLevels.map((level) => <option key={level.value} value={level.value}>{level.label}</option>)}
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="enrolProgramme">Programme override</Label>
+              <Input id="enrolProgramme" name="programme" placeholder="Use course default" />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="enrolLevel">Level override</Label>
+              <Input id="enrolLevel" name="level" placeholder="Use course default" />
+            </div>
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label htmlFor="enrolClassGroup">Class group override</Label>
+              <Input id="enrolClassGroup" name="classGroup" placeholder="Use course default" />
+            </div>
+            <PendingSubmitButton className="sm:col-span-2" pendingLabel="Enrolling student...">
+              Enrol and send activation
+            </PendingSubmitButton>
+          </form>
+
+          <form action={importStudentEnrolmentsAction} className="grid content-start gap-4">
+            <div>
+              <h3 className="text-sm font-extrabold">Import a course list</h3>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                CSV headings: student name, student ID, email address. Programme, level,
+                class group, student category, and programme level are optional.
+              </p>
+            </div>
+            {query.importError ? (
+              <p className="border border-destructive/25 bg-destructive/5 px-4 py-3 text-xs font-semibold text-destructive">
+                {query.importError === "headings"
+                  ? "The CSV is missing required headings."
+                  : query.importError === "rows"
+                    ? "Import files are limited to 1,000 student rows."
+                    : query.importError === "course"
+                      ? "Select a course with a valid faculty and department."
+                      : "Choose a valid CSV file no larger than 2 MB."}
+              </p>
+            ) : null}
+            <div className="space-y-1.5">
+              <Label htmlFor="importCourseId">Course assignment</Label>
+              <select className="h-10 w-full rounded-lg border border-input bg-card px-3 text-sm" defaultValue={selectedCourseId === "all" ? "" : selectedCourseId} id="importCourseId" name="courseId" required>
+                <option value="">Select course</option>
+                {courseOptions.map((course) => <option key={course.id} value={course.id}>{course.courseCode}: {course.courseTitle} ({course.classGroup})</option>)}
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="studentFile">Student CSV</Label>
+              <Input accept=".csv,text/csv" id="studentFile" name="studentFile" required type="file" />
+            </div>
+            <div className="border border-border bg-muted/30 px-4 py-3 text-xs text-muted-foreground">
+              Existing matching student accounts are assigned to the course. New accounts
+              receive an activation email.
+            </div>
+            <PendingSubmitButton pendingLabel="Importing students...">
+              <Upload className="size-4" />
+              Import CSV
+            </PendingSubmitButton>
+          </form>
+        </div>
+      </FormModal>
+
       {editStudent && (
         <FormModal
           isOpen={query.modal === "edit" && !!editStudent}
@@ -786,8 +943,9 @@ export default async function AdminStudentsPage({
                       defaultValue={editStudent.facultyId ?? ""}
                       id="facultyId"
                       name="facultyId"
+                      required
                     >
-                      <option value="">Select faculty</option>
+                      <option disabled value="">Select faculty</option>
                       {facultyRows.map((faculty) => (
                         <option key={faculty.id} value={faculty.id}>
                           {faculty.name}
@@ -802,8 +960,9 @@ export default async function AdminStudentsPage({
                       defaultValue={editStudent.departmentId ?? ""}
                       id="departmentId"
                       name="departmentId"
+                      required
                     >
-                      <option value="">Select department</option>
+                      <option disabled value="">Select department</option>
                       {departmentRows.map((department) => (
                         <option key={department.id} value={department.id}>
                           {department.name}

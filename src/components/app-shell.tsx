@@ -45,6 +45,7 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   "academic-years": Calendar,
   "catalog": BookOpen,
   "courses": BookOpen,
+  "lectures": Clock,
   "students": Users,
   "reports": FileSpreadsheet,
   "classes": Layers,

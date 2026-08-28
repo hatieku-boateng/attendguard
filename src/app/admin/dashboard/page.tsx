@@ -77,7 +77,7 @@ export default async function AdminDashboardPage() {
                 Course Assignment
               </h3>
               <p className="text-xs font-semibold text-muted-foreground/75 leading-relaxed mt-2">
-                Courses must be assigned to verified lecturers before attendance perimeters and tracking logs can be created.
+                Courses must be assigned to verified lecturers before QR attendance lectures and tracking logs can be created.
               </p>
             </div>
           </div>
@@ -95,7 +95,7 @@ export default async function AdminDashboardPage() {
                 Student Enrolment
               </h3>
               <p className="text-xs font-semibold text-muted-foreground/75 leading-relaxed mt-2">
-                Lecturers enrol active students into assigned courses, schedule sessions, and manage QR check-in verification.
+                Administrators enrol students and schedule lectures. Lecturers operate the live QR check-in and review attendance.
               </p>
             </div>
           </div>

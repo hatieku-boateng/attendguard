@@ -7,7 +7,6 @@ import {
   updateCourseStatusAction,
 } from "@/app/lecturer/courses/actions";
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
-import { AttendanceSessionFields } from "@/components/attendance-session-fields";
 import { PageHeader } from "@/components/page-header";
 import { StatCard } from "@/components/stat-card";
 import { StatusBadge } from "@/components/status-badge";
@@ -37,29 +36,17 @@ import {
   courseResources,
   courses,
   enrolments,
-  lectureHalls,
 } from "@/db/schema";
 import { requireRole } from "@/lib/auth";
-import { FormModal } from "@/components/form-modal";
-import { createAttendanceSessionAction } from "@/app/lecturer/sessions/actions";
 
 export default async function CourseDetailPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ courseId: string }>;
-  searchParams: Promise<{ modal?: string; error?: string }>;
 }) {
   const { courseId } = await params;
-  const query = await searchParams;
   const user = await requireRole("lecturer");
   const db = getDb();
-
-  const errorMessages: Record<string, string> = {
-    time: "Opening time must be before normal close, and normal close must be before final close.",
-    venue: "Select a valid lecture hall or leave the venue blank.",
-    missing: "Complete the session title and attendance times.",
-  };
 
   const [course] = await db
     .select()
@@ -100,17 +87,6 @@ export default async function CourseDetailPage({
     .from(attendanceSessions)
     .where(eq(attendanceSessions.courseId, course.id))
     .orderBy(desc(attendanceSessions.opensAt));
-  const mappedLectureHalls = await db
-    .select()
-    .from(lectureHalls)
-    .where(eq(lectureHalls.status, "active"))
-    .orderBy(lectureHalls.code);
-  const sessionVenues = mappedLectureHalls.map((hall) => ({
-    id: hall.id,
-    code: hall.code,
-    name: hall.name,
-  }));
-
   return (
     <>
       <PageHeader
@@ -120,11 +96,6 @@ export default async function CourseDetailPage({
           <>
             <Button asChild variant="outline">
               <Link href={`/lecturer/courses/${course.id}/students`}>Students</Link>
-            </Button>
-            <Button asChild>
-              <Link href={`/lecturer/courses/${course.id}?modal=new`}>
-                Start session
-              </Link>
             </Button>
           </>
         }
@@ -312,36 +283,6 @@ export default async function CourseDetailPage({
           </form>
         </CardContent>
       </Card>
-
-      {/* Start Session Modal */}
-      <FormModal
-        isOpen={query.modal === "new"}
-        title="Start attendance session"
-        description="Choose the attendance window. The rotating QR becomes available automatically."
-        className="sm:max-w-2xl"
-      >
-        <form action={createAttendanceSessionAction} className="grid gap-4 sm:grid-cols-2 pt-2">
-          <input name="courseId" type="hidden" value={course.id} />
-          <input name="source" type="hidden" value="course" />
-          {query.error && errorMessages[query.error] ? (
-            <p className="sm:col-span-2 rounded-xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-xs font-semibold text-destructive leading-relaxed">
-              {errorMessages[query.error]}
-            </p>
-          ) : null}
-          <div className="space-y-1.5 sm:col-span-2">
-            <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Course</Label>
-            <div className="rounded-lg border bg-muted/50 px-3 py-2 text-sm text-muted-foreground font-semibold">
-              {course.courseCode}: {course.courseTitle}
-            </div>
-          </div>
-          <AttendanceSessionFields venues={sessionVenues} />
-          <div className="sm:col-span-2 pt-2">
-            <Button className="w-full py-5 rounded-xl font-bold shadow-md shadow-primary/20 hover:shadow-lg text-sm" type="submit">
-              Open attendance session
-            </Button>
-          </div>
-        </form>
-      </FormModal>
     </>
   );
 }

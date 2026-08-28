@@ -36,7 +36,7 @@ Notes:
 
 ## Email Flow
 
-- Lecturers import students by CSV.
+- Administrators import students by CSV or enrol them manually.
 - Required CSV headings: `student name`, `student id`, `email address`.
 - Optional CSV headings: `programme`, `level`, `class group`.
 - New imported students are created as pending users.
@@ -51,9 +51,9 @@ Notes:
 - Administrators create lecturer accounts.
 - Administrators maintain a course catalogue.
 - Administrators assign catalogue courses to lecturers.
-- Lecturers import/enrol students into assigned courses.
+- Administrators import/enrol students into assigned courses.
 - Lecturers add course resources for students.
-- Lecturers create attendance sessions and display the session's rotating QR code.
+- Administrators schedule attendance lectures; lecturers display each lecture's rotating QR code.
 - Students activate their account from an emailed link.
 - Students scan the current classroom QR code while signed in to record attendance.
 

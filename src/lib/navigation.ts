@@ -11,6 +11,7 @@ export function getWorkspaceNavItems(role: UserRole) {
       { href: "/admin/academic-years", label: "Academic Years" },
       { href: "/admin/catalog", label: "Catalogue" },
       { href: "/admin/courses", label: "Assignments" },
+      { href: "/admin/lectures", label: "Lectures" },
       { href: "/admin/students", label: "Students" },
       { href: "/profile", label: "Profile" },
     ];

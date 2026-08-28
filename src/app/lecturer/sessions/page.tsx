@@ -1,12 +1,8 @@
 import Link from "next/link";
 import { desc, eq } from "drizzle-orm";
-import { Pencil, Plus, QrCode } from "lucide-react";
+import { Pencil, QrCode } from "lucide-react";
 
-import {
-  createAttendanceSessionAction,
-  deleteAttendanceSessionAction,
-  updateAttendanceSessionAction,
-} from "@/app/lecturer/sessions/actions";
+import { deleteAttendanceSessionAction, updateAttendanceSessionAction } from "@/app/lecturer/sessions/actions";
 import { AttendanceSessionFields } from "@/components/attendance-session-fields";
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { FormModal } from "@/components/form-modal";
@@ -15,7 +11,6 @@ import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Table,
   TableBody,
@@ -51,12 +46,7 @@ export default async function LecturerSessionsPage({
   const lecturerId = user.lecturerProfileId ?? "";
   const db = getDb();
 
-  const [lecturerCourses, venues, allSessions] = await Promise.all([
-    db
-      .select({ id: courses.id, code: courses.courseCode, title: courses.courseTitle })
-      .from(courses)
-      .where(eq(courses.lecturerId, lecturerId))
-      .orderBy(courses.courseCode),
+  const [venues, allSessions] = await Promise.all([
     db
       .select({ id: lectureHalls.id, code: lectureHalls.code, name: lectureHalls.name })
       .from(lectureHalls)
@@ -106,15 +96,7 @@ export default async function LecturerSessionsPage({
   return (
     <>
       <PageHeader
-        actions={
-          <Button asChild disabled={lecturerCourses.length === 0}>
-            <Link href="/lecturer/sessions?modal=new">
-              <Plus className="size-4" />
-              New session
-            </Link>
-          </Button>
-        }
-        description="Open rotating QR attendance windows and monitor student check-ins."
+        description="Manage administrator-created QR attendance windows and monitor student check-ins."
         title="Attendance sessions"
       />
 
@@ -182,25 +164,6 @@ export default async function LecturerSessionsPage({
           </Table>
         </CardContent>
       </Card>
-
-      <FormModal
-        description="Set the attendance window. A rotating QR is generated automatically."
-        isOpen={params.modal === "new"}
-        title="New attendance session"
-      >
-        <form action={createAttendanceSessionAction} className="grid gap-4 sm:grid-cols-2">
-          {errorMessage ? <ErrorMessage message={errorMessage} /> : null}
-          <div className="space-y-1.5 sm:col-span-2">
-            <Label htmlFor="courseId">Course</Label>
-            <select className="h-9 w-full rounded-lg border border-input bg-card px-3 text-sm" defaultValue={params.courseId ?? ""} id="courseId" name="courseId" required>
-              <option disabled value="">Select course</option>
-              {lecturerCourses.map((course) => <option key={course.id} value={course.id}>{course.code}: {course.title}</option>)}
-            </select>
-          </div>
-          <AttendanceSessionFields venues={venues} />
-          <Button className="sm:col-span-2" type="submit">Open attendance session</Button>
-        </form>
-      </FormModal>
 
       {editSession ? (
         <FormModal description={`${editSession.courseCode}: ${editSession.courseTitle}`} isOpen title="Edit attendance session">

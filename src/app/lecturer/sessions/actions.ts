@@ -232,7 +232,7 @@ async function sendAbsenceWarningsForSession({
 }
 
 export async function createAttendanceSessionAction(formData: FormData) {
-  const user = await requireRole("lecturer");
+  const user = await requireRole("administrator");
   const courseId = cleanString(formData.get("courseId"));
   const source = cleanString(formData.get("source"));
   const sessionTitle = cleanString(formData.get("sessionTitle"));

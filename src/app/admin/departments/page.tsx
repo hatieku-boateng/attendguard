@@ -67,6 +67,7 @@ export default async function AdminDepartmentsPage({
 
   const errorMessages: Record<string, string> = {
     missing: "Please complete all required fields.",
+    faculty: "Select a valid faculty before saving the department.",
     exists: "A department with that code already exists, or that faculty already has a department with this name.",
   };
 
@@ -149,7 +150,7 @@ export default async function AdminDepartmentsPage({
               name="facultyId"
               required
             >
-              <option value="">Select faculty</option>
+              <option disabled value="">Select faculty</option>
               {facultyRows.map((faculty) => (
                 <option key={faculty.id} value={faculty.id}>
                   {faculty.name}

@@ -283,7 +283,7 @@ export default async function LecturerDashboardPage() {
     <>
       <PageHeader
         title="Lecturer Dashboard"
-        description="Monitor assigned courses, live QR attendance sessions, student enrolment, and recent check-ins."
+        description="Monitor assigned courses, administrator-managed rosters, live QR attendance sessions, and recent check-ins."
       />
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-5">
         <StatCard label="Courses" value={lecturerCourses.length} tone="info" />

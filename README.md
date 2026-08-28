@@ -9,11 +9,11 @@ student enrolment, account activation, and continuously rotating QR verification
 
 ### Role-Based Portals
 
-* **Administrator Console**: Manage lecturers, students, academic years,
-  faculties, departments, course catalogues, and course-to-lecturer assignments.
-* **Lecturer Workspace**: Enrol students manually or by CSV, publish course
-  resources, create attendance sessions, display the live QR code, monitor the
-  roster, and export registers.
+* **Administrator Console**: Manage faculties and their departments, lecturers,
+  course catalogues, course assignments, student enrolment, and lecture schedules.
+* **Lecturer Workspace**: View administrator-managed rosters, publish course
+  resources, display the live QR code for scheduled lectures, monitor the roster,
+  and export registers.
 * **Student Interface**: Activate an imported account, scan the current classroom
   QR code, and view personal attendance history.
 

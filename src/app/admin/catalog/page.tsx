@@ -140,7 +140,7 @@ export default async function AdminCatalogPage({
   }
 
   const errorMessages: Record<string, string> = {
-    missing: "Enter a course code and course title.",
+    missing: "Enter a course code and title, then select its faculty and department.",
     exists: "A catalogue course already exists with that code.",
     department: "Please select a valid department belonging to the selected faculty.",
   };
@@ -333,8 +333,8 @@ export default async function AdminCatalogPage({
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="facultyId" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Faculty</Label>
-            <select className="h-9 w-full rounded-lg border bg-card px-3 text-sm" id="facultyId" name="facultyId">
-              <option value="">Select faculty</option>
+            <select className="h-9 w-full rounded-lg border bg-card px-3 text-sm" id="facultyId" name="facultyId" required>
+              <option disabled value="">Select faculty</option>
               {facultyRows.map((faculty) => (
                 <option key={faculty.id} value={faculty.id}>{faculty.name}</option>
               ))}
@@ -342,8 +342,8 @@ export default async function AdminCatalogPage({
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="departmentId" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Department</Label>
-            <select className="h-9 w-full rounded-lg border bg-card px-3 text-sm" id="departmentId" name="departmentId">
-              <option value="">Select department</option>
+            <select className="h-9 w-full rounded-lg border bg-card px-3 text-sm" id="departmentId" name="departmentId" required>
+              <option disabled value="">Select department</option>
               {departmentRows.map((department) => (
                 <option key={department.id} value={department.id}>{department.name}</option>
               ))}
@@ -434,8 +434,9 @@ export default async function AdminCatalogPage({
                   defaultValue={editCourse.facultyId ?? ""}
                   id="facultyId"
                   name="facultyId"
+                  required
                 >
-                  <option value="">Select faculty</option>
+                  <option disabled value="">Select faculty</option>
                   {facultyRows.map((faculty) => (
                     <option key={faculty.id} value={faculty.id}>
                       {faculty.name}
@@ -450,8 +451,9 @@ export default async function AdminCatalogPage({
                   defaultValue={editCourse.departmentId ?? ""}
                   id="departmentId"
                   name="departmentId"
+                  required
                 >
-                  <option value="">Select department</option>
+                  <option disabled value="">Select department</option>
                   {departmentRows.map((department) => (
                     <option key={department.id} value={department.id}>
                       {department.name}

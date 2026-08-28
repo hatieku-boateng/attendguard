@@ -40,7 +40,7 @@ export default async function LecturerCoursesPage() {
     <>
       <PageHeader
         title="Courses"
-        description="Courses assigned by the administrator. Open a course to enrol students and manage attendance."
+        description="Courses assigned by the administrator. Open a course to view its roster and manage attendance."
       />
       <Card className="glass-panel glass-panel-hover overflow-hidden relative border-border/40">
         <div className="absolute inset-x-0 top-0 h-1 bg-[linear-gradient(90deg,var(--primary),oklch(0.52_0.14_200))]" />

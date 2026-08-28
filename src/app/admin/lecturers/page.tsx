@@ -221,7 +221,7 @@ export default async function AdminLecturersPage({
       <FormModal
         isOpen={params.modal === "new"}
         title="New lecturer"
-        description="Create a teacher account. The lecturer can later enrol students and manage assigned attendance sessions."
+        description="Create a teacher account. The lecturer can operate attendance sessions assigned by the administrator."
         className="sm:max-w-xl"
       >
         <form

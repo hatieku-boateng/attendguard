@@ -7,7 +7,7 @@ This guide documents the preferred integration model for connecting AttendGuard 
 AttendGuard should handle the attendance workflow:
 
 - Administrator setup for faculties, departments, lecturers, courses, lecture halls, and students.
-- Lecturer course management, student enrolment, rotating QR attendance sessions, reviews, approvals, and corrections.
+- Administrator-managed course setup, student enrolment, and lecture scheduling; lecturer-operated rotating QR attendance, reviews, approvals, and corrections.
 - Student account activation and attendance submission.
 - Official attendance record storage.
 

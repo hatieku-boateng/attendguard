@@ -289,7 +289,7 @@ async function enrolStudentWithActivation({
 }
 
 export async function importStudentsAction(formData: FormData) {
-  const user = await requireRole("lecturer");
+  const user = await requireRole("administrator");
   const courseId = cleanString(formData.get("courseId"));
   const file = formData.get("studentFile");
 
@@ -425,7 +425,7 @@ export async function importStudentsAction(formData: FormData) {
 }
 
 export async function addStudentManuallyAction(formData: FormData) {
-  const user = await requireRole("lecturer");
+  const user = await requireRole("administrator");
   const courseId = cleanString(formData.get("courseId"));
   const name = cleanString(formData.get("name")).toUpperCase();
   const studentIdNumber = cleanString(formData.get("studentIdNumber")).toUpperCase();
@@ -504,7 +504,7 @@ export async function addStudentManuallyAction(formData: FormData) {
 }
 
 export async function removeStudentFromCourseAction(formData: FormData) {
-  const user = await requireRole("lecturer");
+  const user = await requireRole("administrator");
   const courseId = cleanString(formData.get("courseId"));
   const enrolmentId = cleanString(formData.get("enrolmentId"));
 
@@ -597,7 +597,7 @@ export async function removeStudentFromCourseAction(formData: FormData) {
 }
 
 export async function resendStudentActivationAction(formData: FormData) {
-  const user = await requireRole("lecturer");
+  const user = await requireRole("administrator");
   const courseId = cleanString(formData.get("courseId"));
   const studentUserId = cleanString(formData.get("studentUserId"));
 

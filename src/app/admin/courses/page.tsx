@@ -88,7 +88,7 @@ export default async function AdminCoursesPage({
     <>
       <PageHeader
         title="Course Assignments"
-        description="Attach registered course catalog templates to verified lecturers to initiate attendance geofencing perimeters."
+        description="Assign registered catalogue courses to verified lecturers for QR attendance."
         actions={
           <Button asChild className="rounded-xl shadow-sm">
             <Link href="/admin/courses?modal=new" className="flex items-center gap-1.5">

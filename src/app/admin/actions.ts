@@ -373,6 +373,16 @@ export async function createDepartmentAction(formData: FormData) {
   }
 
   const db = getDb();
+  const [faculty] = await db
+    .select({ id: faculties.id })
+    .from(faculties)
+    .where(and(eq(faculties.id, facultyId), eq(faculties.status, "active")))
+    .limit(1);
+
+  if (!faculty) {
+    redirect("/admin/departments?modal=new&error=faculty");
+  }
+
   const [existingDepartment] = await db
     .select({ id: departments.id })
     .from(departments)
@@ -424,6 +434,16 @@ export async function updateDepartmentAction(formData: FormData) {
   }
 
   const db = getDb();
+  const [faculty] = await db
+    .select({ id: faculties.id })
+    .from(faculties)
+    .where(eq(faculties.id, facultyId))
+    .limit(1);
+
+  if (!faculty) {
+    redirect(`/admin/departments?modal=edit&id=${departmentId}&error=faculty`);
+  }
+
   const [existingDepartment] = await db
     .select({ id: departments.id })
     .from(departments)
@@ -805,26 +825,24 @@ export async function createCatalogCourseAction(formData: FormData) {
   const admin = await requireRole("administrator");
   const courseCode = cleanString(formData.get("courseCode")).toUpperCase();
   const courseTitle = cleanString(formData.get("courseTitle"));
+  const facultyId = cleanId(formData.get("facultyId"));
+  const departmentId = cleanId(formData.get("departmentId"));
 
-  if (!courseCode || !courseTitle) {
+  if (!courseCode || !courseTitle || !facultyId || !departmentId) {
     redirect("/admin/catalog?modal=new&error=missing");
   }
 
   const db = getDb();
-  const facultyId = cleanId(formData.get("facultyId")) || null;
-  const departmentId = cleanId(formData.get("departmentId")) || null;
   const academicYearId = cleanId(formData.get("academicYearId")) || null;
 
-  if (facultyId && departmentId) {
-    const [department] = await db
-      .select({ id: departments.id })
-      .from(departments)
-      .where(and(eq(departments.id, departmentId), eq(departments.facultyId, facultyId)))
-      .limit(1);
+  const [department] = await db
+    .select({ id: departments.id })
+    .from(departments)
+    .where(and(eq(departments.id, departmentId), eq(departments.facultyId, facultyId)))
+    .limit(1);
 
-    if (!department) {
-      redirect("/admin/catalog?modal=new&error=department");
-    }
+  if (!department) {
+    redirect("/admin/catalog?modal=new&error=department");
   }
 
   const [existingCourse] = await db
@@ -869,26 +887,24 @@ export async function updateCatalogCourseAction(formData: FormData) {
   const catalogCourseId = cleanString(formData.get("catalogCourseId"), { uppercase: false });
   const courseCode = cleanString(formData.get("courseCode")).toUpperCase();
   const courseTitle = cleanString(formData.get("courseTitle"));
+  const facultyId = cleanId(formData.get("facultyId"));
+  const departmentId = cleanId(formData.get("departmentId"));
 
-  if (!catalogCourseId || !courseCode || !courseTitle) {
+  if (!catalogCourseId || !courseCode || !courseTitle || !facultyId || !departmentId) {
     redirect(`/admin/catalog?modal=edit&id=${catalogCourseId}&error=missing`);
   }
 
   const db = getDb();
-  const facultyId = cleanId(formData.get("facultyId")) || null;
-  const departmentId = cleanId(formData.get("departmentId")) || null;
   const academicYearId = cleanId(formData.get("academicYearId")) || null;
 
-  if (facultyId && departmentId) {
-    const [department] = await db
-      .select({ id: departments.id })
-      .from(departments)
-      .where(and(eq(departments.id, departmentId), eq(departments.facultyId, facultyId)))
-      .limit(1);
+  const [department] = await db
+    .select({ id: departments.id })
+    .from(departments)
+    .where(and(eq(departments.id, departmentId), eq(departments.facultyId, facultyId)))
+    .limit(1);
 
-    if (!department) {
-      redirect(`/admin/catalog?modal=edit&id=${catalogCourseId}&error=department`);
-    }
+  if (!department) {
+    redirect(`/admin/catalog?modal=edit&id=${catalogCourseId}&error=department`);
   }
 
   await db
@@ -1119,11 +1135,11 @@ export async function updateStudentAccountAction(formData: FormData) {
   const programmeLevel = normalizeProgrammeLevel(
     cleanString(formData.get("programmeLevel"), { uppercase: false }),
   );
-  const facultyId = cleanId(formData.get("facultyId")) || null;
-  const departmentId = cleanId(formData.get("departmentId")) || null;
+  const facultyId = cleanId(formData.get("facultyId"));
+  const departmentId = cleanId(formData.get("departmentId"));
   const academicYearId = cleanId(formData.get("academicYearId")) || null;
 
-  if (!studentId || !name || !email || !studentIdNumber || !status || !studentCategory || !programmeLevel) {
+  if (!studentId || !name || !email || !studentIdNumber || !status || !studentCategory || !programmeLevel || !facultyId || !departmentId) {
     redirect(`/admin/students?modal=edit&id=${studentId}&error=missing`);
   }
 
@@ -1178,16 +1194,14 @@ export async function updateStudentAccountAction(formData: FormData) {
   const level = cleanString(formData.get("level")) || null;
   const classGroup = cleanString(formData.get("classGroup")) || null;
 
-  if (facultyId && departmentId) {
-    const [department] = await db
-      .select({ id: departments.id })
-      .from(departments)
-      .where(and(eq(departments.id, departmentId), eq(departments.facultyId, facultyId)))
-      .limit(1);
+  const [department] = await db
+    .select({ id: departments.id })
+    .from(departments)
+    .where(and(eq(departments.id, departmentId), eq(departments.facultyId, facultyId)))
+    .limit(1);
 
-    if (!department) {
-      redirect(`/admin/students?modal=edit&id=${studentId}&error=department`);
-    }
+  if (!department) {
+    redirect(`/admin/students?modal=edit&id=${studentId}&error=department`);
   }
 
   await db

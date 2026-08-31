@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { and, asc, desc, eq } from "drizzle-orm";
 import { Clock3, Plus, QrCode } from "lucide-react";
 
@@ -90,10 +91,10 @@ export default async function AdminLecturesPage({
       <PageHeader
         actions={
           <Button asChild>
-            <a href="/admin/lectures?modal=new">
+            <Link href="/admin/lectures?modal=new">
               <Plus className="size-4" />
               Add lecture
-            </a>
+            </Link>
           </Button>
         }
         description="Schedule lectures for assigned courses. Lecturers display the QR code and manage attendance after creation."

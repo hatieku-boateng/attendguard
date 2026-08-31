@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ShieldCheck, BookOpen, GraduationCap } from "lucide-react";
+import { BookOpen, GraduationCap } from "lucide-react";
 
 import { loginAction } from "@/app/(auth)/actions";
 import { AuthFrame } from "@/components/auth-frame";
@@ -19,12 +19,6 @@ const errorMessages: Record<string, string> = {
 };
 
 const portalOptions = [
-  {
-    label: "Admin",
-    value: "administrator",
-    icon: ShieldCheck,
-    color: "has-checked:border-amber-500 has-checked:bg-amber-500/10",
-  },
   {
     label: "Lecturer",
     value: "lecturer",
@@ -60,7 +54,6 @@ export default async function LoginPage({
         <div className="pt-7 pb-4 sm:pt-8 px-5 sm:px-6 flex flex-col">
           <div className="hidden flex-wrap gap-2 pb-2 min-[360px]:flex">
             {[
-              { role: "Admin", icon: ShieldCheck, color: "text-amber-600 bg-amber-500/10 border-amber-500/20 dark:text-amber-400" },
               { role: "Lecturer", icon: BookOpen, color: "text-primary bg-primary/10 border-primary/20" },
               { role: "Student", icon: GraduationCap, color: "text-emerald-600 bg-emerald-500/10 border-emerald-500/20 dark:text-emerald-400" },
             ].map((item) => {
@@ -81,7 +74,7 @@ export default async function LoginPage({
           </div>
           <h2 className="text-2xl font-black tracking-tight text-foreground">Sign in</h2>
           <p className="text-xs font-semibold text-muted-foreground mt-1">
-            Access your administrator, lecturer, or student attendance workspace.
+            Access your lecturer or student attendance workspace.
           </p>
         </div>
 
@@ -97,7 +90,7 @@ export default async function LoginPage({
               <Label className="text-xs font-extrabold text-muted-foreground uppercase tracking-widest leading-none">
                 Login portal
               </Label>
-              <div className="grid grid-cols-1 gap-2 min-[360px]:grid-cols-3">
+              <div className="grid grid-cols-1 gap-2 min-[360px]:grid-cols-2">
                 {portalOptions.map((portal) => {
                   const Icon = portal.icon;
 

@@ -24,6 +24,7 @@ import {
   recordSecurityEvent,
   securityWindows,
 } from "@/lib/security";
+import { getAdminLoginPath, isAdminAccessKey } from "@/lib/admin-access";
 
 function cleanString(value: FormDataEntryValue | null) {
   return String(value ?? "").trim();
@@ -40,18 +41,31 @@ function getDashboardPath(role: UserRole) {
 function cleanRequestedRole(value: FormDataEntryValue | null) {
   const role = cleanString(value).toLowerCase();
 
-  return ["administrator", "lecturer", "student"].includes(role)
+  return ["lecturer", "student"].includes(role)
     ? (role as UserRole)
     : null;
 }
 
-export async function loginAction(formData: FormData) {
+function loginErrorUrl(basePath: string, error: string) {
+  return `${basePath}?error=${error}`;
+}
+
+async function authenticateLogin({
+  formData,
+  requestedRole,
+  errorBasePath,
+  roleMismatchError = "role-mismatch",
+}: {
+  formData: FormData;
+  requestedRole: UserRole;
+  errorBasePath: string;
+  roleMismatchError?: string;
+}) {
   const email = cleanString(formData.get("email")).toLowerCase();
   const password = cleanString(formData.get("password"));
-  const requestedRole = cleanRequestedRole(formData.get("role"));
 
-  if (!email || !password || !requestedRole) {
-    redirect("/login?error=missing");
+  if (!email || !password) {
+    redirect(loginErrorUrl(errorBasePath, "missing"));
   }
 
   const securityContext = await getSecurityRequestContext();
@@ -79,7 +93,7 @@ export async function loginAction(formData: FormData) {
       context: securityContext,
       metadata: { emailBlocked, ipBlocked },
     });
-    redirect("/login?error=too-many");
+    redirect(loginErrorUrl(errorBasePath, "too-many"));
   }
 
   const db = getDb();
@@ -100,7 +114,7 @@ export async function loginAction(formData: FormData) {
         metadata: { reason: "invalid_credentials" },
       }),
     ]);
-    redirect("/login?error=invalid");
+    redirect(loginErrorUrl(errorBasePath, "invalid"));
   }
 
   if (user.status !== "active") {
@@ -110,7 +124,7 @@ export async function loginAction(formData: FormData) {
       context: securityContext,
       metadata: { reason: "inactive_account" },
     });
-    redirect("/login?error=inactive");
+    redirect(loginErrorUrl(errorBasePath, "inactive"));
   }
 
   if (user.role !== requestedRole) {
@@ -124,7 +138,7 @@ export async function loginAction(formData: FormData) {
         actualRole: user.role,
       },
     });
-    redirect("/login?error=role-mismatch");
+    redirect(loginErrorUrl(errorBasePath, roleMismatchError));
   }
 
   await recordSecurityEvent({
@@ -136,6 +150,36 @@ export async function loginAction(formData: FormData) {
   });
   await setSessionCookie(user.id);
   redirect(getDashboardPath(user.role));
+}
+
+export async function loginAction(formData: FormData) {
+  const requestedRole = cleanRequestedRole(formData.get("role"));
+
+  if (!requestedRole) {
+    redirect("/login?error=missing");
+  }
+
+  return authenticateLogin({
+    formData,
+    requestedRole,
+    errorBasePath: "/login",
+  });
+}
+
+export async function adminLoginAction(formData: FormData) {
+  const accessKey = cleanString(formData.get("accessKey"));
+  const errorBasePath = getAdminLoginPath();
+
+  if (!errorBasePath || !isAdminAccessKey(accessKey)) {
+    redirect("/login");
+  }
+
+  return authenticateLogin({
+    formData,
+    requestedRole: "administrator",
+    errorBasePath,
+    roleMismatchError: "invalid",
+  });
 }
 
 export async function registerAction(formData: FormData) {

@@ -54,6 +54,10 @@ function percentageLabel(value: number | null) {
   return value === null ? "N/A" : `${value}%`;
 }
 
+function studentCountLabel(count: number) {
+  return `${count} ${count === 1 ? "student" : "students"}`;
+}
+
 export default async function LecturerReportsPage({
   searchParams,
 }: {
@@ -351,8 +355,8 @@ export default async function LecturerReportsPage({
           <CardTitle className="text-base">Student attendance summary</CardTitle>
           <CardDescription>
             {comparison === "all"
-              ? `${filteredStudents.length} students`
-              : `${filteredStudents.length} students ${comparison === "below" ? "below" : "at or above"} ${threshold}%`}
+              ? studentCountLabel(filteredStudents.length)
+              : `${studentCountLabel(filteredStudents.length)} ${comparison === "below" ? "below" : "at or above"} ${threshold}%`}
           </CardDescription>
         </CardHeader>
         <CardContent className="px-0 pt-0">

@@ -96,7 +96,7 @@ export default async function LecturerSessionsPage({
   return (
     <>
       <PageHeader
-        description="Manage administrator-created QR attendance windows and monitor student check-ins."
+        description="Manage QR attendance windows for your assigned courses and monitor student check-ins."
         title="Attendance sessions"
       />
 

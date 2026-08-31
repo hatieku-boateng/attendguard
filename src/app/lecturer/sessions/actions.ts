@@ -232,7 +232,7 @@ async function sendAbsenceWarningsForSession({
 }
 
 export async function createAttendanceSessionAction(formData: FormData) {
-  const user = await requireRole("administrator");
+  const user = await requireRole("lecturer");
   const courseId = cleanString(formData.get("courseId"));
   const source = cleanString(formData.get("source"));
   const sessionTitle = cleanString(formData.get("sessionTitle"));
@@ -264,6 +264,7 @@ export async function createAttendanceSessionAction(formData: FormData) {
       and(
         eq(courses.id, courseId),
         eq(courses.lecturerId, user.lecturerProfileId),
+        eq(courses.status, "active"),
       ),
     )
     .limit(1);

@@ -1,13 +1,18 @@
 import Link from "next/link";
 import { and, count, desc, eq } from "drizzle-orm";
+import { Plus } from "lucide-react";
 
 import {
   addCourseResourceAction,
   deleteCourseResourceAction,
   updateCourseStatusAction,
 } from "@/app/lecturer/courses/actions";
+import { createAttendanceSessionAction } from "@/app/lecturer/sessions/actions";
+import { AttendanceSessionFields } from "@/components/attendance-session-fields";
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
+import { FormModal } from "@/components/form-modal";
 import { PageHeader } from "@/components/page-header";
+import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { StatCard } from "@/components/stat-card";
 import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
@@ -36,15 +41,19 @@ import {
   courseResources,
   courses,
   enrolments,
+  lectureHalls,
 } from "@/db/schema";
 import { requireRole } from "@/lib/auth";
 
 export default async function CourseDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ courseId: string }>;
+  searchParams: Promise<{ modal?: string; error?: string }>;
 }) {
   const { courseId } = await params;
+  const query = await searchParams;
   const user = await requireRole("lecturer");
   const db = getDb();
 
@@ -63,30 +72,33 @@ export default async function CourseDetailPage({
     return <PageHeader title="Course not found" />;
   }
 
-  const [studentCount] = await db
-    .select({ value: count() })
-    .from(enrolments)
-    .where(eq(enrolments.courseId, course.id));
-
-  const [sessionCount] = await db
-    .select({ value: count() })
-    .from(attendanceSessions)
-    .where(eq(attendanceSessions.courseId, course.id));
-  const resources = await db
-    .select()
-    .from(courseResources)
-    .where(eq(courseResources.courseId, course.id));
-  const sessions = await db
-    .select({
-      id: attendanceSessions.id,
-      title: attendanceSessions.sessionTitle,
-      status: attendanceSessions.status,
-      opensAt: attendanceSessions.opensAt,
-      finalClosesAt: attendanceSessions.finalClosesAt,
-    })
-    .from(attendanceSessions)
-    .where(eq(attendanceSessions.courseId, course.id))
-    .orderBy(desc(attendanceSessions.opensAt));
+  const [[studentCount], [sessionCount], resources, sessions, venues] = await Promise.all([
+    db.select({ value: count() }).from(enrolments).where(eq(enrolments.courseId, course.id)),
+    db.select({ value: count() }).from(attendanceSessions).where(eq(attendanceSessions.courseId, course.id)),
+    db.select().from(courseResources).where(eq(courseResources.courseId, course.id)),
+    db
+      .select({
+        id: attendanceSessions.id,
+        title: attendanceSessions.sessionTitle,
+        status: attendanceSessions.status,
+        opensAt: attendanceSessions.opensAt,
+        finalClosesAt: attendanceSessions.finalClosesAt,
+      })
+      .from(attendanceSessions)
+      .where(eq(attendanceSessions.courseId, course.id))
+      .orderBy(desc(attendanceSessions.opensAt)),
+    db
+      .select({ id: lectureHalls.id, code: lectureHalls.code, name: lectureHalls.name })
+      .from(lectureHalls)
+      .where(eq(lectureHalls.status, "active"))
+      .orderBy(lectureHalls.code),
+  ]);
+  const sessionError =
+    query.error === "time"
+      ? "Opening time must be before present-until time, and present-until must not exceed final close."
+      : query.error
+        ? "Complete the session title and attendance times, then select a valid venue."
+        : null;
   return (
     <>
       <PageHeader
@@ -94,6 +106,14 @@ export default async function CourseDetailPage({
         description={`${course.academicYear} / ${course.semester} / ${course.classGroup}`}
         actions={
           <>
+            {course.status === "active" ? (
+              <Button asChild>
+                <Link href={`/lecturer/courses/${course.id}?modal=new`}>
+                  <Plus className="size-4" />
+                  Add session
+                </Link>
+              </Button>
+            ) : null}
             <Button asChild variant="outline">
               <Link href={`/lecturer/courses/${course.id}/students`}>Students</Link>
             </Button>
@@ -283,6 +303,26 @@ export default async function CourseDetailPage({
           </form>
         </CardContent>
       </Card>
+      <FormModal
+        description={`Create another QR attendance session for ${course.courseCode}.`}
+        isOpen={query.modal === "new" && course.status === "active"}
+        title="Add attendance session"
+      >
+        <form action={createAttendanceSessionAction} className="grid gap-4 sm:grid-cols-2">
+          <input name="courseId" type="hidden" value={course.id} />
+          <input name="source" type="hidden" value="course" />
+          {sessionError ? (
+            <p className="border border-destructive/25 bg-destructive/5 px-4 py-3 text-xs font-semibold text-destructive sm:col-span-2">
+              {sessionError}
+            </p>
+          ) : null}
+          <AttendanceSessionFields venues={venues} />
+          <PendingSubmitButton className="sm:col-span-2" pendingLabel="Creating session...">
+            <Plus className="size-4" />
+            Create session
+          </PendingSubmitButton>
+        </form>
+      </FormModal>
     </>
   );
 }

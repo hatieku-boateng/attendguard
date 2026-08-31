@@ -26,7 +26,7 @@ const nextConfig: NextConfig = {
       { key: "X-Frame-Options", value: "DENY" },
       {
         key: "Permissions-Policy",
-        value: "camera=(), microphone=(), payment=(), geolocation=(self)",
+        value: "camera=(self), microphone=(), payment=(), geolocation=(self)",
       },
       {
         key: "Strict-Transport-Security",

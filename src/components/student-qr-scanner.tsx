@@ -14,8 +14,11 @@ import { cn } from "@/lib/utils";
 export function StudentQrScanner() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const controlsRef = useRef<IScannerControls | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   const processingRef = useRef(false);
+  const autoStartAttemptedRef = useRef(false);
   const [cameraActive, setCameraActive] = useState(false);
+  const [cameraStarting, setCameraStarting] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [result, setResult] = useState<QrCheckInResult | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -23,6 +26,8 @@ export function StudentQrScanner() {
   const stopCamera = useCallback(() => {
     controlsRef.current?.stop();
     controlsRef.current = null;
+    streamRef.current?.getTracks().forEach((track) => track.stop());
+    streamRef.current = null;
     setCameraActive(false);
   }, []);
 
@@ -32,26 +37,43 @@ export function StudentQrScanner() {
     stopCamera();
     setResult(null);
     setCameraError(null);
+    setCameraStarting(true);
     processingRef.current = false;
 
     try {
-      const { BrowserQRCodeReader } = await import("@zxing/browser");
+      if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
+        throw new DOMException("Camera access requires a secure browser context.", "SecurityError");
+      }
+
+      const constraints: MediaStreamConstraints = {
+        audio: false,
+        video: {
+          facingMode: { ideal: "environment" },
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+        },
+      };
+      const streamPromise = navigator.mediaDevices.getUserMedia(constraints);
+      const readerPromise = import("@zxing/browser");
+      const [stream, { BrowserQRCodeReader }] = await Promise.all([
+        streamPromise,
+        readerPromise,
+      ]);
+      streamRef.current = stream;
+
       const reader = new BrowserQRCodeReader(undefined, {
         delayBetweenScanAttempts: 120,
         delayBetweenScanSuccess: 800,
       });
 
-      if (!videoRef.current) return;
+      if (!videoRef.current) {
+        stream.getTracks().forEach((track) => track.stop());
+        streamRef.current = null;
+        return;
+      }
 
-      const controls = await reader.decodeFromConstraints(
-        {
-          audio: false,
-          video: {
-            facingMode: { ideal: "environment" },
-            width: { ideal: 1280 },
-            height: { ideal: 720 },
-          },
-        },
+      const controls = await reader.decodeFromStream(
+        stream,
         videoRef.current,
         (scanResult) => {
           if (!scanResult || processingRef.current) return;
@@ -70,14 +92,20 @@ export function StudentQrScanner() {
       controlsRef.current = controls;
       setCameraActive(true);
     } catch (error) {
-      setCameraError(
-        error instanceof DOMException && error.name === "NotAllowedError"
-          ? "Camera access was denied. Allow camera access in your browser and try again."
-          : "The camera could not be started. Check that this device has an available camera.",
-      );
+      streamRef.current?.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+      setCameraError(cameraErrorMessage(error));
       setCameraActive(false);
+    } finally {
+      setCameraStarting(false);
     }
   }, [stopCamera]);
+
+  useEffect(() => {
+    if (autoStartAttemptedRef.current) return;
+    autoStartAttemptedRef.current = true;
+    void startCamera();
+  }, [startCamera]);
 
   const successful = result?.ok === true;
 
@@ -102,11 +130,22 @@ export function StudentQrScanner() {
                 Scan the lecturer&apos;s QR code
               </h2>
               <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                Use the rear camera and hold the full QR code inside the frame.
+                {cameraStarting
+                  ? "Respond to the camera permission request from your browser."
+                  : "Use the rear camera and hold the full QR code inside the frame."}
               </p>
-              <Button className="mt-6 gap-2" onClick={() => void startCamera()} type="button">
-                <ScanLine className="size-4" />
-                Start camera
+              <Button
+                className="mt-6 gap-2"
+                disabled={cameraStarting}
+                onClick={() => void startCamera()}
+                type="button"
+              >
+                {cameraStarting ? (
+                  <RefreshCw className="size-4 animate-spin" />
+                ) : (
+                  <ScanLine className="size-4" />
+                )}
+                {cameraStarting ? "Requesting camera access" : cameraError ? "Try camera again" : "Start camera"}
               </Button>
             </div>
           </div>
@@ -162,6 +201,28 @@ export function StudentQrScanner() {
       ) : null}
     </div>
   );
+}
+
+function cameraErrorMessage(error: unknown) {
+  if (error instanceof DOMException) {
+    if (error.name === "NotAllowedError") {
+      return "Camera permission is blocked for AttendGuard. Open this site in your browser settings, allow Camera access, then tap Try camera again.";
+    }
+
+    if (error.name === "NotFoundError" || error.name === "OverconstrainedError") {
+      return "No suitable camera was found on this device.";
+    }
+
+    if (error.name === "NotReadableError" || error.name === "AbortError") {
+      return "The camera is being used by another app. Close the other app, then try again.";
+    }
+
+    if (error.name === "SecurityError") {
+      return "Camera access requires the secure AttendGuard website in a supported browser.";
+    }
+  }
+
+  return "The camera could not be started. Check that this device has an available camera and try again.";
 }
 
 function ResultBanner({
